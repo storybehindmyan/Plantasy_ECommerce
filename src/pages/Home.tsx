@@ -305,7 +305,7 @@ const Home = () => {
                             <div className="relative overflow-hidden aspect-[4/3] mb-6">
                                 <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 text-xs font-bold tracking-widest uppercase z-10">Featured</span>
                                 <img
-                                    src="/gram-2.png"
+                                    src="public/gram-2.jpg"
                                     alt="Featured Blog Post"
                                     className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
                                 />

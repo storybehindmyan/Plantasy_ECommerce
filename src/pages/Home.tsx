@@ -59,30 +59,32 @@ const Home = () => {
             {/* 1.5. New Arrivals Section */}
             <section className="bg-[#E8E6E1] py-24 px-6 text-[#2C2C2C] min-h-screen flex flex-col justify-center">
                 <div className="max-w-7xl mx-auto w-full">
-                    <div className="flex justify-between items-end mb-12">
-                        <motion.h2
-                            className="text-4xl md:text-6xl font-serif"
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.8 }}
-                        >
+                    <motion.div
+                        className="flex justify-between items-end mb-12"
+                        initial={{ opacity: 0, x: -50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <h2 className="text-4xl md:text-6xl font-serif">
                             New Arrivals
-                        </motion.h2>
+                        </h2>
                         <Link to="/shop" className="hidden md:inline-block bg-[#c16e41] text-white px-8 py-3 text-sm font-bold tracking-widest hover:bg-[#a0502a] transition duration-300">
                             Shop All
                         </Link>
-                    </div>
+                    </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {PRODUCTS.filter(p => p.badge === 'New Arrival').slice(0, 4).map((item, i) => (
-                            <motion.div
+                    <motion.div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+                        initial={{ opacity: 0, x: 50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                    >
+                        {PRODUCTS.filter(p => p.badge === 'New Arrival').slice(0, 4).map((item) => (
+                            <div
                                 key={item.id}
                                 className="group cursor-pointer"
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1, duration: 0.8 }}
                             >
                                 <Link to={`/product/${item.id}`}>
                                     <div className="relative aspect-[3/4] overflow-hidden bg-white mb-4">
@@ -108,9 +110,9 @@ const Home = () => {
                                         Add to Cart
                                     </button>
                                 </Link>
-                            </motion.div>
+                            </div>
                         ))}
-                    </div>
+                    </motion.div>
 
                     <div className="mt-12 text-center md:hidden">
                         <Link to="/shop" className="inline-block bg-[#c16e41] text-white px-8 py-3 text-sm font-bold tracking-widest hover:bg-[#a0502a] transition duration-300">
@@ -119,6 +121,57 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+
+            {/* 1.5. New Arrivals Section - (Correction: Ended above) */}
+
+            {/* 1.8 Discover Sprout Section */}
+            <motion.section
+                className="relative h-screen bg-black overflow-hidden"
+                initial="initial"
+                whileHover="hover"
+                animate="initial"
+            >
+                {/* Background Grid */}
+                <div className="w-full h-full grid grid-cols-1 md:grid-cols-3">
+                    {/* Item 1 */}
+                    <Link to="/shop" className="relative h-full border-r border-white/10 group overflow-hidden">
+                        <img src="/gram-3.jpg" alt="Shop" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-white text-xl tracking-[0.2em] uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-4 group-hover:translate-y-0">Shop</span>
+                        </div>
+                    </Link>
+
+                    {/* Item 2 */}
+                    <Link to="/our-story" className="relative h-full border-r border-white/10 group overflow-hidden">
+                        <img src="/story-bg.png" alt="Our Story" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-white text-xl tracking-[0.2em] uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-4 group-hover:translate-y-0">Our Story</span>
+                        </div>
+                    </Link>
+
+                    {/* Item 3 */}
+                    <Link to="/shop?category=care" className="relative h-full group overflow-hidden">
+                        <img src="/gram-6.jpg" alt="Care" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-white text-xl tracking-[0.2em] uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-4 group-hover:translate-y-0">Care</span>
+                        </div>
+                    </Link>
+                </div>
+
+                {/* Flying Text */}
+                <motion.div
+                    className="absolute z-10 pointer-events-none"
+                    variants={{
+                        initial: { top: "50%", left: "50%", x: "-50%", y: "-50%", scale: 1 },
+                        hover: { top: "10%", left: "5%", x: "0%", y: "0%", scale: 0.6 }
+                    }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <h2 className="text-6xl md:text-8xl lg:text-9xl font-serif text-white whitespace-nowrap">
+                        Discover Sprout
+                    </h2>
+                </motion.div>
+            </motion.section>
 
             {/* 2. Subscription Boxes (Split Layout) */}
             <section className="flex flex-col md:flex-row min-h-screen">
@@ -184,6 +237,93 @@ const Home = () => {
                         Subscription Boxes
                     </Link>
                 </motion.div>
+            </section>
+
+            {/* 3. Blog Section - From Garden to Vase */}
+            <section className="bg-[#f4f1ed] py-24 px-6 text-[#2C2C2C]">
+                <div className="max-w-7xl mx-auto w-full">
+                    <div className="flex justify-between items-end mb-12">
+                        <motion.h2
+                            className="text-4xl md:text-6xl font-serif"
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.8 }}
+                        >
+                            From Garden to Vase
+                        </motion.h2>
+                        <Link to="/blog" className="hidden md:inline-block border-b border-[#2C2C2C] pb-1 text-sm font-bold tracking-widest hover:text-[#c16e41] hover:border-[#c16e41] transition duration-300">
+                            READ THE BLOG
+                        </Link>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        {/* Featured Post */}
+                        <motion.div
+                            className="group cursor-pointer"
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.8 }}
+                        >
+                            <div className="relative overflow-hidden aspect-[4/3] mb-6">
+                                <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 text-xs font-bold tracking-widest uppercase z-10">Featured</span>
+                                <img
+                                    src="/gram-1.png"
+                                    alt="Featured Blog Post"
+                                    className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
+                                />
+                            </div>
+                            <div className="flex items-center gap-4 text-xs font-bold tracking-widest text-gray-500 mb-3 uppercase">
+                                <span>Oct 12, 2024</span>
+                                <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                                <span>Plant Care</span>
+                            </div>
+                            <h3 className="text-3xl font-serif mb-3 group-hover:text-[#c16e41] transition-colors">How to Propagate Your Monstera</h3>
+                            <p className="text-gray-600 leading-relaxed mb-4">
+                                Propagation is a great way to grow your plant collection without spending a dime. Here is everything you need to know about propagating successfully.
+                            </p>
+                            <span className="text-xs font-bold tracking-widest uppercase border-b border-gray-300 pb-1 group-hover:border-[#c16e41] transition-colors">Read More</span>
+                        </motion.div>
+
+                        {/* Recent Posts List */}
+                        <div className="flex flex-col gap-10 justify-center">
+                            {[
+                                { title: "5 Plants for Low Light", date: "Sep 28, 2024", img: "/gram-2.jpg", category: "Guides" },
+                                { title: "The Art of Watering", date: "Sep 15, 2024", img: "/gram-4.jpg", category: "Tips" },
+                                { title: "Styling Your Greenery", date: "Sep 02, 2024", img: "/gram-7.jpg", category: "Inspiration" }
+                            ].map((post, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="flex gap-6 group cursor-pointer"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: 0.2 + (i * 0.1), duration: 0.8 }}
+                                >
+                                    <div className="w-1/3 aspect-square overflow-hidden shrink-0">
+                                        <img src={post.img} alt={post.title} className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
+                                    </div>
+                                    <div className="flex flex-col justify-center">
+                                        <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest text-gray-500 mb-2 uppercase">
+                                            <span>{post.date}</span>
+                                            <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                                            <span>{post.category}</span>
+                                        </div>
+                                        <h4 className="text-xl font-serif mb-2 group-hover:text-[#c16e41] transition-colors leading-tight">{post.title}</h4>
+                                        <span className="text-[10px] font-bold tracking-widest uppercase text-gray-400 group-hover:text-[#c16e41] transition-colors">Read Article</span>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mt-12 text-center md:hidden">
+                        <Link to="/blog" className="inline-block border-b border-[#2C2C2C] pb-1 text-sm font-bold tracking-widest transition duration-300">
+                            READ THE BLOG
+                        </Link>
+                    </div>
+                </div>
             </section>
 
             {/* 3. Sprout on the #Gram Section */}

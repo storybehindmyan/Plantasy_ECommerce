@@ -44,6 +44,7 @@ const ProfileHeader = () => {
                 const base64String = reader.result as string;
                 setProfileImage(base64String);
                 localStorage.setItem(`profile_image_${user.uid}`, base64String);
+                window.dispatchEvent(new Event('profile-image-updated'));
             };
             reader.readAsDataURL(file);
         }

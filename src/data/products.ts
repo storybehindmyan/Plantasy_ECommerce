@@ -210,5 +210,32 @@ export const PRODUCTS: Product[] = [
         image: '/cactus-subscription-1.png',
         hoverImage: '/cactus-subscription-2.png',
         description: 'Monthly curation of unique cacti delivered to your door.'
+    },
+    {
+        id: '21',
+        name: 'Monstera Seeds',
+        price: 9.99,
+        category: 'seeds',
+        image: '/monstera-1.png', // Reusing placeholder
+        hoverImage: '/monstera-2.png',
+        description: 'Grow your own Swiss Cheese plant from scratch.'
+    },
+    {
+        id: '22',
+        name: 'Palm Seeds',
+        price: 7.99,
+        category: 'seeds',
+        image: '/rhapis-1.png', // Reusing placeholder
+        hoverImage: '/rhapis-2.jpg',
+        description: 'Quality palm seeds for patient gardeners.'
+    },
+    {
+        id: '23',
+        name: 'Cactus Mix Seeds',
+        price: 5.99,
+        category: 'seeds',
+        image: '/cactus-1.png', // Reusing placeholder
+        hoverImage: '/cactus-2.png',
+        description: 'A variety pack of desert cactus seeds.'
     }
 ];

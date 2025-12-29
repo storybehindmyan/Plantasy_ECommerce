@@ -20,7 +20,7 @@ const Home = () => {
         target: storyRef,
         offset: ["start end", "end start"]
     });
-    const yStoryBg = useTransform(storyProgress, [0, 1], ["-10%", "10%"]);
+    const yStoryBg = useTransform(storyProgress, [0, 1], ["-40%", "40%"]);
 
     return (
         <div className="bg-black text-white w-full overflow-x-hidden">
@@ -43,6 +43,7 @@ const Home = () => {
                     whileInView="whileInView"
                     viewport={{ once: true }}
                     variants={fadeInUp}
+                    transition={{ duration: 2.5 }} // Slowed down significantly
                 >
                     <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif mb-6 tracking-tight text-white relative inline-block">
                         Grow Your Joy
@@ -163,7 +164,7 @@ const Home = () => {
                     className="absolute z-10 pointer-events-none"
                     variants={{
                         initial: { top: "50%", left: "50%", x: "-50%", y: "-50%", scale: 1 },
-                        hover: { top: "10%", left: "5%", x: "0%", y: "0%", scale: 0.6 }
+                        hover: { top: "10%", left: "50%", x: "-50%", y: "-50%", scale: 0.5 } // Stays in middle, just shrinks
                     }}
                     transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                 >
@@ -172,6 +173,41 @@ const Home = () => {
                     </h2>
                 </motion.div>
             </motion.section>
+
+            {/* 4. Our Story / From Seed to Sprout Section (Moved here) */}
+            <section ref={storyRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 z-0">
+                    <motion.div
+                        className="absolute inset-0 w-full h-full"
+                        style={{ y: yStoryBg, scale: 1.25 }}
+                    >
+                        <img
+                            src="/story-bg.png"
+                            alt="Background"
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/20" />
+                    </motion.div>
+                </div>
+
+                <motion.div
+                    className="relative z-10 text-center max-w-2xl px-6 text-white"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8 }}
+                >
+                    <h2 className="text-5xl md:text-7xl font-serif mb-6 tracking-tight">
+                        From Seed to Sprout
+                    </h2>
+                    <p className="text-gray-200 text-lg md:text-xl mb-10 leading-relaxed font-light">
+                        I'm a paragraph. Click here to add your own text and edit me. It's easy. Just click “Edit Text” or double click me to add your own content and make changes to the font. I’m a great place for you to tell a story and let your users know a little more about you.
+                    </p>
+                    <Link to="/our-story" className="inline-block border border-white px-10 py-3 text-sm tracking-[0.2em] font-medium hover:bg-white hover:text-black transition-all duration-300 uppercase">
+                        Our Story
+                    </Link>
+                </motion.div>
+            </section>
 
             {/* 2. Subscription Boxes (Split Layout) */}
             <section className="flex flex-col md:flex-row min-h-screen">
@@ -362,45 +398,23 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* 4. Our Story / From Seed to Sprout Section */}
-            <section ref={storyRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+
+
+            {/* 5. Subscription Form - Dark */}
+            {/* 5. Subscription Form - Dark */}
+            <section className="relative bg-black text-white py-32 px-6 border-t border-white/10 overflow-hidden">
+                {/* Background Image */}
                 <div className="absolute inset-0 z-0">
-                    <motion.div
-                        className="absolute inset-0 w-full h-full"
-                        style={{ y: yStoryBg, scale: 1.25 }}
-                    >
-                        <img
-                            src="/story-bg.png"
-                            alt="Background"
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/20" />
-                    </motion.div>
+                    <img
+                        src="/footer.png"
+                        alt="Footer Background"
+                        className="w-full h-full object-cover opacity-100" // Opacity set to 100 as per image provided, but usually needs a darkening overlay for text readability
+                    />
+                    <div className="absolute inset-0 bg-black/60" /> {/* Dark overlay for text readability */}
                 </div>
 
                 <motion.div
-                    className="relative z-10 text-center max-w-2xl px-6 text-white"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8 }}
-                >
-                    <h2 className="text-5xl md:text-7xl font-serif mb-6 tracking-tight">
-                        From Seed to Sprout
-                    </h2>
-                    <p className="text-gray-200 text-lg md:text-xl mb-10 leading-relaxed font-light">
-                        I'm a paragraph. Click here to add your own text and edit me. It's easy. Just click “Edit Text” or double click me to add your own content and make changes to the font. I’m a great place for you to tell a story and let your users know a little more about you.
-                    </p>
-                    <Link to="/our-story" className="inline-block border border-white px-10 py-3 text-sm tracking-[0.2em] font-medium hover:bg-white hover:text-black transition-all duration-300 uppercase">
-                        Our Story
-                    </Link>
-                </motion.div>
-            </section>
-
-            {/* 5. Subscription Form - Dark */}
-            <section className="bg-black text-white py-32 px-6 border-t border-white/10">
-                <motion.div
-                    className="max-w-4xl mx-auto text-center"
+                    className="relative z-10 max-w-4xl mx-auto text-center"
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -409,18 +423,18 @@ const Home = () => {
                     <h2 className="text-4xl md:text-6xl font-serif mb-6 leading-tight">
                         Everything You Need to Know <br /> About Plants and More. No Spam, <br /> We Promise.
                     </h2>
-                    <p className="text-gray-400 mb-12">
+                    <p className="text-gray-300 mb-12">
                         Subscribe now and get 15% off your first purchase.
                     </p>
 
                     <form className="max-w-md mx-auto flex flex-col gap-4">
                         <div className="flex flex-col text-left gap-1">
-                            <label htmlFor="email" className="text-xs ml-1 text-gray-500">Enter your email here *</label>
+                            <label htmlFor="email" className="text-xs ml-1 text-gray-400">Enter your email here *</label>
                             <div className="flex gap-4">
                                 <input
                                     type="email"
                                     id="email"
-                                    className="flex-1 bg-transparent border border-white/30 p-3 text-white focus:outline-none focus:border-white transition-colors"
+                                    className="flex-1 bg-transparent border border-white/50 p-3 text-white focus:outline-none focus:border-white transition-colors placeholder:text-gray-500"
                                 />
                                 <button type="submit" className="bg-[#c16e41] text-white px-8 py-3 text-sm font-bold tracking-widest hover:bg-[#a0502a] transition duration-300">
                                     Subscribe

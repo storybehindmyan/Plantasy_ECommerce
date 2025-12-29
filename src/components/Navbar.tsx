@@ -13,8 +13,27 @@ const Navbar = () => {
     const { itemsCount, toggleCart } = useCart();
     const { products } = useProducts();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false); // Separated state for User Dropdown
+    const userMenuRef = useRef<HTMLDivElement>(null); // Ref for User Menu
     const location = useLocation();
     const navigate = useNavigate();
+    const [profileImage, setProfileImage] = useState<string | null>(null);
+
+    // Sync Profile Image
+    useEffect(() => {
+        const updateImage = () => {
+            if (user) {
+                const savedImage = localStorage.getItem(`profile_image_${user.uid}`);
+                setProfileImage(savedImage || user.photoURL || null);
+            } else {
+                setProfileImage(null);
+            }
+        };
+
+        updateImage();
+        window.addEventListener('profile-image-updated', updateImage);
+        return () => window.removeEventListener('profile-image-updated', updateImage);
+    }, [user, isUserMenuOpen]); // Update when menu opens to catch changes
 
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -49,11 +68,14 @@ const Navbar = () => {
         }
     };
 
-    // Close search when clicking outside
+    // Close search/menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
                 setIsSearchOpen(false);
+            }
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false);
             }
         };
 
@@ -69,11 +91,54 @@ const Navbar = () => {
         setSearchQuery('');
     };
 
+    // Banner Rotation Logic
+    const [currentBanner, setCurrentBanner] = useState(0);
+    const banners = [
+        {
+            id: 0,
+            bg: "bg-[#c16e41]", // Orange
+            content: <span>FREE SHIPPING ON ORDERS OVER $75</span>
+        },
+        {
+            id: 1,
+            bg: "bg-[#5F6F52]", // Green
+            content: (
+                <div className="flex items-center justify-center gap-4">
+                    <span>GET 15% OFF YOUR FIRST PURCHASE</span>
+                    <Link to="/login" className="border border-white/40 px-3 py-0.5 text-[10px] uppercase tracking-widest hover:bg-white hover:text-[#5F6F52] transition-colors">
+                        Sign Up
+                    </Link>
+                </div>
+            )
+        }
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentBanner((prev) => (prev + 1) % banners.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <>
             {/* Promo Banner */}
-            <div className="bg-accent text-white text-center text-xs py-2 tracking-wider font-medium">
-                FREE SHIPPING ON ORDERS OVER $75
+            <div className="relative h-9 overflow-hidden bg-black">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentBanner}
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.5 }}
+                        className={clsx(
+                            "absolute inset-0 w-full h-full flex items-center justify-center text-white text-xs tracking-wider font-medium",
+                            banners[currentBanner].bg
+                        )}
+                    >
+                        {banners[currentBanner].content}
+                    </motion.div>
+                </AnimatePresence>
             </div>
 
             {/* Navbar */}
@@ -94,8 +159,8 @@ const Navbar = () => {
                             <Link
                                 to="/"
                                 className={clsx(
-                                    "px-5 py-2 text-sm font-medium transition-colors border border-white/20 mr-[-1px]",
-                                    location.pathname === '/' ? "bg-black text-white" : "text-white/80 hover:bg-[#c16e41] hover:text-white"
+                                    "px-6 py-3 text-base font-medium transition-colors border border-white/20 mr-[-1px]", // Increased padding and font 
+                                    location.pathname === '/' ? "bg-[#c16e41] text-white border-[#c16e41]" : "text-white/80 hover:bg-[#c16e41] hover:text-white" // Changed active color to Orange
                                 )}
                             >
                                 Home
@@ -105,7 +170,7 @@ const Navbar = () => {
                                     key={link.name}
                                     to={link.path}
                                     className={clsx(
-                                        "px-5 py-2 text-sm font-medium transition-colors border border-white/20 mr-[-1px]",
+                                        "px-6 py-3 text-base font-medium transition-colors border border-white/20 mr-[-1px]", // Increased padding and font
                                         location.pathname === link.path || (link.path.includes('shop') && location.pathname === '/shop' && link.name === 'Shop All' && !location.search)
                                             ? "bg-[#c16e41] text-white border-[#c16e41]"
                                             : "text-white/80 hover:bg-[#c16e41] hover:text-white hover:border-[#c16e41]"
@@ -128,29 +193,30 @@ const Navbar = () => {
 
                         {/* Right Action Section */}
                         <div className="hidden lg:flex items-center bg-black/90 backdrop-blur-sm rounded-sm p-1 gap-1 shadow-lg border border-white/10">
+
                             {/* Login */}
                             {user ? (
-                                <div className="relative">
-                                    <div className="flex items-center gap-4 px-4 py-2 border-r border-white/10">
+                                <div className="relative" ref={userMenuRef}>
+                                    <div className="flex items-center gap-4 px-5 py-3 border-r border-white/10">
                                         <Bell size={20} className="text-white hover:text-[#c16e41] cursor-pointer transition-colors" />
                                         <button
-                                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                             className="flex items-center gap-2 group"
                                         >
                                             <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/20">
-                                                {user.photoURL ? (
-                                                    <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
+                                                {profileImage ? (
+                                                    <img src={profileImage} alt="User" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <UserIcon className="w-full h-full p-1 text-white" />
                                                 )}
                                             </div>
-                                            <ChevronDown size={16} className={`text-white transition-transform duration-300 ${isMenuOpen ? 'rotate-180' : ''}`} />
+                                            <ChevronDown size={16} className={`text-white transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                                         </button>
                                     </div>
 
                                     {/* Dropdown Menu */}
                                     <AnimatePresence>
-                                        {isMenuOpen && (
+                                        {isUserMenuOpen && (
                                             <motion.div
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -187,7 +253,7 @@ const Navbar = () => {
                                                     <button
                                                         onClick={() => {
                                                             logout();
-                                                            setIsMenuOpen(false);
+                                                            setIsUserMenuOpen(false);
                                                         }}
                                                         className="w-full text-left px-6 py-3 text-sm text-white hover:text-[#c16e41] transition-colors flex items-center gap-3"
                                                     >
@@ -200,16 +266,16 @@ const Navbar = () => {
                                     </AnimatePresence>
                                 </div>
                             ) : (
-                                <Link to="/login" className="flex items-center gap-2 px-4 py-2 text-white/90 hover:bg-white/10 rounded-sm text-sm font-medium transition-colors">
-                                    <UserIcon size={18} />
+                                <Link to="/login" className="flex items-center gap-2 px-5 py-3 text-white/90 hover:bg-white/10 rounded-sm text-sm font-medium transition-colors border-r border-white/10">
+                                    <UserIcon size={20} />
                                     <span>Log In</span>
                                 </Link>
                             )}
 
                             {/* Search Bar - Interactive */}
                             <div className="relative" ref={searchRef}>
-                                <div className="bg-white/10 flex items-center gap-2 px-3 py-2 rounded-sm mx-1 min-w-[200px] border border-transparent focus-within:border-white/30 transition-colors">
-                                    <Search size={16} className="text-white/60" />
+                                <div className="bg-white/10 flex items-center gap-2 px-4 py-3 rounded-sm mx-1 min-w-[220px] border border-transparent focus-within:border-white/30 transition-colors">
+                                    <Search size={18} className="text-white/60" />
                                     <input
                                         type="text"
                                         placeholder="Search"
@@ -254,9 +320,9 @@ const Navbar = () => {
                             {/* Cart */}
                             <button
                                 onClick={toggleCart}
-                                className="flex items-center gap-2 px-4 py-2 text-white/90 hover:bg-white/10 rounded-sm text-sm font-medium transition-colors"
+                                className="flex items-center gap-2 px-5 py-3 text-white/90 hover:bg-white/10 rounded-sm text-sm font-medium transition-colors border-l border-white/10"
                             >
-                                <ShoppingCart size={18} />
+                                <ShoppingCart size={20} />
                                 <span>Cart {itemsCount}</span>
                             </button>
                         </div>

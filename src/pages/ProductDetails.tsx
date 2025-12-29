@@ -5,7 +5,8 @@ import { PRODUCTS } from '../data/products';
 import type { Product } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { ChevronLeft, ChevronRight, Heart, ChevronDown, ChevronUp } from 'lucide-react';
-import ProductCard from '../components/ProductCard';
+import YouMayAlsoLike from '../components/YouMayAlsoLike';
+// ... other imports ...
 
 const AccordionItem = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -47,12 +48,6 @@ const ProductDetails = () => {
     const product = PRODUCTS[currentIndex];
     const prevProduct = currentIndex > 0 ? PRODUCTS[currentIndex - 1] : null;
     const nextProduct = currentIndex < PRODUCTS.length - 1 ? PRODUCTS[currentIndex + 1] : null;
-
-    // Get related products (just simple logic for now: same category excluding current)
-    const relatedProducts = useMemo(() => {
-        if (!product) return [];
-        return PRODUCTS.filter((p: Product) => p.category === product.category && p.id !== product.id).slice(0, 4);
-    }, [product]);
 
     if (!product) {
         return <div className="p-20 text-center text-white bg-primary min-h-screen">Product not found.</div>;
@@ -188,23 +183,8 @@ const ProductDetails = () => {
                 </div>
             </div>
 
-            {/* Related Products Section - Black Background */}
-            <div className="bg-primary text-secondary py-20 border-t border-white/10">
-                <div className="max-w-[1280px] mx-auto px-6">
-                    <h3 className="text-3xl font-serif text-center mb-12">Related Products</h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
-                        {relatedProducts.length > 0 ? (
-                            relatedProducts.map((p: Product) => (
-                                <ProductCard key={p.id} product={p} />
-                            ))
-                        ) : (
-                            <p className="col-span-4 text-center text-gray-500">No related products found.</p>
-                        )}
-                    </div>
-                    {/* Add carousel arrows if needed, currently reusing grid for responsiveness */}
-                </div>
-            </div>
+            {/* Related Products / You May Also Like */}
+            <YouMayAlsoLike currentProductId={id} bgColor="bg-primary border-t border-white/10" />
         </div>
     );
 };

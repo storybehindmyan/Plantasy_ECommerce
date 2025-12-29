@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
 import clsx from 'clsx';
 import { Plus, Minus } from 'lucide-react';
+import YouMayAlsoLike from '../components/YouMayAlsoLike';
 
 const SidebarAccordion = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -42,6 +43,7 @@ const Shop = () => {
     const categoryParam = searchParams.get('category');
     const [activeCategory, setActiveCategory] = useState<string>(categoryParam || 'all');
     const [maxPrice, setMaxPrice] = useState(100);
+    const [sortBy, setSortBy] = useState('featured'); // Sort state
 
     useEffect(() => {
         setActiveCategory(categoryParam || 'all');
@@ -53,6 +55,7 @@ const Shop = () => {
         { id: 'sale', label: 'Sale' },
         { id: 'plants', label: 'Plants' },
         { id: 'pots', label: 'Pots' },
+        { id: 'seeds', label: 'Seeds' },
         { id: 'subscriptions', label: 'Subscriptions' },
     ];
 
@@ -66,7 +69,7 @@ const Shop = () => {
         }
     };
 
-    const filteredProducts = products.filter(product => {
+    let filteredProducts = products.filter(product => {
         // Category Filter
         let matchesCategory = true;
         if (activeCategory === 'all') {
@@ -76,7 +79,7 @@ const Shop = () => {
         } else if (activeCategory === 'sale') {
             matchesCategory = product.badge === 'Sale';
         } else if (activeCategory === 'subscriptions') {
-            matchesCategory = product.category === 'plants' && product.name.toLowerCase().includes('subscription'); // Basic check based on data
+            matchesCategory = product.category === 'plants' && product.name.toLowerCase().includes('subscription');
         } else {
             matchesCategory = product.category === activeCategory;
         }
@@ -87,13 +90,25 @@ const Shop = () => {
         return matchesCategory && matchesPrice;
     });
 
+    // Sort Logic
+    if (sortBy === 'price-low-high') {
+        filteredProducts.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price-high-low') {
+        filteredProducts.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'newest') {
+        // Assuming higher ID is newer for this mock data, or prioritize 'New Arrival' badge
+        filteredProducts.sort((a, b) => (b.badge === 'New Arrival' ? 1 : 0) - (a.badge === 'New Arrival' ? 1 : 0));
+    }
+
     return (
         <div className="min-h-screen bg-black text-secondary pt-32 pb-20 transition-colors duration-300">
             {/* Centered Title */}
-            <div className="text-center mt-12 mb-32 px-4">
+            <div className="text-center mt-12 mb-20 px-4 relative">
                 <h1 className="text-6xl md:text-8xl font-serif font-medium tracking-tight mb-4 capitalize text-white">
                     {activeCategory === 'all' ? 'Shop All' : categories.find(c => c.id === activeCategory)?.label || activeCategory}
                 </h1>
+
+                {/* Sort By Dropdown - Positioned Top Right of Grid Context usually, but here centric or side */}
             </div>
 
             <div className="max-w-[1600px] mx-auto px-12 flex flex-col md:flex-row gap-20">
@@ -138,19 +153,25 @@ const Shop = () => {
                                 />
                             </div>
                         </SidebarAccordion>
-
-                        <SidebarAccordion title="Color">
-                            <div className="text-sm text-gray-500 py-2">No color filters available.</div>
-                        </SidebarAccordion>
-
-                        <SidebarAccordion title="Size">
-                            <div className="text-sm text-gray-500 py-2">No size filters available.</div>
-                        </SidebarAccordion>
                     </div>
                 </aside>
 
                 {/* Main Content */}
                 <div className="flex-1">
+                    {/* Toolbar */}
+                    <div className="flex justify-end mb-8">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="bg-transparent text-white border border-white/20 px-4 py-2 text-sm focus:outline-none focus:border-white/50 cursor-pointer"
+                        >
+                            <option value="featured" className="bg-black">Sort by: Featured</option>
+                            <option value="newest" className="bg-black">Sort by: Newest</option>
+                            <option value="price-low-high" className="bg-black">Price: Low to High</option>
+                            <option value="price-high-low" className="bg-black">Price: High to Low</option>
+                        </select>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-16">
                         {filteredProducts.map((product) => (
                             <ProductCard key={product.id} product={product} />
@@ -164,6 +185,9 @@ const Shop = () => {
                     )}
                 </div>
             </div>
+
+            {/* Recommendations */}
+            <YouMayAlsoLike />
         </div>
     );
 };

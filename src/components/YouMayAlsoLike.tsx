@@ -5,7 +5,7 @@ interface YouMayAlsoLikeProps {
     bgColor?: string;
 }
 
-const YouMayAlsoLike = ({ currentProductId, bgColor = 'bg-black' }: YouMayAlsoLikeProps) => {
+const YouMayAlsoLike = ({ bgColor = 'bg-black' }: YouMayAlsoLikeProps) => {
     // Note: currentProductId is unused in this fixed-layout design but kept for prop compatibility
 
     return (

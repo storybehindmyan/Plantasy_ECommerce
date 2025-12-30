@@ -91,7 +91,7 @@ const ProfileHeader = () => {
 const NavTab = ({ to, label }: { to: string, label: string }) => (
     <NavLink
         to={to}
-        end={to === ''}
+        end={to === '/profile'} // Explicitly end matching for root profile to avoid active state on sub-routes
         className={({ isActive }) =>
             `px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${isActive ? 'text-white' : 'text-gray-400 hover:text-[#c16e41]'}`
         }

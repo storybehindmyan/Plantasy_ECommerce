@@ -148,7 +148,7 @@ const Navbar = () => {
 
                         {/* Mobile Toggle */}
                         <button
-                            className="lg:hidden text-white drop-shadow-md"
+                            className="lg:hidden text-white drop-shadow-md z-50 relative"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                         >
                             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -159,122 +159,150 @@ const Navbar = () => {
                             <Link
                                 to="/"
                                 className={clsx(
-                                    "px-6 py-3 text-base font-medium transition-colors border border-white/20 mr-[-1px]", // Increased padding and font 
-                                    location.pathname === '/' ? "bg-[#c16e41] text-white border-[#c16e41]" : "text-white/80 hover:bg-[#c16e41] hover:text-white" // Changed active color to Orange
+                                    "px-6 py-3 text-base font-medium transition-colors border border-white/20 mr-[-1px]", // Included Home padding fix 
+                                    location.pathname === '/' ? "bg-[#c16e41] text-white border-[#c16e41]" : "text-white/80 hover:bg-[#c16e41] hover:text-white"
                                 )}
                             >
                                 Home
                             </Link>
-                            {navLinks.map((link) => (
-                                <Link
-                                    key={link.name}
-                                    to={link.path}
-                                    className={clsx(
-                                        "px-6 py-3 text-base font-medium transition-colors border border-white/20 mr-[-1px]", // Increased padding and font
-                                        location.pathname === link.path || (link.path.includes('shop') && location.pathname === '/shop' && link.name === 'Shop All' && !location.search)
-                                            ? "bg-[#c16e41] text-white border-[#c16e41]"
-                                            : "text-white/80 hover:bg-[#c16e41] hover:text-white hover:border-[#c16e41]"
-                                    )}
-                                >
-                                    {link.name}
-                                </Link>
-                            ))}
+                            {navLinks.map((link) => {
+                                // Detailed Active Logic
+                                const isActive = link.path === '/shop'
+                                    ? location.pathname === '/shop' && !location.search
+                                    : location.pathname + location.search === link.path;
+
+                                return (
+                                    <Link
+                                        key={link.name}
+                                        to={link.path}
+                                        className={clsx(
+                                            "px-6 py-3 text-base font-medium transition-colors border border-white/20 mr-[-1px]",
+                                            isActive
+                                                ? "bg-[#c16e41] text-white border-[#c16e41]"
+                                                : "text-white/80 hover:bg-[#c16e41] hover:text-white hover:border-[#c16e41]"
+                                        )}
+                                    >
+                                        {link.name}
+                                    </Link>
+                                );
+                            })}
                         </div>
 
                         {/* Center Logo Area */}
-                        <div className="absolute left-1/2 top-10 transform -translate-x-1/2 flex justify-center z-50">
+                        <div className="absolute left-1/2 top-10 transform -translate-x-1/2 flex justify-center z-40">
                             <Link to="/" className="flex flex-col items-center group">
-                                <div className="w-44 h-16 flex items-center justify-center mb-1 group-hover:scale-105 transition-transform duration-300 drop-shadow-md bg-transparent">
-                                    <img src="/clogo.png" alt="Plantasy" className="w-64 h-64 object-contain mt-10" />
+                                <div className="w-32 md:w-44 h-16 flex items-center justify-center mb-1 group-hover:scale-105 transition-transform duration-300 drop-shadow-md bg-transparent">
+                                    <img src="/clogo.png" alt="Plantasy" className="w-50 h-50 object-contain mt-10" />
                                 </div>
                             </Link>
                         </div>
 
                         {/* Right Action Section */}
-                        <div className="hidden lg:flex items-center gap-4">
+                        <div className="flex items-center gap-2 md:gap-4 ml-auto lg:ml-0 z-50">
 
-                            {/* Login */}
-                            {user ? (
-                                <div className="relative" ref={userMenuRef}>
-                                    <div className="flex items-center gap-4">
-                                        <Bell size={20} className="text-white hover:text-[#c16e41] cursor-pointer transition-colors" />
-                                        <button
-                                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                            className="flex items-center gap-2 group bg-[#2a2a2a]/90 hover:bg-[#2a2a2a] backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5 transition-all"
-                                        >
-                                            <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/20">
-                                                {profileImage ? (
-                                                    <img src={profileImage} alt="User" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <UserIcon className="w-full h-full p-1 text-white" />
-                                                )}
-                                            </div>
-                                            <ChevronDown size={16} className={`text-white transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-                                    </div>
+                            {/* Mobile User/Login (Simplified) */}
+                            <div className="lg:hidden">
+                                {user ? (
+                                    <Link to="/profile" className="text-white p-2">
+                                        <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/20">
+                                            {profileImage ? (
+                                                <img src={profileImage} alt="User" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <UserIcon className="w-full h-full p-1 text-white" />
+                                            )}
+                                        </div>
+                                    </Link>
+                                ) : (
+                                    <Link to="/login" className="text-white p-2">
+                                        <UserIcon size={24} />
+                                    </Link>
+                                )}
+                            </div>
 
-                                    {/* Dropdown Menu */}
-                                    <AnimatePresence>
-                                        {isUserMenuOpen && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 10 }}
-                                                className="absolute right-0 top-full mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                            {/* Desktop Login & Search */}
+                            <div className="hidden lg:flex items-center gap-4">
+                                {user ? (
+                                    <div className="relative" ref={userMenuRef}>
+                                        <div className="flex items-center gap-4">
+                                            <Bell size={20} className="text-white hover:text-[#c16e41] cursor-pointer transition-colors" />
+                                            <button
+                                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                                className="flex items-center gap-2 group bg-[#2a2a2a]/90 hover:bg-[#2a2a2a] backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5 transition-all"
                                             >
-                                                <div className="py-2">
-                                                    <Link to="/profile" className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3">
-                                                        <UserIcon size={16} /> Profile
-                                                    </Link>
-                                                    {user?.role === 'admin' && ( // Added Admin Link
-                                                        <Link to="/admin" className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3">
-                                                            <UserIcon size={16} /> Admin Dashboard
-                                                        </Link>
+                                                <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/20">
+                                                    {profileImage ? (
+                                                        <img src={profileImage} alt="User" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <UserIcon className="w-full h-full p-1 text-white" />
                                                     )}
-                                                    {[
-                                                        { label: 'My Orders', icon: Package, path: '/profile/orders' },
-                                                        { label: 'My Addresses', icon: MapPin, path: '/profile/addresses' },
-                                                        { label: 'My Wallet', icon: Wallet, path: '/profile/wallet' },
-                                                        { label: 'My Subscriptions', icon: Package, path: '/profile/subscriptions' },
-                                                        { label: 'My Wishlist', icon: Heart, path: '/profile/wishlist' },
-                                                        { label: 'My Account', icon: UserIcon, path: '/profile/my-account' }
-                                                    ].map((item, idx) => (
-                                                        <Link
-                                                            key={idx}
-                                                            to={item.path}
-                                                            className={`block px-6 py-3 text-sm transition-colors flex items-center gap-3 ${location.pathname === item.path ? 'text-[#c16e41]' : 'text-white hover:text-[#c16e41]'}`}
-                                                        >
-                                                            <item.icon size={16} />
-                                                            {item.label}
-                                                        </Link>
-                                                    ))}
-                                                    <div className="h-px bg-white/10 my-1 mx-6" />
-                                                    <button
-                                                        onClick={() => {
-                                                            logout();
-                                                            setIsUserMenuOpen(false);
-                                                        }}
-                                                        className="w-full text-left px-6 py-3 text-sm text-white hover:text-[#c16e41] transition-colors flex items-center gap-3"
-                                                    >
-                                                        <UserIcon size={16} className="opacity-0" /> {/* Spacer */}
-                                                        Log Out
-                                                    </button>
                                                 </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            ) : (
-                                <Link to="/login" className="flex items-center gap-3 px-4 py-2.5 bg-[#2a2a2a]/80 hover:bg-[#2a2a2a] backdrop-blur-md rounded-lg text-white text-sm font-medium transition-all shadow-sm border border-white/5">
-                                    <div className="bg-white rounded-full p-0.5">
-                                        <UserIcon size={16} className="text-[#2a2a2a] fill-current" />
-                                    </div>
-                                    <span>Log In</span>
-                                </Link>
-                            )}
+                                                <ChevronDown size={16} className={`text-white transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                                            </button>
+                                        </div>
 
-                            {/* Search Bar - Interactive */}
-                            <div className="relative" ref={searchRef}>
+                                        {/* Dropdown Menu */}
+                                        <AnimatePresence>
+                                            {isUserMenuOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 10 }}
+                                                    className="absolute right-0 top-full mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                                                >
+                                                    <div className="py-2">
+                                                        <Link to="/profile" className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3">
+                                                            <UserIcon size={16} /> Profile
+                                                        </Link>
+                                                        {user?.role === 'admin' && ( // Added Admin Link
+                                                            <Link to="/admin" className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3">
+                                                                <UserIcon size={16} /> Admin Dashboard
+                                                            </Link>
+                                                        )}
+                                                        {[
+                                                            { label: 'My Orders', icon: Package, path: '/profile/orders' },
+                                                            { label: 'My Addresses', icon: MapPin, path: '/profile/addresses' },
+                                                            { label: 'My Wallet', icon: Wallet, path: '/profile/wallet' },
+                                                            { label: 'My Subscriptions', icon: Package, path: '/profile/subscriptions' },
+                                                            { label: 'My Wishlist', icon: Heart, path: '/profile/wishlist' },
+                                                            { label: 'My Account', icon: UserIcon, path: '/profile/my-account' }
+                                                        ].map((item, idx) => (
+                                                            <Link
+                                                                key={idx}
+                                                                to={item.path}
+                                                                className={`block px-6 py-3 text-sm transition-colors flex items-center gap-3 ${location.pathname === item.path ? 'text-[#c16e41]' : 'text-white hover:text-[#c16e41]'}`}
+                                                            >
+                                                                <item.icon size={16} />
+                                                                {item.label}
+                                                            </Link>
+                                                        ))}
+                                                        <div className="h-px bg-white/10 my-1 mx-6" />
+                                                        <button
+                                                            onClick={() => {
+                                                                logout();
+                                                                setIsUserMenuOpen(false);
+                                                            }}
+                                                            className="w-full text-left px-6 py-3 text-sm text-white hover:text-[#c16e41] transition-colors flex items-center gap-3"
+                                                        >
+                                                            <UserIcon size={16} className="opacity-0" /> {/* Spacer */}
+                                                            Log Out
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                ) : (
+                                    <Link to="/login" className="flex items-center gap-3 px-4 py-2.5 bg-[#2a2a2a]/80 hover:bg-[#2a2a2a] backdrop-blur-md rounded-lg text-white text-sm font-medium transition-all shadow-sm border border-white/5">
+                                        <div className="bg-white rounded-full p-0.5">
+                                            <UserIcon size={16} className="text-[#2a2a2a] fill-current" />
+                                        </div>
+                                        <span>Log In</span>
+                                    </Link>
+                                )}
+                            </div>
+
+                            {/* Search Bar - Interactive (Hidden on Mobile, simplified) */}
+                            <div className="relative hidden lg:block" ref={searchRef}>
                                 <div className="bg-[#2a2a2a]/80 hover:bg-[#2a2a2a] backdrop-blur-md flex items-center gap-3 px-4 py-2.5 rounded-lg border border-white/5 focus-within:border-white/20 transition-all min-w-[200px]">
                                     <Search size={18} className="text-white/80" />
                                     <input
@@ -285,7 +313,6 @@ const Navbar = () => {
                                         className="bg-transparent border-none outline-none text-white text-sm w-full placeholder:text-white/80"
                                     />
                                 </div>
-
                                 {/* Search Results Dropdown */}
                                 <AnimatePresence>
                                     {isSearchOpen && searchResults.length > 0 && (
@@ -321,22 +348,17 @@ const Navbar = () => {
                             {/* Cart */}
                             <button
                                 onClick={toggleCart}
-                                className="flex items-center gap-2 px-2 py-2 text-white hover:text-[#c16e41] transition-colors"
+                                className="flex items-center gap-2 px-2 py-2 text-white hover:text-[#c16e41] transition-colors relative"
                             >
                                 <ShoppingCart size={22} />
-                                <span className="text-sm font-medium">Cart {itemsCount}</span>
+                                <span className="text-sm font-medium hidden lg:inline">Cart {itemsCount}</span>
+                                {itemsCount > 0 && (
+                                    <span className="lg:hidden absolute top-0 right-0 bg-accent text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                                        {itemsCount}
+                                    </span>
+                                )}
                             </button>
                         </div>
-
-                        {/* Mobile Cart Icon */}
-                        <button onClick={toggleCart} className="lg:hidden text-white drop-shadow-md p-2 relative">
-                            <ShoppingCart size={24} />
-                            {itemsCount > 0 && (
-                                <span className="absolute top-1 right-0 bg-accent text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
-                                    {itemsCount}
-                                </span>
-                            )}
-                        </button>
                     </div>
                 </div>
 
@@ -347,24 +369,20 @@ const Navbar = () => {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="lg:hidden bg-secondary border-t border-primary/10 overflow-hidden absolute w-full"
+                            className="lg:hidden bg-[#1a1a1a] border-t border-white/10 overflow-hidden absolute w-full top-full left-0 z-30"
                         >
                             <div className="flex flex-col p-6 space-y-4">
-                                <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-lg font-serif text-primary block">Home</Link>
+                                <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-lg font-serif text-white block">Home</Link>
                                 {navLinks.map((link) => (
                                     <Link
                                         key={link.name}
                                         to={link.path}
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="text-lg font-serif text-primary block"
+                                        className="text-lg font-serif text-white block"
                                     >
                                         {link.name}
                                     </Link>
                                 ))}
-                                <hr className="border-primary/10" />
-                                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-primary font-medium">
-                                    <UserIcon size={20} /> Log In
-                                </Link>
                             </div>
                         </motion.div>
                     )}

@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 
+
 interface YouMayAlsoLikeProps {
     currentProductId?: string;
     bgColor?: string;
-    hideFirstImage?: boolean; // New prop
+    hideFirstImage?: boolean;
 }
 
 const YouMayAlsoLike = ({ bgColor = 'bg-black', hideFirstImage = false }: YouMayAlsoLikeProps) => {

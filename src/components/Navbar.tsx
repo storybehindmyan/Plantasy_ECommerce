@@ -192,16 +192,16 @@ const Navbar = () => {
                         </div>
 
                         {/* Right Action Section */}
-                        <div className="hidden lg:flex items-center bg-black/90 backdrop-blur-sm rounded-sm p-1 gap-1 shadow-lg border border-white/10">
+                        <div className="hidden lg:flex items-center gap-4">
 
                             {/* Login */}
                             {user ? (
                                 <div className="relative" ref={userMenuRef}>
-                                    <div className="flex items-center gap-4 px-5 py-3 border-r border-white/10">
+                                    <div className="flex items-center gap-4">
                                         <Bell size={20} className="text-white hover:text-[#c16e41] cursor-pointer transition-colors" />
                                         <button
                                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                            className="flex items-center gap-2 group"
+                                            className="flex items-center gap-2 group bg-[#2a2a2a]/90 hover:bg-[#2a2a2a] backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5 transition-all"
                                         >
                                             <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/20">
                                                 {profileImage ? (
@@ -221,7 +221,7 @@ const Navbar = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 10 }}
-                                                className="absolute right-0 top-full mt-2 w-64 bg-black border border-white/10 rounded-sm shadow-xl z-50 overflow-hidden"
+                                                className="absolute right-0 top-full mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
                                             >
                                                 <div className="py-2">
                                                     <Link to="/profile" className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3">
@@ -266,22 +266,24 @@ const Navbar = () => {
                                     </AnimatePresence>
                                 </div>
                             ) : (
-                                <Link to="/login" className="flex items-center gap-2 px-5 py-3 text-white/90 hover:bg-white/10 rounded-sm text-sm font-medium transition-colors border-r border-white/10">
-                                    <UserIcon size={20} />
+                                <Link to="/login" className="flex items-center gap-3 px-4 py-2.5 bg-[#2a2a2a]/80 hover:bg-[#2a2a2a] backdrop-blur-md rounded-lg text-white text-sm font-medium transition-all shadow-sm border border-white/5">
+                                    <div className="bg-white rounded-full p-0.5">
+                                        <UserIcon size={16} className="text-[#2a2a2a] fill-current" />
+                                    </div>
                                     <span>Log In</span>
                                 </Link>
                             )}
 
                             {/* Search Bar - Interactive */}
                             <div className="relative" ref={searchRef}>
-                                <div className="bg-white/10 flex items-center gap-2 px-4 py-3 rounded-sm mx-1 min-w-[220px] border border-transparent focus-within:border-white/30 transition-colors">
-                                    <Search size={18} className="text-white/60" />
+                                <div className="bg-[#2a2a2a]/80 hover:bg-[#2a2a2a] backdrop-blur-md flex items-center gap-3 px-4 py-2.5 rounded-lg border border-white/5 focus-within:border-white/20 transition-all min-w-[200px]">
+                                    <Search size={18} className="text-white/80" />
                                     <input
                                         type="text"
                                         placeholder="Search"
                                         value={searchQuery}
                                         onChange={handleSearchChange}
-                                        className="bg-transparent border-none outline-none text-white text-sm w-full placeholder:text-white/60"
+                                        className="bg-transparent border-none outline-none text-white text-sm w-full placeholder:text-white/80"
                                     />
                                 </div>
 
@@ -320,10 +322,10 @@ const Navbar = () => {
                             {/* Cart */}
                             <button
                                 onClick={toggleCart}
-                                className="flex items-center gap-2 px-5 py-3 text-white/90 hover:bg-white/10 rounded-sm text-sm font-medium transition-colors border-l border-white/10"
+                                className="flex items-center gap-2 px-2 py-2 text-white hover:text-[#c16e41] transition-colors"
                             >
-                                <ShoppingCart size={20} />
-                                <span>Cart {itemsCount}</span>
+                                <ShoppingCart size={22} />
+                                <span className="text-sm font-medium">Cart {itemsCount}</span>
                             </button>
                         </div>
 

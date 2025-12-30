@@ -9,6 +9,9 @@ export interface User {
     role: Role;
     name: string;
     photoURL?: string;
+    title?: string;
+    phone?: string;
+    bio?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +20,7 @@ interface AuthContextType {
     login: (email: string) => void;
     loginWithGoogle: () => void;
     logout: () => void;
+    updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,13 +72,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('plantasy_user');
     };
 
+    const updateUser = (updates: Partial<User>) => {
+        setUser((prev) => {
+            if (!prev) return null;
+            const updatedUser = { ...prev, ...updates };
+            localStorage.setItem('plantasy_user', JSON.stringify(updatedUser));
+            return updatedUser;
+        });
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
             isAuthenticated: !!user,
             login,
             loginWithGoogle,
-            logout
+            logout,
+            updateUser
         }}>
             {children}
             <MockGoogleModal

@@ -288,7 +288,7 @@ const Home = () => {
                         >
                             From Garden to Vase
                         </motion.h2>
-                        <Link to="/blog" className="hidden md:inline-block border-b border-[#2C2C2C] pb-1 text-sm font-bold tracking-widest hover:text-[#c16e41] hover:border-[#c16e41] transition duration-300">
+                        <Link to="/care" className="hidden md:inline-block border-b border-[#2C2C2C] pb-1 text-sm font-bold tracking-widest hover:text-[#c16e41] hover:border-[#c16e41] transition duration-300">
                             READ THE BLOG
                         </Link>
                     </div>
@@ -319,36 +319,39 @@ const Home = () => {
                             <p className="text-gray-600 leading-relaxed mb-4">
                                 Propagation is a great way to grow your plant collection without spending a dime. Here is everything you need to know about propagating successfully.
                             </p>
-                            <span className="text-xs font-bold tracking-widest uppercase border-b border-gray-300 pb-1 group-hover:border-[#c16e41] transition-colors">Read More</span>
+                            <Link to="/care?blogId=monstera-propagation" className="inline-block">
+                                <span className="text-xs font-bold tracking-widest uppercase border-b border-gray-300 pb-1 group-hover:border-[#c16e41] transition-colors">Read More</span>
+                            </Link>
                         </motion.div>
 
                         {/* Recent Posts List */}
                         <div className="flex flex-col gap-10 justify-center">
                             {[
-                                { title: "5 Plants for Low Light", date: "Sep 28, 2024", img: "/gram-2.jpg", category: "Guides" },
-                                { title: "The Art of Watering", date: "Sep 15, 2024", img: "/gram-4.jpg", category: "Tips" },
-                                { title: "Styling Your Greenery", date: "Sep 02, 2024", img: "/gram-7.jpg", category: "Inspiration" }
+                                { id: "low-light-plants", title: "5 Plants for Low Light", date: "Sep 28, 2024", img: "/gram-2.jpg", category: "Guides" },
+                                { id: "watering-art", title: "The Art of Watering", date: "Sep 15, 2024", img: "/gram-4.jpg", category: "Tips" },
+                                { id: "styling-greenery", title: "Styling Your Greenery", date: "Sep 02, 2024", img: "/gram-7.jpg", category: "Inspiration" }
                             ].map((post, i) => (
                                 <motion.div
                                     key={i}
-                                    className="flex gap-6 group cursor-pointer"
                                     initial={{ opacity: 0, x: 20 }}
                                     whileInView={{ opacity: 1, x: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: 0.2 + (i * 0.1), duration: 0.8 }}
                                 >
-                                    <div className="w-1/3 aspect-square overflow-hidden shrink-0">
-                                        <img src={post.img} alt={post.title} className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
-                                    </div>
-                                    <div className="flex flex-col justify-center">
-                                        <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest text-gray-500 mb-2 uppercase">
-                                            <span>{post.date}</span>
-                                            <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                                            <span>{post.category}</span>
+                                    <Link to={`/care?blogId=${post.id}`} className="flex gap-6 group cursor-pointer">
+                                        <div className="w-1/3 aspect-square overflow-hidden shrink-0">
+                                            <img src={post.img} alt={post.title} className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
                                         </div>
-                                        <h4 className="text-xl font-serif mb-2 group-hover:text-[#c16e41] transition-colors leading-tight">{post.title}</h4>
-                                        <span className="text-[10px] font-bold tracking-widest uppercase text-gray-400 group-hover:text-[#c16e41] transition-colors">Read Article</span>
-                                    </div>
+                                        <div className="flex flex-col justify-center">
+                                            <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest text-gray-500 mb-2 uppercase">
+                                                <span>{post.date}</span>
+                                                <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                                                <span>{post.category}</span>
+                                            </div>
+                                            <h4 className="text-xl font-serif mb-2 group-hover:text-[#c16e41] transition-colors leading-tight">{post.title}</h4>
+                                            <span className="text-[10px] font-bold tracking-widest uppercase text-gray-400 group-hover:text-[#c16e41] transition-colors">Read Article</span>
+                                        </div>
+                                    </Link>
                                 </motion.div>
                             ))}
                         </div>

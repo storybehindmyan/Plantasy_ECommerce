@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
-import { MoreHorizontal, Edit3, Camera, AlignLeft, Video, Smile, Lock, ChevronDown, Package, Wallet, Heart } from 'lucide-react';
+import { MoreHorizontal, Edit3, Camera, AlignLeft, Video, Smile, Lock, ChevronDown, Package, Wallet, Heart, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // --- Shared Components ---
@@ -18,23 +18,8 @@ const PlantasyLogo = () => (
 // --- Header & Nav ---
 
 const ProfileHeader = () => {
-    const { user } = useAuth();
-    const [profileImage, setProfileImage] = React.useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop");
+    const { user, updateUser } = useAuth();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-    React.useEffect(() => {
-        if (!user) return;
-
-        // Use user-specific key
-        const savedImage = localStorage.getItem(`profile_image_${user.uid}`);
-
-        // Prioritize local storage (custom upload) > user.photoURL > default
-        if (savedImage) {
-            setProfileImage(savedImage);
-        } else if (user.photoURL) {
-            setProfileImage(user.photoURL);
-        }
-    }, [user]);
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -42,9 +27,7 @@ const ProfileHeader = () => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result as string;
-                setProfileImage(base64String);
-                localStorage.setItem(`profile_image_${user.uid}`, base64String);
-                window.dispatchEvent(new Event('profile-image-updated'));
+                updateUser({ photoURL: base64String });
             };
             reader.readAsDataURL(file);
         }
@@ -81,7 +64,7 @@ const ProfileHeader = () => {
                 <div className="w-24 h-24 rounded-full bg-black/20 overflow-hidden border-2 border-white/30 backdrop-blur-sm flex items-center justify-center relative group">
                     {/* Avatar Image */}
                     <img
-                        src={profileImage}
+                        src={user.photoURL || "https://tse1.mm.bing.net/th/id/OIP.nloKH2rnGKa0cl6U5alOygAAAA?pid=ImgDet&w=185&h=277&c=7&dpr=1.3&o=7&rm=3"}
                         alt="Profile"
                         className="w-full h-full object-cover"
                     />
@@ -125,21 +108,21 @@ const NavTab = ({ to, label }: { to: string, label: string }) => (
 // --- Sections ---
 
 const ProfileInfo = () => {
-    const { user } = useAuth();
-    const [bio, setBio] = React.useState("");
+    const { user, updateUser } = useAuth();
+    const [bio, setBio] = React.useState(user?.bio || "");
 
     React.useEffect(() => {
-        if (!user) return;
-        const savedBio = localStorage.getItem(`user_bio_${user.uid}`);
-        if (savedBio) setBio(savedBio);
-    }, [user]);
+        if (user?.bio) setBio(user.bio);
+    }, [user?.bio]);
 
     const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newBio = e.target.value;
         setBio(newBio);
-        if (user) {
-            localStorage.setItem(`user_bio_${user.uid}`, newBio);
-        }
+    };
+
+    const saveBio = () => {
+        updateUser({ bio });
+        alert("Bio updated!");
     };
 
     return (
@@ -159,6 +142,7 @@ const ProfileInfo = () => {
                     <textarea
                         value={bio}
                         onChange={handleBioChange}
+                        onBlur={saveBio} // Auto-save on blur for bio
                         placeholder="Add a short bio or personal note..."
                         className="w-full bg-transparent p-4 text-white text-sm focus:outline-none min-h-[120px] resize-none placeholder:text-white/30"
                     />
@@ -202,20 +186,105 @@ const WalletPage = () => (
     </div>
 );
 
-const Addresses = () => (
-    <div className="min-h-[400px] flex flex-col">
-        <h2 className="text-2xl font-serif text-white mb-2">My Addresses</h2>
-        <p className="text-gray-400 text-sm mb-12">Add and manage the addresses you use often.</p>
 
-        <div className="flex-1 flex flex-col items-center justify-center mb-12">
-            <p className="text-white text-lg font-light mb-8">You haven't saved any addresses yet.</p>
-            <button className="bg-[#c16e41] text-white px-8 py-3 rounded-sm text-sm font-medium hover:bg-[#a05a32] transition-colors">
-                Add New Address
-            </button>
-            <PlantasyLogo />
+const Addresses = () => {
+    const [isAddingMode, setIsAddingMode] = React.useState(false);
+    const [addresses, setAddresses] = React.useState<any[]>([]);
+
+    // Form State
+    const [form, setForm] = React.useState({
+        label: 'Home',
+        address: '',
+        city: '',
+        zip: ''
+    });
+
+    const handleSave = () => {
+        setAddresses([...addresses, form]);
+        setIsAddingMode(false);
+        setForm({ label: 'Home', address: '', city: '', zip: '' }); // Reset
+    };
+
+    return (
+        <div className="min-h-[400px] flex flex-col">
+            <h2 className="text-2xl font-serif text-white mb-2">My Addresses</h2>
+            <p className="text-gray-400 text-sm mb-12">Add and manage the addresses you use often.</p>
+
+            {isAddingMode ? (
+                <div className="max-w-md bg-white/5 p-8 rounded-lg border border-white/10">
+                    <h3 className="text-white text-lg font-serif mb-6">New Address</h3>
+                    <div className="space-y-4">
+                        <input
+                            placeholder="Label (e.g. Home)"
+                            className="w-full bg-transparent border border-white/20 p-3 text-white rounded-sm"
+                            value={form.label}
+                            onChange={(e) => setForm({ ...form, label: e.target.value })}
+                        />
+                        <input
+                            placeholder="Address Line"
+                            className="w-full bg-transparent border border-white/20 p-3 text-white rounded-sm"
+                            value={form.address}
+                            onChange={(e) => setForm({ ...form, address: e.target.value })}
+                        />
+                        <div className="flex gap-4">
+                            <input
+                                placeholder="City"
+                                className="w-full bg-transparent border border-white/20 p-3 text-white rounded-sm"
+                                value={form.city}
+                                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                            />
+                            <input
+                                placeholder="Zip Code"
+                                className="w-full bg-transparent border border-white/20 p-3 text-white rounded-sm"
+                                value={form.zip}
+                                onChange={(e) => setForm({ ...form, zip: e.target.value })}
+                            />
+                        </div>
+                        <div className="flex gap-4 pt-4">
+                            <button onClick={handleSave} className="bg-[#c16e41] text-white px-6 py-2 rounded-sm text-sm hover:bg-[#a05a32]">Save Address</button>
+                            <button onClick={() => setIsAddingMode(false)} className="text-white/60 px-6 py-2 text-sm hover:text-white">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex-1 flex flex-col items-center justify-center mb-12">
+                    {addresses.length === 0 ? (
+                        <>
+                            <p className="text-white text-lg font-light mb-8">You haven't saved any addresses yet.</p>
+                            <button
+                                onClick={() => setIsAddingMode(true)}
+                                className="bg-[#c16e41] text-white px-8 py-3 rounded-sm text-sm font-medium hover:bg-[#a05a32] transition-colors"
+                            >
+                                Add New Address
+                            </button>
+                            <PlantasyLogo />
+                        </>
+                    ) : (
+                        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {addresses.map((addr, idx) => (
+                                <div key={idx} className="p-6 border border-white/10 rounded-sm bg-white/5 relative group">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="bg-[#c16e41]/20 text-[#c16e41] px-2 py-0.5 text-xs rounded uppercase tracking-wider">{addr.label}</span>
+                                        <MoreHorizontal className="text-white/40 cursor-pointer hover:text-white" size={16} />
+                                    </div>
+                                    <p className="text-white font-medium">{addr.address}</p>
+                                    <p className="text-white/60 text-sm">{addr.city}, {addr.zip}</p>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => setIsAddingMode(true)}
+                                className="border border-dashed border-white/20 rounded-sm flex flex-col items-center justify-center min-h-[140px] text-white/40 hover:text-white hover:border-white/40 transition-all"
+                            >
+                                <Plus size={24} className="mb-2" />
+                                <span>Add Another Address</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 const Subscriptions = () => (
     <div className="min-h-[400px] flex flex-col">
@@ -231,31 +300,43 @@ const Subscriptions = () => (
 );
 
 const MyAccount = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     // In a real app, we would fetch this from an API endpoint for `user.uid`
     // For now, we seed it with the AuthContext user data
 
     const [info, setInfo] = React.useState({
         displayName: user?.name || '',
-        title: '',
+        title: user?.title || '',
         firstName: user?.name?.split(' ')[0] || '',
-        lastName: user?.name?.split(' ')[1] || '',
-        phone: ''
+        lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+        phone: user?.phone || ''
     });
 
     React.useEffect(() => {
         if (user) {
             setInfo(prev => ({
                 ...prev,
-                displayName: user.name, // Update if auth context changes
+                displayName: user.name,
+                title: user.title || '',
                 firstName: user.name.split(' ')[0],
-                lastName: user.name.split(' ')[1] || ''
+                lastName: user.name.split(' ').slice(1).join(' ') || '',
+                phone: user.phone || ''
             }));
         }
     }, [user]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleUpdate = () => {
+        const fullName = `${info.firstName} ${info.lastName}`.trim();
+        updateUser({
+            name: fullName || info.displayName, // Fallback to display name if constructed name is empty, or prefer constructed name
+            title: info.title,
+            phone: info.phone
+        });
+        alert("Profile updated successfully!"); // Simple feedback
     };
 
     return (
@@ -267,7 +348,7 @@ const MyAccount = () => {
                 </div>
                 <div className="flex gap-4">
                     <button className="px-6 py-2 text-white border border-white/20 hover:border-white/40 transition-colors text-sm">Discard</button>
-                    <button className="px-6 py-2 bg-[#c16e41] text-white hover:bg-[#a05a32] transition-colors text-sm">Update Info</button>
+                    <button onClick={handleUpdate} className="px-6 py-2 bg-[#c16e41] text-white hover:bg-[#a05a32] transition-colors text-sm">Update Info</button>
                 </div>
             </div>
 
@@ -390,7 +471,7 @@ const MyAccount = () => {
             </div>
             <div className="flex justify-end gap-4 mt-8">
                 <button className="px-6 py-2 text-white border border-white/20 hover:border-white/40 transition-colors text-sm">Discard</button>
-                <button className="px-6 py-2 bg-[#c16e41] text-white hover:bg-[#a05a32] transition-colors text-sm">Update Info</button>
+                <button onClick={handleUpdate} className="px-6 py-2 bg-[#c16e41] text-white hover:bg-[#a05a32] transition-colors text-sm">Update Info</button>
             </div>
         </div>
     );
@@ -406,13 +487,13 @@ const UserProfile = () => {
 
                 {/* Navigation Bar */}
                 <div className="border-b border-white/10 px-6 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-                    <NavTab to="" label="Profile" />
-                    <NavTab to="orders" label="My Orders" />
-                    <NavTab to="my-account" label="My Account" />
-                    <NavTab to="addresses" label="My Addresses" />
-                    <NavTab to="wallet" label="My Wallet" />
-                    <NavTab to="subscriptions" label="My Subscriptions" />
-                    <NavTab to="wishlist" label="My Wishlist" />
+                    <NavTab to="/profile" label="Profile" />
+                    <NavTab to="/profile/orders" label="My Orders" />
+                    <NavTab to="/profile/my-account" label="My Account" />
+                    <NavTab to="/profile/addresses" label="My Addresses" />
+                    <NavTab to="/profile/wallet" label="My Wallet" />
+                    <NavTab to="/profile/subscriptions" label="My Subscriptions" />
+                    <NavTab to="/profile/wishlist" label="My Wishlist" />
                 </div>
 
                 {/* Content Area */}

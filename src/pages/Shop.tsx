@@ -187,7 +187,7 @@ const Shop = () => {
             </div>
 
             {/* Recommendations */}
-            <YouMayAlsoLike />
+            <YouMayAlsoLike hideFirstImage={activeCategory === 'pots'} />
         </div>
     );
 };

@@ -184,10 +184,9 @@ const Navbar = () => {
                         {/* Center Logo Area */}
                         <div className="absolute left-1/2 top-10 transform -translate-x-1/2 flex justify-center z-50">
                             <Link to="/" className="flex flex-col items-center group">
-                                <div className="w-12 h-16 border-2 border-white/80 rounded-full flex items-center justify-center mb-1 group-hover:scale-105 transition-transform duration-300 drop-shadow-md bg-transparent">
-                                    <span className="font-serif text-2xl italic text-white pt-1">P</span>
+                                <div className="w-44 h-16 flex items-center justify-center mb-1 group-hover:scale-105 transition-transform duration-300 drop-shadow-md bg-transparent">
+                                    <img src="/clogo.png" alt="Plantasy" className="w-64 h-64 object-contain mt-10" />
                                 </div>
-                                <span className="text-xl font-serif font-semibold tracking-tight text-white drop-shadow-md mt-1">Plantasy</span>
                             </Link>
                         </div>
 

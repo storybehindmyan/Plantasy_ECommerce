@@ -1,15 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
-const Login = () => {
-    const [view, setView] = useState<'signup-options' | 'email-signup' | 'login'>('signup-options');
+interface LoginProps {
+    initialView?: 'signup-options' | 'login';
+}
+
+const Login = ({ initialView = 'login' }: LoginProps) => {
+    const [view, setView] = useState<'signup-options' | 'email-signup' | 'login'>(initialView);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login, loginWithGoogle, user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Reset view when location/prop changes
+    useEffect(() => {
+        if (location.pathname === '/signup') {
+            setView('signup-options');
+        } else if (location.pathname === '/login') {
+            setView('login');
+        }
+    }, [location.pathname]);
 
     // Redirect to home/shop if user is logged in
     useEffect(() => {
@@ -67,9 +81,9 @@ const Login = () => {
 
                 <p className="text-white/60 text-sm mb-12">
                     {view === 'login' ? (
-                        <>New to this site? <button onClick={() => setView('signup-options')} className="text-[#c16e41] hover:underline">Sign Up</button></>
+                        <>New to this site? <button onClick={() => navigate('/signup')} className="text-[#c16e41] hover:underline">Sign Up</button></>
                     ) : (
-                        <>Already a member? <button onClick={() => setView('login')} className="text-[#c16e41] hover:underline">Log In</button></>
+                        <>Already a member? <button onClick={() => navigate('/login')} className="text-[#c16e41] hover:underline">Log In</button></>
                     )}
                 </p>
 

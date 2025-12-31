@@ -14,8 +14,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '1',
         name: 'Rhapis Palm',
-        price: 14.99,
-        originalPrice: 19.99,
+        price: 1199,
+        originalPrice: 1599,
         category: 'plants',
         badge: 'Sale',
         image: '/rhapis-1.png',
@@ -25,8 +25,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '2',
         name: 'Beige Pot',
-        price: 11.99,
-        originalPrice: 15.99,
+        price: 899,
+        originalPrice: 1199,
         category: 'pots',
         badge: 'Sale',
         image: '/beige-pot-1.png',
@@ -36,7 +36,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '3',
         name: 'Alokazia Amazonica',
-        price: 23.99,
+        price: 1899,
         category: 'plants',
         image: '/alokazia-1.png',
         hoverImage: '/alokazia-2.jpg',
@@ -45,8 +45,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '4',
         name: 'Metal Pot',
-        price: 19.49,
-        originalPrice: 25.99,
+        price: 1549,
+        originalPrice: 2099,
         category: 'pots',
         badge: 'Sale',
         image: '/metal-pot-1.png',
@@ -56,7 +56,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '5',
         name: 'Pot Stand',
-        price: 15.99,
+        price: 1299,
         category: 'pots',
         image: '/pot-stand-1.png',
         hoverImage: '/pot-stand-2.png',
@@ -65,8 +65,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '6',
         name: 'Schefflera Arboricola',
-        price: 24.74,
-        originalPrice: 32.99,
+        price: 1999,
+        originalPrice: 2699,
         category: 'plants',
         badge: 'Sale',
         image: '/schefflera-1.png',
@@ -76,7 +76,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '7',
         name: 'Wooden Basket',
-        price: 28.99,
+        price: 2299,
         category: 'pots',
         badge: 'New Arrival',
         image: '/wooden-basket-1.png',
@@ -86,8 +86,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '8',
         name: 'Cereus',
-        price: 15.00,
-        originalPrice: 20.00,
+        price: 1199,
+        originalPrice: 1599,
         category: 'plants',
         badge: 'Sale',
         image: '/cereus-1.png',
@@ -97,7 +97,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '9',
         name: 'Cactus',
-        price: 19.99,
+        price: 1599,
         category: 'plants',
         badge: 'New Arrival',
         image: '/cactus-1.png',
@@ -107,8 +107,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '10',
         name: 'Concrete Pot',
-        price: 11.99,
-        originalPrice: 15.99,
+        price: 899,
+        originalPrice: 1199,
         category: 'pots',
         badge: 'Sale',
         image: '/concrete-pot-1.png',
@@ -118,7 +118,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '11',
         name: 'Crassula',
-        price: 19.99,
+        price: 1599,
         category: 'plants',
         image: '/crassula-1.png',
         hoverImage: '/crassula-2.png',
@@ -127,7 +127,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '12',
         name: 'Rattan Basket',
-        price: 32.99,
+        price: 2649,
         category: 'pots',
         image: '/rattan-basket-1.png',
         hoverImage: '/rattan-basket-2.png',
@@ -136,7 +136,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '13',
         name: 'Rusty Flowerpot',
-        price: 20.99,
+        price: 1699,
         category: 'pots',
         badge: 'New Arrival',
         image: '/rusty-flowerpot-1.png',
@@ -146,7 +146,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '14',
         name: 'Monstera Deliciosa',
-        price: 26.99,
+        price: 2199,
         category: 'plants',
         image: '/monstera-new-1.png',
         hoverImage: '/monstera-new-2.png',
@@ -155,8 +155,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '15',
         name: 'Graphite Pot',
-        price: 11.99,
-        originalPrice: 15.99,
+        price: 899,
+        originalPrice: 1199,
         category: 'pots',
         badge: 'Sale',
         image: '/graphite-pot-1.png',
@@ -166,8 +166,8 @@ export const PRODUCTS: Product[] = [
     {
         id: '16',
         name: 'Anthurium Clarinervium',
-        price: 16.49,
-        originalPrice: 21.99,
+        price: 1299,
+        originalPrice: 1799,
         category: 'plants',
         badge: 'Sale',
         image: '/anthurium-1.png',
@@ -177,7 +177,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '17',
         name: 'Zamioculcas',
-        price: 19.99,
+        price: 1599,
         category: 'plants',
         image: '/zamioculcas-1.png',
         hoverImage: '/zamioculcas-2.png',
@@ -186,7 +186,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '18',
         name: 'Ficus Lyrata',
-        price: 35.99,
+        price: 2899,
         category: 'plants',
         badge: 'New Arrival',
         image: '/ficus-lyrata-1.png',
@@ -196,7 +196,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '19',
         name: 'Exotic Plants Subscription',
-        price: 100.00,
+        price: 4999,
         category: 'plants',
         image: '/exotic-subscription-1.png',
         hoverImage: '/exotic-subscription-2.png',
@@ -205,7 +205,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '20',
         name: 'Cactus Lover Subscription',
-        price: 100.00,
+        price: 4999,
         category: 'plants',
         image: '/cactus-subscription-1.png',
         hoverImage: '/cactus-subscription-2.png',
@@ -214,7 +214,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '21',
         name: 'Monstera Seeds',
-        price: 9.99,
+        price: 799,
         category: 'seeds',
         image: '/monstera-1.png', // Reusing placeholder
         hoverImage: '/monstera-2.png',
@@ -223,7 +223,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '22',
         name: 'Palm Seeds',
-        price: 7.99,
+        price: 649,
         category: 'seeds',
         image: '/rhapis-1.png', // Reusing placeholder
         hoverImage: '/rhapis-2.jpg',
@@ -232,7 +232,7 @@ export const PRODUCTS: Product[] = [
     {
         id: '23',
         name: 'Cactus Mix Seeds',
-        price: 5.99,
+        price: 499,
         category: 'seeds',
         image: '/cactus-1.png', // Reusing placeholder
         hoverImage: '/cactus-2.png',

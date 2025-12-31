@@ -6,6 +6,7 @@ import { useProducts } from '../context/ProductContext';
 import clsx from 'clsx';
 import { Plus, Minus } from 'lucide-react';
 import YouMayAlsoLike from '../components/YouMayAlsoLike';
+import YouMayAlsoLikePots from '../components/YouMayAlsoLikePots';
 
 const SidebarAccordion = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -42,7 +43,7 @@ const Shop = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const categoryParam = searchParams.get('category');
     const [activeCategory, setActiveCategory] = useState<string>(categoryParam || 'all');
-    const [maxPrice, setMaxPrice] = useState(100);
+    const [maxPrice, setMaxPrice] = useState(5000);
     const [sortBy, setSortBy] = useState('featured'); // Sort state
 
     useEffect(() => {
@@ -141,12 +142,12 @@ const Shop = () => {
                             <div className="px-1">
                                 <div className="flex justify-between text-sm text-gray-400 mb-4">
                                     <span>Range</span>
-                                    <span>$0 - ${maxPrice}</span>
+                                    <span>₹0 - ₹{maxPrice}</span>
                                 </div>
                                 <input
                                     type="range"
                                     min="0"
-                                    max="200"
+                                    max="10000"
                                     value={maxPrice}
                                     onChange={(e) => setMaxPrice(Number(e.target.value))}
                                     className="w-full h-[2px] bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"
@@ -187,9 +188,15 @@ const Shop = () => {
             </div>
 
             {/* Recommendations */}
-            <YouMayAlsoLike
-                hideFirstImage={activeCategory === 'pots'}
-            />
+            {/* Recommendations */}
+            {activeCategory === 'pots' ? (
+                <YouMayAlsoLikePots />
+            ) : (
+                <YouMayAlsoLike
+                    hideFirstImage={activeCategory === 'pots'} // Keeping this logic but pots will use separate component above
+                    compact={activeCategory === 'seeds' || activeCategory === 'plants'}
+                />
+            )}
         </div>
     );
 };

@@ -45,7 +45,7 @@ const CartDrawer = () => {
                                         <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded bg-gray-50" />
                                         <div className="flex-1">
                                             <h3 className="font-medium text-primary line-clamp-1">{item.name}</h3>
-                                            <p className="text-gray-500 text-sm mb-2">${item.price.toFixed(2)}</p>
+                                            <p className="text-gray-500 text-sm mb-2">₹{item.price.toFixed(2)}</p>
 
                                             <div className="flex items-center gap-3">
                                                 <div className="flex items-center border border-gray-200 rounded">
@@ -80,7 +80,7 @@ const CartDrawer = () => {
                             <div className="p-6 border-t border-gray-100 bg-gray-50">
                                 <div className="flex justify-between items-center mb-4 text-lg font-medium">
                                     <span>Subtotal</span>
-                                    <span>${cartTotal.toFixed(2)}</span>
+                                    <span>₹{cartTotal.toFixed(2)}</span>
                                 </div>
                                 <button className="w-full bg-primary text-white py-3 font-semibold tracking-wide hover:bg-accent transition duration-300">
                                     CHECKOUT

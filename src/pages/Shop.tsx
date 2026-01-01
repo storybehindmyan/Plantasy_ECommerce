@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';

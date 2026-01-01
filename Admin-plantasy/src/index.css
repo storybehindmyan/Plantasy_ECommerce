@@ -1,0 +1,304 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+@layer base {
+  :root {
+    /* Primary Palette - Warm Earthy Tones */
+    --bg-primary: 36 58% 86%;
+    --bg-secondary: 36 40% 80%;
+    --text-primary: 36 73% 29%;
+    --text-secondary: 36 50% 40%;
+    --accent-secondary: 36 30% 66%;
+    --accent-hover: 36 40% 55%;
+    
+    /* Semantic Tokens */
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
+    
+    --card: 36 45% 92%;
+    --card-foreground: var(--text-primary);
+    
+    --popover: 36 50% 95%;
+    --popover-foreground: var(--text-primary);
+    
+    --primary: var(--text-primary);
+    --primary-foreground: 36 58% 96%;
+    
+    --secondary: var(--accent-secondary);
+    --secondary-foreground: var(--text-primary);
+    
+    --muted: 36 25% 78%;
+    --muted-foreground: var(--text-secondary);
+    
+    --accent: var(--accent-secondary);
+    --accent-foreground: var(--text-primary);
+    
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 142 50% 35%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 90% 50%;
+    --warning-foreground: 36 73% 20%;
+    
+    --border: 36 30% 75%;
+    --input: 36 30% 80%;
+    --ring: var(--text-primary);
+    
+    --radius: 0.75rem;
+    
+    /* Sidebar */
+    --sidebar-background: 36 73% 29%;
+    --sidebar-foreground: 36 58% 92%;
+    --sidebar-primary: 36 58% 96%;
+    --sidebar-primary-foreground: 36 73% 29%;
+    --sidebar-accent: 36 50% 35%;
+    --sidebar-accent-foreground: 36 58% 92%;
+    --sidebar-border: 36 40% 40%;
+    --sidebar-ring: 36 58% 86%;
+    
+    /* Custom Admin Variables */
+    --stat-card-shadow: 0 4px 20px -4px hsl(36 30% 50% / 0.15);
+    --table-row-hover: 36 40% 88%;
+    --badge-pending: 45 80% 55%;
+    --badge-confirmed: 200 70% 50%;
+    --badge-shipped: 280 60% 55%;
+    --badge-delivered: 142 50% 40%;
+    --badge-cancelled: 0 65% 50%;
+  }
+
+  .dark {
+    --bg-primary: 36 30% 12%;
+    --bg-secondary: 36 25% 16%;
+    --text-primary: 36 58% 86%;
+    --text-secondary: 36 40% 65%;
+    --accent-secondary: 36 35% 45%;
+    --accent-hover: 36 40% 55%;
+    
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
+    
+    --card: 36 25% 15%;
+    --card-foreground: var(--text-primary);
+    
+    --popover: 36 25% 18%;
+    --popover-foreground: var(--text-primary);
+    
+    --primary: 36 58% 86%;
+    --primary-foreground: 36 30% 12%;
+    
+    --secondary: var(--accent-secondary);
+    --secondary-foreground: var(--text-primary);
+    
+    --muted: 36 20% 25%;
+    --muted-foreground: var(--text-secondary);
+    
+    --accent: var(--accent-secondary);
+    --accent-foreground: var(--text-primary);
+    
+    --border: 36 20% 25%;
+    --input: 36 20% 22%;
+    
+    --sidebar-background: 36 25% 10%;
+    --sidebar-foreground: 36 58% 86%;
+    --sidebar-accent: 36 30% 18%;
+    
+    --table-row-hover: 36 25% 18%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'DM Sans', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight text-foreground;
+  }
+}
+
+@layer components {
+  .admin-card {
+    @apply bg-card rounded-xl border border-border p-6 transition-all duration-300;
+    box-shadow: var(--stat-card-shadow);
+  }
+  
+  .admin-card:hover {
+    @apply border-accent;
+    transform: translateY(-2px);
+  }
+  
+  .admin-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200;
+  }
+  
+  .admin-btn-primary {
+    @apply admin-btn bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98];
+  }
+  
+  .admin-btn-secondary {
+    @apply admin-btn bg-secondary text-secondary-foreground hover:bg-accent-hover;
+  }
+  
+  .admin-btn-outline {
+    @apply admin-btn border-2 border-border bg-transparent text-foreground hover:bg-muted;
+  }
+  
+  .admin-btn-ghost {
+    @apply admin-btn bg-transparent text-foreground hover:bg-muted;
+  }
+  
+  .admin-btn-danger {
+    @apply admin-btn bg-destructive text-destructive-foreground hover:opacity-90;
+  }
+  
+  .admin-input {
+    @apply w-full px-4 py-2.5 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all;
+  }
+  
+  .admin-label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+  
+  .admin-table {
+    @apply w-full text-sm;
+  }
+  
+  .admin-table th {
+    @apply text-left font-semibold text-foreground py-3 px-4 border-b border-border bg-muted/30;
+  }
+  
+  .admin-table td {
+    @apply py-3 px-4 border-b border-border;
+  }
+  
+  .admin-table tr:hover td {
+    background-color: hsl(var(--table-row-hover));
+  }
+  
+  .admin-badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .admin-badge-pending {
+    @apply admin-badge;
+    background-color: hsl(var(--badge-pending) / 0.2);
+    color: hsl(var(--badge-pending));
+  }
+  
+  .admin-badge-confirmed {
+    @apply admin-badge;
+    background-color: hsl(var(--badge-confirmed) / 0.2);
+    color: hsl(var(--badge-confirmed));
+  }
+  
+  .admin-badge-shipped {
+    @apply admin-badge;
+    background-color: hsl(var(--badge-shipped) / 0.2);
+    color: hsl(var(--badge-shipped));
+  }
+  
+  .admin-badge-delivered {
+    @apply admin-badge;
+    background-color: hsl(var(--badge-delivered) / 0.2);
+    color: hsl(var(--badge-delivered));
+  }
+  
+  .admin-badge-cancelled {
+    @apply admin-badge;
+    background-color: hsl(var(--badge-cancelled) / 0.2);
+    color: hsl(var(--badge-cancelled));
+  }
+  
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200;
+  }
+  
+  .sidebar-link-active {
+    @apply bg-sidebar-accent text-sidebar-foreground font-medium;
+  }
+  
+  .stat-card-icon {
+    @apply w-12 h-12 rounded-xl flex items-center justify-center;
+  }
+  
+  .page-header {
+    @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8;
+  }
+  
+  .page-title {
+    @apply text-2xl md:text-3xl font-bold text-foreground;
+  }
+  
+  .page-subtitle {
+    @apply text-muted-foreground mt-1;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--accent-secondary)) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--accent-secondary));
+    border-radius: 3px;
+  }
+}

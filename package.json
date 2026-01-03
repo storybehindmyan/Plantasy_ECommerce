@@ -3,6 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shaikvaliyababji/Plant_Ecommers.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shaikvaliyababji/Plant_Ecommers/issues"
+  },
+  "homepage": "https://github.com/shaikvaliyababji/Plant_Ecommers#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -12,11 +25,13 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "firebase": "^12.7.0",
+    "firebase-admin": "^13.6.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.11.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

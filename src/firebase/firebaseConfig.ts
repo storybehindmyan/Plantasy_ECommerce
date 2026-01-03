@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Firebase Configuration
 // IMPORTANT: Replace these placeholder values with your actual Firebase config
 // You can find these values in your Firebase Console -> Project Settings -> General -> Your apps
@@ -6,18 +7,20 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA8JjEja1z--LMfhndMrEj0Ytf2ZmDZ4xs",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "project-plantasy.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "project-plantasy",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "project-plantasy.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "228651564668",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:228651564668:web:ea4f3c64c71c907a7c13f9"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDRjFbE0VRl4tn0QDMOqAqUfSTg0BZySag",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "plantasy-bharat.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "plantasy-bharat",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "plantasy-bharat.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1024932082336",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1024932082336:web:c32155ec1bb91eb2a7cfc5",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-5FE430D0FP"
 };
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+// export const analytics = getAnalytics(app);
 
 // Initialize services
 export const auth = getAuth(app);
@@ -34,4 +37,17 @@ export default app;
 //   storageBucket: "project-plantasy.firebasestorage.app",
 //   messagingSenderId: "228651564668",
 //   appId: "1:228651564668:web:ea4f3c64c71c907a7c13f9"
+// };
+
+
+// // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// const firebaseConfig = {
+//   apiKey: "AIzaSyDRjFbE0VRl4tn0QDMOqAqUfSTg0BZySag",
+//   authDomain: "plantasy-bharat.firebaseapp.com",
+//   databaseURL: "https://plantasy-bharat-default-rtdb.firebaseio.com",
+//   projectId: "plantasy-bharat",
+//   storageBucket: "plantasy-bharat.firebasestorage.app",
+//   messagingSenderId: "1024932082336",
+//   appId: "1:1024932082336:web:c32155ec1bb91eb2a7cfc5",
+//   measurementId: "G-5FE430D0FP"
 // };

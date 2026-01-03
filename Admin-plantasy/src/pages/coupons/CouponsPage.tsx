@@ -146,7 +146,7 @@ const CouponsPage: React.FC = () => {
         <span className="font-medium">
           {coupon.discountType === 'percentage' 
             ? `${coupon.discountValue}%` 
-            : `$${coupon.discountValue.toFixed(2)}`}
+            : `₹${coupon.discountValue.toFixed(2)}`}
         </span>
       ),
     },
@@ -154,7 +154,7 @@ const CouponsPage: React.FC = () => {
       key: 'minOrderValue',
       header: 'Min Order',
       render: (coupon: Coupon) => (
-        <span>${coupon.minOrderValue.toFixed(2)}</span>
+        <span>₹{coupon.minOrderValue.toFixed(2)}</span>
       ),
     },
     {
@@ -271,7 +271,7 @@ const CouponsPage: React.FC = () => {
                 className="admin-input"
               >
                 <option value="percentage">Percentage (%)</option>
-                <option value="flat">Flat Amount ($)</option>
+                <option value="flat">Flat Amount (₹)</option>
               </select>
             </div>
           </div>
@@ -279,7 +279,7 @@ const CouponsPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="admin-label">
-                Discount Value {formData.discountType === 'percentage' ? '(%)' : '($)'}
+                Discount Value {formData.discountType === 'percentage' ? '(%)' : '(₹)'}
               </label>
               <input
                 type="number"
@@ -291,7 +291,7 @@ const CouponsPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="admin-label">Min Order Value ($)</label>
+              <label className="admin-label">Min Order Value (₹)</label>
               <input
                 type="number"
                 step="0.01"

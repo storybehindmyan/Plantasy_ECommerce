@@ -32,6 +32,7 @@ const App = () => {
                 <Route path="profile/*" element={<UserProfile />} />
                 <Route path="admin" element={<AdminDashboard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
+                
               </Route>
             </Routes>
           </ProductProvider>
@@ -40,5 +41,7 @@ const App = () => {
     </BrowserRouter>
   );
 };
+
+
 
 export default App;

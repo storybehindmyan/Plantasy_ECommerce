@@ -1,21 +1,72 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  EyeOff,
+  Upload,
+  Star,
+} from 'lucide-react';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import StatusBadge from '../../components/common/StatusBadge';
 import { Product } from '../../types';
-import { productService } from '../../services/productService';
+import { db, storage } from '../../firebase/firebaseConfig';
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+  Timestamp,
+} from 'firebase/firestore';
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from 'firebase/storage';
+
+type Category = {
+  id: string;
+  name: string;
+};
+
+type ProductFormData = {
+  name: string;
+  description: string;
+  price: string;
+  discountPrice: string;
+  stock: string;
+  category: string;
+  isActive: boolean;
+  coverImage: string;
+  images: string[];
+};
+
+type ProductWithMeta = Product & {
+  coverImage?: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
 
 const ProductsPage: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductWithMeta | null>(
+    null
+  );
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
     price: '',
@@ -23,18 +74,57 @@ const ProductsPage: React.FC = () => {
     stock: '',
     category: '',
     isActive: true,
-    images: [] as string[],
+    coverImage: '',
+    images: [],
   });
 
+  // local image state
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
   useEffect(() => {
+    fetchCategories();
     fetchProducts();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'categories'));
+      const cats: Category[] = [];
+      snap.forEach((d) => {
+        const data = d.data() as any;
+        cats.push({ id: d.id, name: data.name });
+      });
+      setCategories(cats);
+    } catch (err) {
+      console.error('Error fetching categories', err);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const { products } = await productService.getProducts(50);
-      setProducts(products);
+      const snap = await getDocs(collection(db, 'products'));
+      const prods: ProductWithMeta[] = [];
+      snap.forEach((d) => {
+        const data = d.data() as any;
+        prods.push({
+          id: d.id,
+          name: data.name,
+          description: data.description,
+          price: data.price,
+          discountPrice: data.discountPrice,
+          stock: data.stock,
+          category: data.category,
+          isActive: data.isActive,
+          images: data.images || [],
+          coverImage: data.coverImage || data.images?.[0] || '',
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        });
+      });
+      setProducts(prods);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -42,9 +132,43 @@ const ProductsPage: React.FC = () => {
     }
   };
 
-  const handleOpenModal = (product?: Product) => {
+  const generateProductId = () => {
+    const random = Math.floor(10000000 + Math.random() * 90000000);
+    return `PROD00${random}`;
+  };
+
+  // compress using canvas before upload[web:38][web:47]
+  const compressImage = async (file: File, quality = 0.7): Promise<File> => {
+    const imageBitmap = await createImageBitmap(file);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+
+    const maxWidth = 1200;
+    const scale = Math.min(1, maxWidth / imageBitmap.width);
+    canvas.width = imageBitmap.width * scale;
+    canvas.height = imageBitmap.height * scale;
+
+    ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+
+    const blob: Blob = await new Promise((resolve) =>
+      canvas.toBlob(
+        (b) => resolve(b as Blob),
+        'image/jpeg',
+        quality
+      )
+    );
+
+    return new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+      type: 'image/jpeg',
+    });
+  };
+
+  const handleOpenModal = (product?: ProductWithMeta) => {
     if (product) {
       setEditingProduct(product);
+      const imgs = product.images || [];
+      const cover = product.coverImage || imgs[0] || '';
       setFormData({
         name: product.name,
         description: product.description,
@@ -53,8 +177,12 @@ const ProductsPage: React.FC = () => {
         stock: product.stock.toString(),
         category: product.category,
         isActive: product.isActive,
-        images: product.images || [],
+        coverImage: cover,
+        images: imgs,
       });
+      setExistingImageUrls(imgs);
+      setImageFiles([]);
+      setImagePreviews(imgs);
     } else {
       setEditingProduct(null);
       setFormData({
@@ -65,43 +193,156 @@ const ProductsPage: React.FC = () => {
         stock: '',
         category: '',
         isActive: true,
+        coverImage: '',
         images: [],
       });
+      setExistingImageUrls([]);
+      setImageFiles([]);
+      setImagePreviews([]);
     }
     setShowModal(true);
   };
 
+  const handleImagesSelected = (files: FileList | null) => {
+    if (!files) return;
+
+    const fileArray = Array.from(files);
+    const newFiles: File[] = [];
+    const readers: Promise<string>[] = [];
+
+    fileArray.forEach((file) => {
+      newFiles.push(file);
+      readers.push(
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = (err) => reject(err);
+          reader.readAsDataURL(file);
+        })
+      );
+    });
+
+    Promise.all(readers)
+      .then((results) => {
+        setImageFiles((prev) => [...prev, ...newFiles]);
+        const updatedPreviews = [...imagePreviews, ...results];
+        setImagePreviews(updatedPreviews);
+      })
+      .catch((err) => console.error('Error reading files', err));
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const preview = imagePreviews[index];
+
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImagePreviews(newPreviews);
+
+    if (existingImageUrls.includes(preview)) {
+      const newExisting = existingImageUrls.filter((url) => url !== preview);
+      setExistingImageUrls(newExisting);
+      setFormData((prev) => ({
+        ...prev,
+        images: newExisting,
+        coverImage:
+          prev.coverImage === preview ? newExisting[0] || '' : prev.coverImage,
+      }));
+    } else {
+      const offset = index - existingImageUrls.length;
+      if (offset >= 0) {
+        const newFileList = [...imageFiles];
+        newFileList.splice(offset, 1);
+        setImageFiles(newFileList);
+      }
+    }
+  };
+
+  const handleSetCover = (index: number) => {
+    const newCover = imagePreviews[index];
+    setFormData((prev) => ({
+      ...prev,
+      coverImage: newCover,
+    }));
+  };
+
+  const uploadImagesAndGetUrls = async (productId: string) => {
+    const urls: string[] = [...existingImageUrls];
+    for (const file of imageFiles) {
+      try {
+        const compressed = await compressImage(file, 0.7);
+        const imageRef = ref(
+          storage,
+          `products/${productId}/images/${Date.now()}-${compressed.name}`
+        );
+        const snapshot = await uploadBytes(imageRef, compressed);
+        const url = await getDownloadURL(snapshot.ref);
+        urls.push(url);
+      } catch (err) {
+        console.error('Error uploading image', err);
+      }
+    }
+    return urls;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (!formData.category) return;
+
     try {
-      const productData = {
+      setIsLoading(true);
+
+      const productId = editingProduct ? editingProduct.id : generateProductId();
+
+      const allImageUrls = await uploadImagesAndGetUrls(productId);
+
+      let coverImageUrl = formData.coverImage;
+      if (!coverImageUrl || !allImageUrls.includes(coverImageUrl)) {
+        coverImageUrl = allImageUrls[0] || '';
+      }
+
+      const baseData = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
-        discountPrice: formData.discountPrice ? parseFloat(formData.discountPrice) : undefined,
+        discountPrice: formData.discountPrice
+          ? parseFloat(formData.discountPrice)
+          : undefined,
         stock: parseInt(formData.stock),
         category: formData.category,
         isActive: formData.isActive,
-        images: formData.images,
+        images: allImageUrls,
+        coverImage: coverImageUrl,
       };
 
+      const productRef = doc(db, 'products', productId);
+
       if (editingProduct) {
-        await productService.updateProduct(editingProduct.id, productData);
+        await updateDoc(productRef, {
+          ...baseData,
+          updatedAt: serverTimestamp(), // only updatedAt on edit[web:64][web:70]
+        });
       } else {
-        await productService.createProduct(productData);
+        await setDoc(productRef, {
+          ...baseData,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
       }
 
       setShowModal(false);
-      fetchProducts();
+      setExistingImageUrls([]);
+      setImageFiles([]);
+      setImagePreviews([]);
+      await fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await productService.deleteProduct(id);
+      await deleteDoc(doc(db, 'products', id));
       setDeleteConfirm(null);
       fetchProducts();
     } catch (error) {
@@ -109,29 +350,39 @@ const ProductsPage: React.FC = () => {
     }
   };
 
-  const handleToggleActive = async (product: Product) => {
+  const handleToggleActive = async (product: ProductWithMeta) => {
     try {
-      await productService.updateProduct(product.id, { isActive: !product.isActive });
+      await updateDoc(doc(db, 'products', product.id), {
+        isActive: !product.isActive,
+        updatedAt: serverTimestamp(),
+      });
       fetchProducts();
     } catch (error) {
       console.error('Error toggling product status:', error);
     }
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const formatTimestamp = (ts?: Timestamp) => {
+    if (!ts) return '-';
+    const date = ts.toDate(); // Firestore Timestamp -> JS Date[web:53][web:59]
+    return date.toLocaleString();
+  };
 
   const columns = [
     {
       key: 'name',
       header: 'Product',
-      render: (product: Product) => (
+      render: (product: ProductWithMeta) => (
         <div className="flex items-center gap-3">
-          {product.images?.[0] ? (
+          {product.coverImage || product.images?.[0] ? (
             <img
-              src={product.images[0]}
+              src={product.coverImage || product.images[0]}
               alt={product.name}
               className="w-10 h-10 rounded-lg object-cover"
             />
@@ -150,17 +401,21 @@ const ProductsPage: React.FC = () => {
     {
       key: 'price',
       header: 'Price',
-      render: (product: Product) => (
+      render: (product: ProductWithMeta) => (
         <div>
           {product.discountPrice ? (
             <>
-              <span className="font-medium">${product.discountPrice.toFixed(2)}</span>
+              <span className="font-medium">
+                ₹{product.discountPrice.toFixed(2)}
+              </span>
               <span className="text-xs text-muted-foreground line-through ml-2">
-                ${product.price.toFixed(2)}
+                ₹{product.price.toFixed(2)}
               </span>
             </>
           ) : (
-            <span className="font-medium">${product.price.toFixed(2)}</span>
+            <span className="font-medium">
+              ₹{product.price.toFixed(2)}
+            </span>
           )}
         </div>
       ),
@@ -168,8 +423,10 @@ const ProductsPage: React.FC = () => {
     {
       key: 'stock',
       header: 'Stock',
-      render: (product: Product) => (
-        <span className={product.stock <= 10 ? 'text-destructive font-medium' : ''}>
+      render: (product: ProductWithMeta) => (
+        <span
+          className={product.stock <= 10 ? 'text-destructive font-medium' : ''}
+        >
           {product.stock}
         </span>
       ),
@@ -177,14 +434,14 @@ const ProductsPage: React.FC = () => {
     {
       key: 'isActive',
       header: 'Status',
-      render: (product: Product) => (
+      render: (product: ProductWithMeta) => (
         <StatusBadge status={product.isActive ? 'active' : 'inactive'} />
       ),
     },
     {
       key: 'actions',
       header: 'Actions',
-      render: (product: Product) => (
+      render: (product: ProductWithMeta) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleToggleActive(product)}
@@ -224,7 +481,10 @@ const ProductsPage: React.FC = () => {
           <h1 className="page-title">Products</h1>
           <p className="page-subtitle">Manage your product inventory</p>
         </div>
-        <button onClick={() => handleOpenModal()} className="admin-btn-primary">
+        <button
+          onClick={() => handleOpenModal()}
+          className="admin-btn-primary"
+        >
           <Plus className="w-5 h-5" />
           Add Product
         </button>
@@ -266,20 +526,30 @@ const ProductsPage: React.FC = () => {
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className="admin-input"
                 required
               />
             </div>
             <div>
               <label className="admin-label">Category</label>
-              <input
-                type="text"
+              <select
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
                 className="admin-input"
                 required
-              />
+              >
+                <option value="">Select category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -287,7 +557,9 @@ const ProductsPage: React.FC = () => {
             <label className="admin-label">Description</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               className="admin-input min-h-[100px] resize-y"
               required
             />
@@ -295,23 +567,30 @@ const ProductsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="admin-label">Price ($)</label>
+              <label className="admin-label">Price (₹)</label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: e.target.value })
+                }
                 className="admin-input"
                 required
               />
             </div>
             <div>
-              <label className="admin-label">Discount Price ($)</label>
+              <label className="admin-label">Discount Price (₹)</label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.discountPrice}
-                onChange={(e) => setFormData({ ...formData, discountPrice: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    discountPrice: e.target.value,
+                  })
+                }
                 className="admin-input"
                 placeholder="Optional"
               />
@@ -321,22 +600,123 @@ const ProductsPage: React.FC = () => {
               <input
                 type="number"
                 value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, stock: e.target.value })
+                }
                 className="admin-input"
                 required
               />
             </div>
           </div>
 
+          {/* Images uploader */}
+          <div>
+            <label className="admin-label">Product Images</label>
+
+            <div
+              className="border-2 border-dashed border-border rounded-lg p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleImagesSelected(e.dataTransfer.files);
+              }}
+              onClick={() => {
+                const input = document.getElementById(
+                  'product-images-input'
+                ) as HTMLInputElement | null;
+                input?.click();
+              }}
+            >
+              <Upload className="w-6 h-6 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Drag & drop images here, or click to browse
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select an image and mark it as cover
+              </p>
+              <input
+                id="product-images-input"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleImagesSelected(e.target.files)}
+              />
+            </div>
+
+            {imagePreviews.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 md:grid-cols-4 gap-3">
+                {imagePreviews.map((src, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={src}
+                      alt={`Product ${index + 1}`}
+                      className={`w-full h-24 object-cover rounded-lg border ${
+                        formData.coverImage === src
+                          ? 'border-primary'
+                          : 'border-border'
+                      }`}
+                    />
+                    {formData.coverImage === src && (
+                      <span className="absolute top-1 left-1 bg-primary text-xs text-primary-foreground px-2 py-0.5 rounded flex items-center gap-1">
+                        <Star className="w-3 h-3" /> Cover
+                      </span>
+                    )}
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                      <button
+                        type="button"
+                        className="bg-background/80 rounded-full px-2 text-xs"
+                        title="Set as cover"
+                        onClick={() => handleSetCover(index)}
+                      >
+                        <Star className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        className="bg-background/80 rounded-full px-2 text-xs"
+                        title="Remove"
+                        onClick={() => handleRemoveImage(index)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Timestamps display */}
+          {editingProduct && (
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>
+                <span className="font-medium">Created on:</span>{' '}
+                {formatTimestamp(editingProduct.createdAt)}
+              </p>
+              <p>
+                <span className="font-medium">Last updated:</span>{' '}
+                {formatTimestamp(editingProduct.updatedAt)}
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
               id="isActive"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isActive: e.target.checked })
+              }
               className="w-4 h-4 rounded border-border"
             />
-            <label htmlFor="isActive" className="text-sm">Product is active</label>
+            <label htmlFor="isActive" className="text-sm">
+              Product is active
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
@@ -362,7 +742,8 @@ const ProductsPage: React.FC = () => {
         size="sm"
       >
         <p className="text-muted-foreground mb-6">
-          Are you sure you want to delete this product? This action cannot be undone.
+          Are you sure you want to delete this product? This action cannot be
+          undone.
         </p>
         <div className="flex justify-end gap-3">
           <button

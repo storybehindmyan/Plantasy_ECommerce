@@ -421,7 +421,7 @@ const Addresses = () => {
           address: newId,
           updatedAt: serverTimestamp(),
         });
-        updateUser({ address: newId });
+        updateUser({ address: newId } as any);
       }
 
       setIsAddingMode(false);
@@ -467,7 +467,7 @@ const Addresses = () => {
         address: addr.id,
         updatedAt: serverTimestamp(),
       });
-      updateUser({ address: addr.id });
+      updateUser({ address: addr.id }as any);
 
       setOpenMenuForId(null);
       await loadAddresses();
@@ -488,7 +488,7 @@ const Addresses = () => {
           address: "",
           updatedAt: serverTimestamp(),
         });
-        updateUser({ address: "" });
+        updateUser({ address: "" } as any);
       }
       setOpenMenuForId(null);
       await loadAddresses();

@@ -96,7 +96,7 @@ const DashboardPage: React.FC = () => {
     {
       key: 'status',
       header: 'Status',
-      render: (order: Order) => <StatusBadge status={order.orderStatus} />,
+        render: (order: Order) => <StatusBadge status={order.status} />,
     },
     {
       key: 'createdAt',

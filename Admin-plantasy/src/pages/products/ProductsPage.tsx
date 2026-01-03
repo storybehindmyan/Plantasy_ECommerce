@@ -45,11 +45,11 @@ type ProductFormData = {
   images: string[];
 };
 
-type ProductWithMeta = Product & {
+type ProductWithMeta = Omit<Product, 'createdAt' | 'updatedAt'> & {
   coverImage?: string;
   hoverImage?: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt?: Timestamp | Date;
+  updatedAt?: Timestamp | Date;
   isNewArrival?: boolean;
   isOnSale?: boolean;
 };
@@ -411,10 +411,15 @@ const ProductsPage: React.FC = () => {
       product.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const formatTimestamp = (ts?: Timestamp) => {
+  const formatTimestamp = (ts?: Timestamp | Date) => {
     if (!ts) return "-";
-    const date = ts.toDate();
-    return date.toLocaleString();
+    let date: Date | null = null;
+    if (typeof (ts as any)?.toDate === "function") {
+      date = (ts as any).toDate();
+    } else if (ts instanceof Date) {
+      date = ts;
+    }
+    return date ? date.toLocaleString() : "-";
   };
 
   const columns = [

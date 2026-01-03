@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -9,12 +9,12 @@ import {
   EyeOff,
   Upload,
   Star,
-} from 'lucide-react';
-import DataTable from '../../components/common/DataTable';
-import Modal from '../../components/common/Modal';
-import StatusBadge from '../../components/common/StatusBadge';
-import { Product } from '../../types';
-import { db, storage } from '../../firebase/firebaseConfig';
+} from "lucide-react";
+import DataTable from "../../components/common/DataTable";
+import Modal from "../../components/common/Modal";
+import StatusBadge from "../../components/common/StatusBadge";
+import { Product } from "../../types";
+import { db, storage } from "../../firebase/firebaseConfig";
 import {
   collection,
   doc,
@@ -24,12 +24,8 @@ import {
   deleteDoc,
   serverTimestamp,
   Timestamp,
-} from 'firebase/firestore';
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage';
+} from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 type Category = {
   id: string;
@@ -45,36 +41,40 @@ type ProductFormData = {
   category: string;
   isActive: boolean;
   coverImage: string;
+  hoverImage: string;
   images: string[];
 };
 
 type ProductWithMeta = Product & {
   coverImage?: string;
+  hoverImage?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  isNewArrival?: boolean;
+  isOnSale?: boolean;
 };
 
 const ProductsPage: React.FC = () => {
   const [products, setProducts] = useState<ProductWithMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductWithMeta | null>(
-    null
-  );
+  const [editingProduct, setEditingProduct] =
+    useState<ProductWithMeta | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    description: '',
-    price: '',
-    discountPrice: '',
-    stock: '',
-    category: '',
+    name: "",
+    description: "",
+    price: "",
+    discountPrice: "",
+    stock: "",
+    category: "",
     isActive: true,
-    coverImage: '',
+    coverImage: "",
+    hoverImage: "",
     images: [],
   });
 
@@ -90,7 +90,7 @@ const ProductsPage: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const snap = await getDocs(collection(db, 'categories'));
+      const snap = await getDocs(collection(db, "categories"));
       const cats: Category[] = [];
       snap.forEach((d) => {
         const data = d.data() as any;
@@ -98,17 +98,36 @@ const ProductsPage: React.FC = () => {
       });
       setCategories(cats);
     } catch (err) {
-      console.error('Error fetching categories', err);
+      console.error("Error fetching categories", err);
     }
   };
 
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const snap = await getDocs(collection(db, 'products'));
+      const snap = await getDocs(collection(db, "products"));
       const prods: ProductWithMeta[] = [];
+
+      const now = new Date();
+      const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+
       snap.forEach((d) => {
         const data = d.data() as any;
+
+        const updatedAt: Timestamp | undefined = data.updatedAt;
+        const hasDiscount = typeof data.discountPrice === "number";
+        let isNewArrival = false;
+
+        if (updatedAt && updatedAt.toDate) {
+          const updatedDate = updatedAt.toDate() as Date;
+          const diffMs = now.getTime() - updatedDate.getTime();
+          isNewArrival = diffMs <= tenDaysMs && diffMs >= 0;
+        }
+
+        const images: string[] = data.images || [];
+        const coverImage = data.coverImage || images[0] || "";
+        const hoverImage = data.hoverImage || images[1] || images[0] || "";
+
         prods.push({
           id: d.id,
           name: data.name,
@@ -118,15 +137,19 @@ const ProductsPage: React.FC = () => {
           stock: data.stock,
           category: data.category,
           isActive: data.isActive,
-          images: data.images || [],
-          coverImage: data.coverImage || data.images?.[0] || '',
+          images,
+          coverImage,
+          hoverImage,
           createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
+          updatedAt,
+          isNewArrival,
+          isOnSale: hasDiscount,
         });
       });
+
       setProducts(prods);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
     } finally {
       setIsLoading(false);
     }
@@ -137,11 +160,11 @@ const ProductsPage: React.FC = () => {
     return `PROD00${random}`;
   };
 
-  // compress using canvas before upload[web:38][web:47]
+  // compress using canvas before upload
   const compressImage = async (file: File, quality = 0.7): Promise<File> => {
     const imageBitmap = await createImageBitmap(file);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
     if (!ctx) return file;
 
     const maxWidth = 1200;
@@ -152,15 +175,11 @@ const ProductsPage: React.FC = () => {
     ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
 
     const blob: Blob = await new Promise((resolve) =>
-      canvas.toBlob(
-        (b) => resolve(b as Blob),
-        'image/jpeg',
-        quality
-      )
+      canvas.toBlob((b) => resolve(b as Blob), "image/jpeg", quality)
     );
 
-    return new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-      type: 'image/jpeg',
+    return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), {
+      type: "image/jpeg",
     });
   };
 
@@ -168,16 +187,18 @@ const ProductsPage: React.FC = () => {
     if (product) {
       setEditingProduct(product);
       const imgs = product.images || [];
-      const cover = product.coverImage || imgs[0] || '';
+      const cover = product.coverImage || imgs[0] || "";
+      const hover = product.hoverImage || "";
       setFormData({
         name: product.name,
         description: product.description,
         price: product.price.toString(),
-        discountPrice: product.discountPrice?.toString() || '',
+        discountPrice: product.discountPrice?.toString() || "",
         stock: product.stock.toString(),
         category: product.category,
         isActive: product.isActive,
         coverImage: cover,
+        hoverImage: hover,
         images: imgs,
       });
       setExistingImageUrls(imgs);
@@ -186,14 +207,15 @@ const ProductsPage: React.FC = () => {
     } else {
       setEditingProduct(null);
       setFormData({
-        name: '',
-        description: '',
-        price: '',
-        discountPrice: '',
-        stock: '',
-        category: '',
+        name: "",
+        description: "",
+        price: "",
+        discountPrice: "",
+        stock: "",
+        category: "",
         isActive: true,
-        coverImage: '',
+        coverImage: "",
+        hoverImage: "",
         images: [],
       });
       setExistingImageUrls([]);
@@ -228,7 +250,7 @@ const ProductsPage: React.FC = () => {
         const updatedPreviews = [...imagePreviews, ...results];
         setImagePreviews(updatedPreviews);
       })
-      .catch((err) => console.error('Error reading files', err));
+      .catch((err) => console.error("Error reading files", err));
   };
 
   const handleRemoveImage = (index: number) => {
@@ -244,7 +266,11 @@ const ProductsPage: React.FC = () => {
         ...prev,
         images: newExisting,
         coverImage:
-          prev.coverImage === preview ? newExisting[0] || '' : prev.coverImage,
+          prev.coverImage === preview ? newExisting[0] || "" : prev.coverImage,
+        hoverImage:
+          prev.hoverImage === preview
+            ? newExisting[1] || newExisting[0] || ""
+            : prev.hoverImage,
       }));
     } else {
       const offset = index - existingImageUrls.length;
@@ -264,6 +290,14 @@ const ProductsPage: React.FC = () => {
     }));
   };
 
+  const handleSetHover = (index: number) => {
+    const newHover = imagePreviews[index];
+    setFormData((prev) => ({
+      ...prev,
+      hoverImage: newHover,
+    }));
+  };
+
   const uploadImagesAndGetUrls = async (productId: string) => {
     const urls: string[] = [...existingImageUrls];
     for (const file of imageFiles) {
@@ -277,7 +311,7 @@ const ProductsPage: React.FC = () => {
         const url = await getDownloadURL(snapshot.ref);
         urls.push(url);
       } catch (err) {
-        console.error('Error uploading image', err);
+        console.error("Error uploading image", err);
       }
     }
     return urls;
@@ -295,8 +329,16 @@ const ProductsPage: React.FC = () => {
       const allImageUrls = await uploadImagesAndGetUrls(productId);
 
       let coverImageUrl = formData.coverImage;
+      let hoverImageUrl = formData.hoverImage;
+
+      // Ensure cover image exists and is valid
       if (!coverImageUrl || !allImageUrls.includes(coverImageUrl)) {
-        coverImageUrl = allImageUrls[0] || '';
+        coverImageUrl = allImageUrls[0] || "";
+      }
+
+      // Ensure hover image exists and is valid, different from cover if possible
+      if (!hoverImageUrl || !allImageUrls.includes(hoverImageUrl)) {
+        hoverImageUrl = allImageUrls[1] || allImageUrls[0] || "";
       }
 
       const baseData = {
@@ -311,14 +353,15 @@ const ProductsPage: React.FC = () => {
         isActive: formData.isActive,
         images: allImageUrls,
         coverImage: coverImageUrl,
+        hoverImage: hoverImageUrl,
       };
 
-      const productRef = doc(db, 'products', productId);
+      const productRef = doc(db, "products", productId);
 
       if (editingProduct) {
         await updateDoc(productRef, {
           ...baseData,
-          updatedAt: serverTimestamp(), // only updatedAt on edit[web:64][web:70]
+          updatedAt: serverTimestamp(),
         });
       } else {
         await setDoc(productRef, {
@@ -334,7 +377,7 @@ const ProductsPage: React.FC = () => {
       setImagePreviews([]);
       await fetchProducts();
     } catch (error) {
-      console.error('Error saving product:', error);
+      console.error("Error saving product:", error);
     } finally {
       setIsLoading(false);
     }
@@ -342,23 +385,23 @@ const ProductsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'products', id));
+      await deleteDoc(doc(db, "products", id));
       setDeleteConfirm(null);
       fetchProducts();
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error("Error deleting product:", error);
     }
   };
 
   const handleToggleActive = async (product: ProductWithMeta) => {
     try {
-      await updateDoc(doc(db, 'products', product.id), {
+      await updateDoc(doc(db, "products", product.id), {
         isActive: !product.isActive,
         updatedAt: serverTimestamp(),
       });
       fetchProducts();
     } catch (error) {
-      console.error('Error toggling product status:', error);
+      console.error("Error toggling product status:", error);
     }
   };
 
@@ -369,15 +412,15 @@ const ProductsPage: React.FC = () => {
   );
 
   const formatTimestamp = (ts?: Timestamp) => {
-    if (!ts) return '-';
-    const date = ts.toDate(); // Firestore Timestamp -> JS Date[web:53][web:59]
+    if (!ts) return "-";
+    const date = ts.toDate();
     return date.toLocaleString();
   };
 
   const columns = [
     {
-      key: 'name',
-      header: 'Product',
+      key: "name",
+      header: "Product",
       render: (product: ProductWithMeta) => (
         <div className="flex items-center gap-3">
           {product.coverImage || product.images?.[0] ? (
@@ -392,15 +435,29 @@ const ProductsPage: React.FC = () => {
             </div>
           )}
           <div>
-            <p className="font-medium">{product.name}</p>
-            <p className="text-xs text-muted-foreground">{product.category}</p>
+            <p className="font-medium flex items-center gap-2">
+              {product.name}
+              {product.isNewArrival && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+                  New Arrival
+                </span>
+              )}
+              {product.isOnSale && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700">
+                  Sale
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {product.category}
+            </p>
           </div>
         </div>
       ),
     },
     {
-      key: 'price',
-      header: 'Price',
+      key: "price",
+      header: "Price",
       render: (product: ProductWithMeta) => (
         <div>
           {product.discountPrice ? (
@@ -421,32 +478,34 @@ const ProductsPage: React.FC = () => {
       ),
     },
     {
-      key: 'stock',
-      header: 'Stock',
+      key: "stock",
+      header: "Stock",
       render: (product: ProductWithMeta) => (
         <span
-          className={product.stock <= 10 ? 'text-destructive font-medium' : ''}
+          className={
+            product.stock <= 10 ? "text-destructive font-medium" : ""
+          }
         >
           {product.stock}
         </span>
       ),
     },
     {
-      key: 'isActive',
-      header: 'Status',
+      key: "isActive",
+      header: "Status",
       render: (product: ProductWithMeta) => (
-        <StatusBadge status={product.isActive ? 'active' : 'inactive'} />
+        <StatusBadge status={product.isActive ? "active" : "inactive"} />
       ),
     },
     {
-      key: 'actions',
-      header: 'Actions',
+      key: "actions",
+      header: "Actions",
       render: (product: ProductWithMeta) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleToggleActive(product)}
             className="admin-btn-ghost p-2"
-            title={product.isActive ? 'Disable' : 'Enable'}
+            title={product.isActive ? "Disable" : "Enable"}
           >
             {product.isActive ? (
               <EyeOff className="w-4 h-4" />
@@ -516,7 +575,7 @@ const ProductsPage: React.FC = () => {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingProduct ? 'Edit Product' : 'Add Product'}
+        title={editingProduct ? "Edit Product" : "Add Product"}
         size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -626,7 +685,7 @@ const ProductsPage: React.FC = () => {
               }}
               onClick={() => {
                 const input = document.getElementById(
-                  'product-images-input'
+                  "product-images-input"
                 ) as HTMLInputElement | null;
                 input?.click();
               }}
@@ -636,7 +695,7 @@ const ProductsPage: React.FC = () => {
                 Drag & drop images here, or click to browse
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Select an image and mark it as cover
+                Select cover and hover images
               </p>
               <input
                 id="product-images-input"
@@ -657,8 +716,10 @@ const ProductsPage: React.FC = () => {
                       alt={`Product ${index + 1}`}
                       className={`w-full h-24 object-cover rounded-lg border ${
                         formData.coverImage === src
-                          ? 'border-primary'
-                          : 'border-border'
+                          ? "border-primary ring-2 ring-primary/50"
+                          : formData.hoverImage === src
+                          ? "border-secondary ring-2 ring-secondary/50"
+                          : "border-border"
                       }`}
                     />
                     {formData.coverImage === src && (
@@ -666,10 +727,16 @@ const ProductsPage: React.FC = () => {
                         <Star className="w-3 h-3" /> Cover
                       </span>
                     )}
+                    {formData.hoverImage === src &&
+                      formData.coverImage !== src && (
+                        <span className="absolute top-1 right-8 bg-secondary text-xs text-secondary-foreground px-2 py-0.5 rounded flex items-center gap-1">
+                          Hover
+                        </span>
+                      )}
                     <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition">
                       <button
                         type="button"
-                        className="bg-background/80 rounded-full px-2 text-xs"
+                        className="bg-background/80 hover:bg-primary/10 rounded-full p-1.5 text-xs"
                         title="Set as cover"
                         onClick={() => handleSetCover(index)}
                       >
@@ -677,7 +744,15 @@ const ProductsPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        className="bg-background/80 rounded-full px-2 text-xs"
+                        className="bg-background/80 hover:bg-secondary/10 rounded-full p-1.5 text-xs"
+                        title="Set as hover"
+                        onClick={() => handleSetHover(index)}
+                      >
+                        H
+                      </button>
+                      <button
+                        type="button"
+                        className="bg-background/80 rounded-full p-1.5 text-xs text-destructive hover:bg-destructive/10"
                         title="Remove"
                         onClick={() => handleRemoveImage(index)}
                       >
@@ -694,11 +769,11 @@ const ProductsPage: React.FC = () => {
           {editingProduct && (
             <div className="text-xs text-muted-foreground space-y-1">
               <p>
-                <span className="font-medium">Created on:</span>{' '}
+                <span className="font-medium">Created on:</span>{" "}
                 {formatTimestamp(editingProduct.createdAt)}
               </p>
               <p>
-                <span className="font-medium">Last updated:</span>{' '}
+                <span className="font-medium">Last updated:</span>{" "}
                 {formatTimestamp(editingProduct.updatedAt)}
               </p>
             </div>
@@ -728,7 +803,7 @@ const ProductsPage: React.FC = () => {
               Cancel
             </button>
             <button type="submit" className="admin-btn-primary">
-              {editingProduct ? 'Update Product' : 'Create Product'}
+              {editingProduct ? "Update Product" : "Create Product"}
             </button>
           </div>
         </form>

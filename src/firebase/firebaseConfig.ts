@@ -12,11 +12,12 @@ import { getAnalytics } from "firebase/analytics";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDRjFbE0VRl4tn0QDMOqAqUfSTg0BZySag",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "plantasy-bharat.firebaseapp.com",
+  databaseURL: "https://plantasy-bharat-default-rtdb.firebaseio.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "plantasy-bharat",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "plantasy-bharat.firebasestorage.app",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1024932082336",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1024932082336:web:c32155ec1bb91eb2a7cfc5",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-5FE430D0FP"
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1024932082336:web:5c599f1c1ae8653aa7cfc5",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-HKM8DQD5SC"
 };
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -28,6 +29,17 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 export default app;
+
+// const firebaseConfig = {
+//   apiKey: "AIzaSyDRjFbE0VRl4tn0QDMOqAqUfSTg0BZySag",
+//   authDomain: "plantasy-bharat.firebaseapp.com",
+//   databaseURL: "https://plantasy-bharat-default-rtdb.firebaseio.com",
+//   projectId: "plantasy-bharat",
+//   storageBucket: "plantasy-bharat.firebasestorage.app",
+//   messagingSenderId: "1024932082336",
+//   appId: "1:1024932082336:web:5c599f1c1ae8653aa7cfc5",
+//   measurementId: "G-HKM8DQD5SC"
+// };
 
 
 // const firebaseConfig = {

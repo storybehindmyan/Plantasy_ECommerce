@@ -83,7 +83,7 @@ const Footer = () => {
             </div>
 
             <div className="text-center text-xs text-gray-600 pt-8 border-t border-white/5">
-                &copy; {new Date().getFullYear()} Plantasy. All rights reserved.
+                &copy;2024 Plantasy. All rights reserved.
             </div>
         </footer>
     );

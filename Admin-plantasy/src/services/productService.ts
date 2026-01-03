@@ -158,25 +158,28 @@ export const productService = {
   },
 
   // Get low stock products
-  async getLowStockProducts(threshold: number = 10): Promise<Product[]> {
-    try {
-      const q = query(
-        collection(db, COLLECTION_NAME),
-        where('stockQuantity', '<=', threshold),
-        where('isActive', '==', true)
-      );
-      // console.log('Low stock products fetched:', q);
-      const snapshot = await getDocs(q);
-      // console.log('Low stock products fetched:', snapshot);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      })) as Product[];
-    } catch (error) {
-      console.error('Error fetching low stock products:', error);
-      throw error;
-    }
-  },
+ async getLowStockProducts(threshold: number = 5): Promise<Product[]> {
+  try {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('stock', '<', threshold),
+      where('isActive', '==', true)
+    );
+    const snapshot = await getDocs(q);
+
+    // TEMP: debug
+    //console.log('Low stock docs count:', snapshot.size);
+    // snapshot.forEach(d => console.log(d.id, d.data()));
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.(),
+      updatedAt: doc.data().updatedAt?.toDate?.(),
+    })) as Product[];
+  } catch (error) {
+    console.error('Error fetching low stock products:', error);
+    throw error;
+  }
+},
 };

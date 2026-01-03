@@ -23,7 +23,6 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        
         const [
           recent,
           ordersCount,
@@ -31,18 +30,19 @@ const DashboardPage: React.FC = () => {
           productsCount,
           activeCouponsCount,
           pendingCount,
-          lowStock
+          lowStock,
         ] = await Promise.all([
           orderService.getRecentOrders(5),
-          orderService.getOrdersCount() ,
-          orderService.getTotalRevenue(),
+          orderService.getOrdersCount(),
+          orderService.getLast30DaysRevenue(),
           productService.getProductsCount(),
           couponService.getActiveCouponsCount(),
           orderService.getPendingOrdersCount(),
+          // IMPORTANT: implement this inside productService so it only returns products where stock < 5
           productService.getLowStockProducts(),
         ]);
-        
 
+        //console.log('Low stock products:', lowStock);
         setStats({
           totalOrders: ordersCount,
           totalRevenue: revenue,
@@ -54,7 +54,6 @@ const DashboardPage: React.FC = () => {
         setRecentOrders(recent);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        //console.log("Failed to fetch dashboard data", recent); // --- IGNORE ---
       } finally {
         setIsLoading(false);
       }
@@ -79,7 +78,9 @@ const DashboardPage: React.FC = () => {
           <p className="font-medium">
             {order.deliveryAddress.firstName} {order.deliveryAddress.lastName}
           </p>
-          <p className="text-xs text-muted-foreground">{order.deliveryAddress.phone}</p>
+          <p className="text-xs text-muted-foreground">
+            {order.deliveryAddress.phone}
+          </p>
         </div>
       ),
     },
@@ -87,7 +88,9 @@ const DashboardPage: React.FC = () => {
       key: 'totalAmount',
       header: 'Amount',
       render: (order: Order) => (
-        <span className="font-medium">${order.pricing.grandTotal.toFixed(2)}</span>
+        <span className="font-medium">
+          ₹{order.pricing.grandTotal.toFixed(2)}
+        </span>
       ),
     },
     {
@@ -100,7 +103,9 @@ const DashboardPage: React.FC = () => {
       header: 'Date',
       render: (order: Order) => (
         <span className="text-muted-foreground">
-          {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-'}
+          {order.createdAt
+            ? new Date(order.createdAt).toLocaleDateString()
+            : '-'}
         </span>
       ),
     },
@@ -132,7 +137,9 @@ const DashboardPage: React.FC = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Welcome back! Here's your store overview.</p>
+          <p className="page-subtitle">
+            Welcome back! Here's your store overview.
+          </p>
         </div>
       </div>
 
@@ -177,7 +184,7 @@ const DashboardPage: React.FC = () => {
             <p className="text-2xl font-bold">{stats.pendingOrders}</p>
           </div>
         </div>
-        
+
         <div className="admin-card flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center">
             <AlertTriangle className="w-6 h-6 text-destructive" />
@@ -193,10 +200,7 @@ const DashboardPage: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Recent Orders</h2>
-          <a 
-            href="/orders" 
-            className="text-sm text-primary hover:underline"
-          >
+          <a href="/orders" className="text-sm text-primary hover:underline">
             View All
           </a>
         </div>

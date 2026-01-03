@@ -112,7 +112,7 @@ const YouMayAlsoLike = ({
               border-r border-white/5 border-t border-white/5 md:border-t-0`}
                     >
                         <h3 className="text-xl font-serif mb-2">
-                            Subscription <br /> Boxes
+                            Seeds <br /> Collection
                         </h3>
 
                         <p className="text-gray-400 text-sm mb-4">
@@ -120,7 +120,7 @@ const YouMayAlsoLike = ({
                         </p>
 
                         <Link
-                            to="/shop?category=subscriptions"
+                            to="/shop?category=seeds"
                             className="bg-[#c16e41] text-white px-5 py-2 text-sm font-medium
                          hover:bg-[#a05a32] transition-colors"
                         >

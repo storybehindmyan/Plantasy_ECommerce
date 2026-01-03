@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { Product } from '../data/products';
 
 interface CartItem extends Product {
+    coverImage: string;
     quantity: number;
 }
 

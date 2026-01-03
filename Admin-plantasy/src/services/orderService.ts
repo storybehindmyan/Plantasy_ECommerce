@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
   collection, 
   doc, 
@@ -144,16 +145,35 @@ export const orderService = {
   },
 
   // Get total revenue
-  async getTotalRevenue(): Promise<number> {
+  async getLast30DaysRevenue(): Promise<number> {
     try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(now.getDate() - 30);
+
+      const thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+
       const q = query(
         collection(db, COLLECTION_NAME),
-        where('payment.paymentStatus', '==', 'paid')
+        where('payment.paymentStatus', '==', 'paid'),
+        where('createdAt', '>=', thirtyDaysAgoTimestamp)
       );
+
       const snapshot = await getDocs(q);
-      return snapshot.docs.reduce((total, doc) => total + (doc.data().totalAmount || 0), 0);
+
+      const total = snapshot.docs.reduce((sum, doc) => {
+        const data = doc.data() as any;
+        const grandTotal =
+          data.pricing?.grandTotal &&
+          typeof data.pricing.grandTotal === 'number'
+            ? data.pricing.grandTotal
+            : 0;
+        return sum + grandTotal;
+      }, 0);
+
+      return total;
     } catch (error) {
-      console.error('Error calculating total revenue:', error);
+      console.error('Error calculating last 30 days revenue:', error);
       throw error;
     }
   },

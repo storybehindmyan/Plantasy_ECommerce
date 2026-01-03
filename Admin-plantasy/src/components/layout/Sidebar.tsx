@@ -35,8 +35,8 @@ const navItems: NavItem[] = [
   { label: 'Orders', path: '/orders', icon: ShoppingCart },
   { label: 'Coupons', path: '/coupons', icon: Ticket,  },
   { label: 'Blogs', path: '/blogs', icon: FileText,  },
-  { label: 'Reviews', path: '/reviews', icon: Star },
-  { label: 'Support', path: '/support', icon: MessageSquare },
+  // { label: 'Reviews', path: '/reviews', icon: Star },
+  // { label: 'Support', path: '/support', icon: MessageSquare },
   { label: 'Admin Users', path: '/admin-users', icon: Users,  },
 ];
 

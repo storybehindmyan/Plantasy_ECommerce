@@ -12,7 +12,8 @@ export type ProductCategory =
 export interface Product {
   id: string;
   category: ProductCategory;
-  coverImage: string;
+  coverImage?: string;
+  image?: string; // Compatibility with data/products
   hoverImage?: string;
   images?: string[];
   name: string;

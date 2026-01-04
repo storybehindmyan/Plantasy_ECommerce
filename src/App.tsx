@@ -13,7 +13,7 @@ import CartDrawer from './components/CartDrawer';
 import OurStory from './pages/OurStory';
 import Care from './pages/Care';
 import UserProfile from './pages/UserProfile';
-import LoginPage from '../Admin-plantasy/src/pages/auth/LoginPage';
+// import LoginPage from '../Admin-plantasy/src/pages/auth/LoginPage';
 
 const App = () => {
   return (
@@ -32,15 +32,15 @@ const App = () => {
                 <Route path="care" element={<Care />} />
                 <Route path="our-story" element={<OurStory />} />
                 <Route path="profile/*" element={<UserProfile />} />
-                <Route path="admin" element={<LoginPage />} />
+                {/* <Route path="admin" element={<LoginPage />} /> */}
                 <Route path="*" element={<Navigate to="/" replace />} />
-                
+
               </Route>
             </Routes>
           </ProductProvider>
         </CartProvider>
-         {/* other layout */}
-  <Toaster richColors position="bottom-center" />
+        {/* other layout */}
+        <Toaster richColors position="bottom-center" />
       </AuthProvider>
     </BrowserRouter>
   );

@@ -43,13 +43,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           {/* Base (cover) image */}
           <img
-            src={product.coverImage}
+            src={product.coverImage || product.image}
             alt={product.name}
             loading="lazy"
             onLoad={() => setIsImageLoaded(true)}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
-              isImageLoaded ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${isImageLoaded ? "opacity-100" : "opacity-0"
+              }`}
           />
 
           {/* Hover image overlay */}
@@ -65,9 +64,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {/* Badge */}
           {product.badge && (
             <span
-              className={`absolute top-2 left-2 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-1 ${
-                product.badge === "Sale" ? "bg-accent" : "bg-[#686736]/70 backdrop-blur-md border border-[#686736]/90"
-              }`}
+              className={`absolute top-2 left-2 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-1 ${product.badge === "Sale" ? "bg-accent" : "bg-[#686736]/70 backdrop-blur-md border border-[#686736]/90"
+                }`}
             >
               {product.badge}
             </span>

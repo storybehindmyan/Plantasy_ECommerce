@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { Product } from '../data/products';
+import type { Product } from '../types/product';
 
 interface CartItem extends Product {
     coverImage: string;
@@ -39,7 +39,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                     item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
                 );
             }
-            return [...prev, { ...product, quantity }];
+            return [...prev, { ...product, quantity, coverImage: product.coverImage || product.image || '' }];
         });
         setIsCartOpen(true);
     };

@@ -2,16 +2,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/immutability */
-import { 
-  createContext, 
-  useContext, 
-  useState, 
-  useEffect, 
-  type ReactNode,
-  useCallback 
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode
 } from 'react';
 import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 
 type Role = 'user' | 'admin' | null;
@@ -36,6 +35,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
+  error: any | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,13 +43,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const firebaseAuth = useFirebaseAuth();
 
   // Sync Firebase Auth state with custom User state
   useEffect(() => {
     if (firebaseAuth.loading) return;
-    
+
     if (firebaseAuth.user) {
       // Firebase user exists, fetch/enhance with profile data
       loadUserProfile(firebaseAuth.user);
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadUserProfile = async (firebaseUser: any) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      
+
       if (userDoc.exists()) {
         const profileData = userDoc.data() as Partial<User>;
         const fullUser: User = {
@@ -96,14 +96,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Real-time profile listener (optional, for live updates)
-  const startProfileListener = useCallback((uid: string) => {
-    return onSnapshot(doc(db, 'users', uid), (docSnap) => {
-      if (docSnap.exists()) {
-        const profileData = docSnap.data() as Partial<User>;
-        setUser(prev => prev ? { ...prev, ...profileData } : null);
-      }
-    });
-  }, []);
+  // const startProfileListener = useCallback((uid: string) => {
+  //   return onSnapshot(doc(db, 'users', uid), (docSnap) => {
+  //     if (docSnap.exists()) {
+  //       const profileData = docSnap.data() as Partial<User>;
+  //       setUser(prev => prev ? { ...prev, ...profileData } : null);
+  //     }
+  //   });
+  // }, []);
 
   const login = async (email: string, password: string) => {
     await firebaseAuth.login(email, password);
@@ -125,11 +125,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUser = async (updates: Partial<User>) => {
     if (!user) return;
-    
+
     try {
       // Update Firestore
       await setDoc(doc(db, 'users', user.uid), { ...user, ...updates }, { merge: true });
-      
+
       // Update local state
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
@@ -161,7 +161,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup,
     loginWithGoogle,
     logout,
-    updateUser
+    updateUser,
+    error: firebaseAuth.error
   };
 
   return (

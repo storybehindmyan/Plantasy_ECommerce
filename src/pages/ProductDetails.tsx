@@ -68,11 +68,11 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
 
   const [quantity, setQuantity] = useState(1);
-  const [size, setSize] = useState("");
+  // const [size, setSize] = useState("");
 
   // Optional: prev / next via local state or separate query.
-  const [prevProduct, setPrevProduct] = useState<Product | null>(null);
-  const [nextProduct, setNextProduct] = useState<Product | null>(null);
+  // const [prevProduct, setPrevProduct] = useState<Product | null>(null);
+  // const [nextProduct, setNextProduct] = useState<Product | null>(null);
 
   // Carousel state
   const [activeIndex, setActiveIndex] = useState(0);
@@ -109,6 +109,7 @@ const ProductDetails = () => {
           badge: data.badge,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
+          image: data.coverImage, // Map coverImage to image for compatibility
         };
 
         setProduct(mapped);
@@ -151,7 +152,7 @@ const ProductDetails = () => {
   const allImages =
     product.images && product.images.length > 0
       ? product.images
-      : [product.coverImage];
+      : [product.coverImage || product.image || ""];
 
   const handlePrev = () => {
     setActiveIndex((prev) =>
@@ -184,7 +185,7 @@ const ProductDetails = () => {
               <span className="text-white font-medium">{product.name}</span>
             </div>
             <div className="flex items-center gap-4">
-              {prevProduct ? (
+              {/* {prevProduct ? (
                 <Link
                   to={`/product/${prevProduct.id}`}
                   className="hover:text-accent flex items-center gap-1 transition-colors"
@@ -195,9 +196,9 @@ const ProductDetails = () => {
                 <span className="text-gray-600 flex items-center gap-1">
                   <ChevronLeft size={16} /> Prev
                 </span>
-              )}
+              )} */}
               <span>|</span>
-              {nextProduct ? (
+              {/* {nextProduct ? (
                 <Link
                   to={`/product/${nextProduct.id}`}
                   className="hover:text-accent flex items-center gap-1 transition-colors"
@@ -208,7 +209,7 @@ const ProductDetails = () => {
                 <span className="text-gray-600 flex items-center gap-1">
                   Next <ChevronRight size={16} />
                 </span>
-              )}
+              )} */}
             </div>
           </div>
 
@@ -256,11 +257,10 @@ const ProductDetails = () => {
                       key={img + index}
                       type="button"
                       onClick={() => setActiveIndex(index)}
-                      className={`relative border transition-colors ${
-                        index === activeIndex
-                          ? "border-white"
-                          : "border-transparent hover:border-white/40"
-                      }`}
+                      className={`relative border transition-colors ${index === activeIndex
+                        ? "border-white"
+                        : "border-transparent hover:border-white/40"
+                        }`}
                     >
                       <img
                         src={img}

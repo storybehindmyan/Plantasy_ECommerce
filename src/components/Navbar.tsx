@@ -238,20 +238,20 @@ const Navbar = () => {
     {
       id: 0,
       bg: "bg-[#c16e41]",
-      content: <span>FREE SHIPPING ON ORDERS OVER $75</span>,
+      content: <span>FREE SHIPPING ON ORDERS OVER ₹750</span>,
     },
     {
       id: 1,
       bg: "bg-[#5F6F52]",
       content: (
         <div className="flex items-center justify-center gap-4">
-          <span>GET 15% OFF YOUR FIRST PURCHASE</span>
-          <Link
+          <span>APPLY "FIRST20" TO GET 20% OFF YOUR FIRST PURCHASE</span>
+          {/* <Link
             to="/login"
             className="border border-white/40 px-3 py-0.5 text-[10px] uppercase tracking-widest hover:bg-white hover:text-[#5F6F52] transition-colors"
           >
             Sign Up
-          </Link>
+          </Link> */}
         </div>
       ),
     },

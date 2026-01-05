@@ -7,13 +7,13 @@ import {
   useContext,
   useState,
   useEffect,
-  type ReactNode
-} from 'react';
-import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+  type ReactNode,
+} from "react";
+import { useFirebaseAuth } from "../hooks/useFirebaseAuth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../firebase/firebaseConfig";
 
-type Role = 'user' | 'admin' | null;
+type Role = "user" | "admin" | null;
 
 export interface User {
   uid: string;
@@ -51,59 +51,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (firebaseAuth.loading) return;
 
     if (firebaseAuth.user) {
-      // Firebase user exists, fetch/enhance with profile data
-      loadUserProfile(firebaseAuth.user);
+      void loadUserProfile(firebaseAuth.user);
     } else {
-      // No Firebase user, clear local state
       setUser(null);
     }
     setLoading(false);
   }, [firebaseAuth.user, firebaseAuth.loading]);
 
-  // Load user profile from Firestore (with role, etc.)
   const loadUserProfile = async (firebaseUser: any) => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      const userRef = doc(db, "users", firebaseUser.uid);
+      const userDoc = await getDoc(userRef);
 
       if (userDoc.exists()) {
         const profileData = userDoc.data() as Partial<User>;
         const fullUser: User = {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
-          name: firebaseUser.displayName || firebaseUser.email!.split('@')[0],
+          name:
+            firebaseUser.displayName ||
+            firebaseUser.email!.split("@")[0],
           photoURL: firebaseUser.photoURL,
-          role: profileData.role || 'user', // Default to user
-          ...profileData
+          role: profileData.role || "user",
+          ...profileData,
         };
         setUser(fullUser);
-        localStorage.setItem('plantasy_user', JSON.stringify(fullUser));
+        localStorage.setItem("plantasy_user", JSON.stringify(fullUser));
       } else {
-        // New user - create basic profile
         const basicUser: User = {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
-          name: firebaseUser.displayName || firebaseUser.email!.split('@')[0],
+          name:
+            firebaseUser.displayName ||
+            firebaseUser.email!.split("@")[0],
           photoURL: firebaseUser.photoURL,
-          role: 'user' // Default for new users
+          role: "user",
         };
-        await setDoc(doc(db, 'users', firebaseUser.uid), basicUser);
+        await setDoc(userRef, basicUser);
         setUser(basicUser);
-        localStorage.setItem('plantasy_user', JSON.stringify(basicUser));
+        localStorage.setItem("plantasy_user", JSON.stringify(basicUser));
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error("Error loading user profile:", error);
     }
   };
-
-  // Real-time profile listener (optional, for live updates)
-  // const startProfileListener = useCallback((uid: string) => {
-  //   return onSnapshot(doc(db, 'users', uid), (docSnap) => {
-  //     if (docSnap.exists()) {
-  //       const profileData = docSnap.data() as Partial<User>;
-  //       setUser(prev => prev ? { ...prev, ...profileData } : null);
-  //     }
-  //   });
-  // }, []);
 
   const login = async (email: string, password: string) => {
     await firebaseAuth.login(email, password);
@@ -114,12 +105,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loginWithGoogle = async () => {
-    await firebaseAuth.loginWithGoogle();
+    await firebaseAuth.loginWithGoogle(); // now uses signInWithRedirect in the hook
   };
 
   const logout = async () => {
     await firebaseAuth.logout();
-    localStorage.removeItem('plantasy_user');
+    localStorage.removeItem("plantasy_user");
     setUser(null);
   };
 
@@ -127,28 +118,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
 
     try {
-      // Update Firestore
-      await setDoc(doc(db, 'users', user.uid), { ...user, ...updates }, { merge: true });
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(
+        userRef,
+        { ...user, ...updates },
+        { merge: true }
+      );
 
-      // Update local state
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      localStorage.setItem('plantasy_user', JSON.stringify(updatedUser));
+      localStorage.setItem("plantasy_user", JSON.stringify(updatedUser));
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error("Error updating user:", error);
       throw error;
     }
   };
 
   // Persist login on app reload (fallback)
   useEffect(() => {
-    const storedUser = localStorage.getItem('plantasy_user');
+    const storedUser = localStorage.getItem("plantasy_user");
     if (storedUser && !firebaseAuth.user) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
         setUser(parsedUser);
       } catch {
-        localStorage.removeItem('plantasy_user');
+        localStorage.removeItem("plantasy_user");
       }
     }
   }, []);
@@ -162,7 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loginWithGoogle,
     logout,
     updateUser,
-    error: firebaseAuth.error
+    error: firebaseAuth.error,
   };
 
   return (
@@ -175,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

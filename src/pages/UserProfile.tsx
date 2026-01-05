@@ -15,6 +15,7 @@ import {
   Wallet,
   Heart,
   Plus,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -29,6 +30,7 @@ import {
   serverTimestamp,
   Timestamp,
   deleteDoc,
+  getDoc,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -52,6 +54,13 @@ const PlantasyLogo = () => (
 const ProfileHeader = () => {
   const { user, updateUser } = useAuth();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [info, setInfo] = React.useState({
+    displayName: user?.name || "",
+    title: user?.title || "",
+    firstName: user?.name?.split(" ")[0] || "",
+    lastName: user?.name?.split(" ").slice(1).join(" ") || "",
+    phone: user?.phone || "",
+  });
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -98,9 +107,9 @@ const ProfileHeader = () => {
           onChange={handleImageUpload}
         />
       </div>
-      <div className="absolute top-4 right-4 text-white">
+      {/* <div className="absolute top-4 right-4 text-white">
         <MoreHorizontal className="w-6 h-6 cursor-pointer" />
-      </div>
+      </div> */}
 
       {/* Main Profile Info */}
       <div className="flex items-center gap-6">
@@ -123,8 +132,8 @@ const ProfileHeader = () => {
         <div className="text-white">
           <h1 className="text-3xl font-serif mb-1">{user.name}</h1>
           <div className="flex gap-4 text-sm font-light opacity-90">
-            <span>0 Followers</span>
-            <span>0 Following</span>
+            <span>+91 {user.phone}</span>
+            
           </div>
         </div>
       </div>
@@ -231,18 +240,420 @@ const ProfileInfo = () => {
   );
 };
 
-const MyOrders = () => (
-  <div>
-    <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
-    <div className="border border-white/10 p-8 text-center rounded-sm">
-      <Package size={48} className="mx-auto text-gray-600 mb-4" />
-      <p className="text-gray-400">You haven't placed any orders yet.</p>
-      <button className="mt-4 text-[#c16e41] hover:underline">
-        Start Shopping
-      </button>
+// Types matching your sample document
+type OrderAddress = {
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  country: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  region: string;
+  zip: string;
+};
+
+type OrderItem = {
+  price: number;
+  productId: string;
+  productImage: string;
+  productName: string;
+  quantity: number;
+  totalPrice: number;
+};
+
+type OrderPayment = {
+  paymentId: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  transactionRef: string;
+};
+
+type OrderPricing = {
+  couponCode?: string;
+  discount: number;
+  grandTotal: number;
+  shippingCharge: number;
+  subTotal: number;
+  tax: number;
+};
+
+type OrderTimestamps = {
+  confirmedAt?: Timestamp;
+  deliveredAt?: Timestamp;
+  orderedAt?: Timestamp;
+  shippedAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
+
+type OrderDoc = {
+  id: string; // orderId/docId
+  userId: string;
+  createdAt?: Timestamp;
+  deliveryAddress: OrderAddress;
+  invoiceId?: string;
+  isCancelable: boolean;
+  isReturnEligible: boolean;
+  items: OrderItem[];
+  orderId: string;
+  orderStatus?: string | null;
+  orderType?: string;
+  payment?: OrderPayment;
+  pricing?: OrderPricing;
+  timestamps?: OrderTimestamps;
+  track?: string;
+};
+
+const MyOrders = () => {
+  const { user } = useAuth();
+  const [orders, setOrders] = React.useState<OrderDoc[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [openOrderId, setOpenOrderId] = React.useState<string | null>(null);
+
+  const fetchOrders = React.useCallback(async () => {
+    if (!user?.uid) return;
+    setLoading(true);
+    try {
+      // 1. Get the orders array (orderIds) from users/{uid}
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? (userSnap.data() as any) : null;
+      const orderIds: string[] = userData?.orders || [];
+
+      if (!orderIds.length) {
+        setOrders([]);
+        return;
+      }
+
+      // 2. For each orderId, fetch orders/{orderId}
+      const ordersCol = collection(db, "orders");
+      const orderDocs: OrderDoc[] = [];
+
+      // In Firestore you cannot query by `in` and order by other field easily for many ids,
+      // so fetch by id one by one here.
+      for (const oid of orderIds) {
+        const oRef = doc(ordersCol, oid);
+        const oSnap = await getDoc(oRef);
+        if (oSnap.exists()) {
+          const data = oSnap.data() as any;
+          orderDocs.push({
+            id: oSnap.id,
+            userId: data.userId,
+            createdAt: data.createdAt,
+            deliveryAddress: data.deliveryAddress,
+            invoiceId: data.invoiceId,
+            isCancelable: data.isCancelable,
+            isReturnEligible: data.isReturnEligible,
+            items: data.items || [],
+            orderId: data.orderId,
+            orderStatus: data.orderStatus ?? null,
+            orderType: data.orderType,
+            payment: data.payment,
+            pricing: data.pricing,
+            timestamps: data.timestamps,
+            track: data.track,
+          });
+        }
+      }
+
+      // 3. Sort by createdAt descending (latest first)
+      orderDocs.sort((a, b) => {
+        const ta = a.createdAt?.toMillis() ?? 0;
+        const tb = b.createdAt?.toMillis() ?? 0;
+        return tb - ta;
+      });
+
+      setOrders(orderDocs);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.uid]);
+
+  React.useEffect(() => {
+    void fetchOrders();
+  }, [fetchOrders]);
+
+  const toggleOrder = (id: string) => {
+    setOpenOrderId((prev) => (prev === id ? null : id));
+  };
+
+  const formatTs = (ts?: Timestamp) =>
+    ts ? ts.toDate().toLocaleString() : "N/A";
+
+  const handleGenerateInvoice = (order: OrderDoc) => {
+    // If you have an invoice PDF URL stored somewhere, open it here.
+    // For now, just alert with invoiceId to show it's wired.
+    if (order.invoiceId) {
+      alert(`Generate invoice for ${order.invoiceId}`);
+    } else {
+      alert("Invoice ID not available for this order.");
+    }
+  };
+
+  if (!user?.uid) {
+    return (
+      <div>
+        <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+        <div className="border border-white/10 p-8 text-center rounded-sm">
+          <p className="text-gray-400">Please log in to view your orders.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div>
+        <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+        <div className="border border-white/10 p-8 text-center rounded-sm">
+          <p className="text-gray-400">Loading your orders...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!orders.length) {
+    return (
+      <div>
+        <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+        <div className="border border-white/10 p-8 text-center rounded-sm">
+          <Package size={48} className="mx-auto text-gray-600 mb-4" />
+          <p className="text-gray-400">You haven't placed any orders yet.</p>
+          <button className="mt-4 text-[#c16e41] hover:underline">
+            Start Shopping
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+      <div className="space-y-4">
+        {orders.map((order) => {
+          const isOpen = openOrderId === order.id;
+          const status = order.orderStatus || "N/A";
+
+          return (
+            <div
+              key={order.id}
+              className="border border-white/10 rounded-sm bg-white/5 overflow-hidden"
+            >
+              {/* Card header */}
+              <button
+                onClick={() => toggleOrder(order.id)}
+                className="w-full flex justify-between items-center px-4 py-3 text-left hover:bg-white/10 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Package className="text-[#c16e41]" size={22} />
+                  <div>
+                    <p className="text-white text-sm font-medium">
+                      Order #{order.orderId || order.id}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Placed on {formatTs(order.createdAt)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {order.deliveryAddress.firstName}{" "}
+                      {order.deliveryAddress.lastName} •{" "}
+                      {order.deliveryAddress.city},{" "}
+                      {order.deliveryAddress.region}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Status badge */}
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full border ${
+                      status === "delivered"
+                        ? "border-emerald-500 text-emerald-400"
+                        : status === "confirmed"
+                        ? "border-blue-500 text-blue-400"
+                        : status === "cancelled"
+                        ? "border-red-500 text-red-400"
+                        : "border-gray-500 text-gray-300"
+                    }`}
+                  >
+                    {status.toUpperCase()}
+                  </span>
+                  {/* Total */}
+                  <span className="text-sm text-white font-medium">
+                    ₹{order.pricing?.grandTotal ?? order.items?.[0]?.totalPrice}
+                  </span>
+                  <ChevronDown
+                    className={`text-white transition-transform ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                    size={18}
+                  />
+                </div>
+              </button>
+
+              {/* Card body (accordion) */}
+              {isOpen && (
+                <div className="px-4 pb-4 pt-3 text-sm text-white/80 space-y-4 border-t border-white/10">
+                  {/* Items */}
+                  <div>
+                    <p className="font-semibold mb-2">Items</p>
+                    <div className="space-y-2">
+                      {order.items.map((item, idx) => (
+                        <div
+                          key={`${item.productId}-${idx}`}
+                          className="flex justify-between items-center text-xs md:text-sm"
+                        >
+                          <div className="flex items-center gap-3">
+                            {item.productImage && (
+                              <img
+                                src={item.productImage}
+                                alt={item.productName}
+                                className="w-10 h-10 rounded object-cover border border-white/10"
+                              />
+                            )}
+                            <div>
+                              <p className="text-white">
+                                {item.productName || item.productId}
+                              </p>
+                              <p className="text-gray-400">
+                                Qty: {item.quantity}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-white">
+                            ₹{item.totalPrice ?? item.price * item.quantity}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Pricing summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-semibold mb-2">Pricing</p>
+                      <div className="text-xs space-y-1 text-gray-300">
+                        <p>
+                          Subtotal: ₹{order.pricing?.subTotal ?? "N/A"}
+                        </p>
+                        <p>
+                          Discount: -₹{order.pricing?.discount ?? 0}{" "}
+                          {order.pricing?.couponCode
+                            ? `(${order.pricing.couponCode})`
+                            : ""}
+                        </p>
+                        <p>
+                          Shipping: ₹{order.pricing?.shippingCharge ?? 0}
+                        </p>
+                        <p>Tax: ₹{order.pricing?.tax ?? 0}</p>
+                        <p className="text-white font-medium pt-1">
+                          Grand Total: ₹{order.pricing?.grandTotal ?? "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Payment & tracking */}
+                    <div className="space-y-3">
+                      <div>
+                        <p className="font-semibold mb-2">Payment</p>
+                        <div className="text-xs space-y-1 text-gray-300">
+                          <p>
+                            Method: {order.payment?.paymentMethod || "N/A"}
+                          </p>
+                          <p>
+                            Status: {order.payment?.paymentStatus || "N/A"}
+                          </p>
+                          <p>
+                            Payment ID: {order.payment?.paymentId || "N/A"}
+                          </p>
+                          <p>
+                            Transaction Ref:{" "}
+                            {order.payment?.transactionRef || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold mb-1">Tracking</p>
+                        {order.track ? (
+                          <a
+                            href={order.track}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[#c16e41] hover:underline text-xs md:text-sm"
+                          >
+                            Here is your tracking link
+                            <ChevronRight size={14} />
+                          </a>
+                        ) : (
+                          <p className="text-xs text-gray-400">
+                            Tracking link not available.
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <button
+                          onClick={() => handleGenerateInvoice(order)}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-xs md:text-sm border border-white/20 text-white rounded-sm hover:bg-white/10 transition-colors"
+                        >
+                          Generate Invoice
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Timeline */}
+                  <div>
+                    <p className="font-semibold mb-2">Timeline</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 text-xs text-gray-300 gap-1">
+                      <p>Ordered at: {formatTs(order.timestamps?.orderedAt)}</p>
+                      <p>
+                        Confirmed at: {formatTs(order.timestamps?.confirmedAt)}
+                      </p>
+                      <p>Shipped at: {formatTs(order.timestamps?.shippedAt)}</p>
+                      <p>
+                        Delivered at: {formatTs(order.timestamps?.deliveredAt)}
+                      </p>
+                      <p>Updated at: {formatTs(order.timestamps?.updatedAt)}</p>
+                    </div>
+                  </div>
+
+                  {/* Delivery address */}
+                  <div>
+                    <p className="font-semibold mb-2">Delivery Address</p>
+                    <p className="text-xs text-gray-300">
+                      {order.deliveryAddress.firstName}{" "}
+                      {order.deliveryAddress.lastName}
+                      <br />
+                      {order.deliveryAddress.addressLine1}
+                      {order.deliveryAddress.addressLine2 && (
+                        <>
+                          <br />
+                          {order.deliveryAddress.addressLine2}
+                        </>
+                      )}
+                      <br />
+                      {order.deliveryAddress.city},{" "}
+                      {order.deliveryAddress.region}{" "}
+                      {order.deliveryAddress.zip}
+                      <br />
+                      {order.deliveryAddress.country}
+                      <br />
+                      {order.deliveryAddress.phone}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
 
 const WalletPage = () => (
   <div>
@@ -642,7 +1053,10 @@ const Addresses = () => {
             </div>
             <div className="flex gap-4 pt-4">
               <button
-                onClick={handleSave}
+                onClick={() => {
+                  handleSave();
+                  alert("Address saved!");
+                }}
                 className="bg-[#c16e41] text-white px-6 py-2 rounded-sm text-sm hover:bg-[#a05a32]"
               >
                 Save Address
@@ -1004,7 +1418,7 @@ const MyAccount = () => {
           Update your personal information.
         </p>
 
-        <div className="space-y-0 text-white">
+        {/* <div className="space-y-0 text-white">
           {["Profile URL", "Profile privacy", "Blocked members"].map(
             (item, idx) => (
               <div
@@ -1016,7 +1430,7 @@ const MyAccount = () => {
               </div>
             )
           )}
-        </div>
+        </div> */}
       </div>
       <div className="flex justify-end gap-4 mt-8">
         <button className="px-6 py-2 text-white border border-white/20 hover:border-white/40 transition-colors text-sm">
@@ -1048,8 +1462,7 @@ const UserProfile = () => {
           <NavTab to="/profile/my-account" label="My Account" />
           <NavTab to="/profile/addresses" label="My Addresses" />
           <NavTab to="/profile/wallet" label="My Wallet" />
-          <NavTab to="/profile/subscriptions" label="My Subscriptions" />
-          <NavTab to="/profile/wishlist" label="My Wishlist" />
+          
         </div>
 
         {/* Content Area */}

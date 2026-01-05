@@ -771,7 +771,7 @@ const Home = () => {
             <br /> We Promise.
           </h2>
           <p className="text-gray-300 mb-12">
-            Subscribe now and get 15% off your first purchase.
+            Use FIRST20 to get 20% off on your first purchase.
           </p>
 
           <form

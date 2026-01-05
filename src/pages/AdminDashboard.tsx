@@ -43,6 +43,9 @@ const AdminDashboard = () => {
             image: newProduct.image,
             description: newProduct.description || 'No description provided.',
             hoverImage: newProduct.image // Fallback
+            ,
+            coverImage: undefined,
+            discountPrice: undefined
         });
 
         setIsAdding(false);

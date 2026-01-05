@@ -1,4 +1,7 @@
 export interface Product {
+    coverImage: string | undefined;
+    discountPrice: any;
+    discountPrice: number;
     id: string;
     name: string;
     price: number;

@@ -24,6 +24,7 @@ export interface User {
   title?: string;
   phone?: string;
   bio?: string;
+  address?: string;
 }
 
 interface AuthContextType {

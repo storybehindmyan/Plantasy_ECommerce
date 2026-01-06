@@ -542,10 +542,10 @@ const ProductsPage: React.FC = () => {
           product.discountPrice !== undefined ? (
             <>
               <span className="font-medium">
-                ₹{product.discountPrice.toFixed(2)}
+                ₹{product.price.toFixed(2)}
               </span>
               <span className="text-xs text-muted-foreground line-through ml-2">
-                ₹{product.price.toFixed(2)}
+                ₹{product.discountPrice.toFixed(2)}
               </span>
             </>
           ) : (

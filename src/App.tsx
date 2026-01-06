@@ -13,6 +13,8 @@ import CartDrawer from './components/CartDrawer';
 import OurStory from './pages/OurStory';
 import Care from './pages/Care';
 import UserProfile from './pages/UserProfile';
+import ShippingReturns from './pages/ShippingReturns';
+import ContactUs from './pages/ContactUs';
 // import LoginPage from '../Admin-plantasy/src/pages/auth/LoginPage';
 
 const App = () => {
@@ -31,6 +33,8 @@ const App = () => {
                 <Route path="product/:id" element={<ProductDetails />} />
                 <Route path="care" element={<Care />} />
                 <Route path="our-story" element={<OurStory />} />
+                <Route path="shipping-returns" element={<ShippingReturns />} />
+                <Route path="contact" element={<ContactUs />} />
                 <Route path="profile/*" element={<UserProfile />} />
                 {/* <Route path="admin" element={<LoginPage />} /> */}
                 <Route path="*" element={<Navigate to="/" replace />} />

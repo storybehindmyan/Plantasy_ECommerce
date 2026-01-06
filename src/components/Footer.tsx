@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -61,29 +62,29 @@ const Footer = () => {
 
                 {/* Links */}
                 <FooterSection title="Shop">
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">All Plants</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">New Arrivals</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Pots & Planters</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Plant Care</a>
+                    <Link to="/shop?category=all" className="hover:text-accent transition text-gray-400 hover:text-white">All Plants</Link>
+                    <Link to="/shop?category=new-arrivals" className="hover:text-accent transition text-gray-400 hover:text-white">New Arrivals</Link>
+                    <Link to="/shop?category=pots" className="hover:text-accent transition text-gray-400 hover:text-white">Pots & Planters</Link>
+                    <Link to="/care" className="hover:text-accent transition text-gray-400 hover:text-white">Plant Care</Link>
                 </FooterSection>
 
                 <FooterSection title="Company">
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Our Story</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Sustainability</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Careers</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Terms of Service</a>
+                    <Link to="/our-story" className="hover:text-accent transition text-gray-400 hover:text-white">Our Story</Link>
+                    {/* <Link to="/our-story" className="hover:text-accent transition text-gray-400 hover:text-white">Sustainability</Link>
+                    <Link to="#" className="hover:text-accent transition text-gray-400 hover:text-white">Careers</Link>
+                    <Link to="#" className="hover:text-accent transition text-gray-400 hover:text-white">Terms of Service</Link> */}
                 </FooterSection>
 
                 <FooterSection title="Support">
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">FAQ</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Shipping & Returns</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Contact Us</a>
-                    <a href="#" className="hover:text-accent transition text-gray-400 hover:text-white">Track Order</a>
+                    {/* <Link to="/care" className="hover:text-accent transition text-gray-400 hover:text-white">FAQ</Link> */}
+                    <Link to="/shipping-returns" className="hover:text-accent transition text-gray-400 hover:text-white">Shipping & Returns</Link>
+                    <Link to="/contact" className="hover:text-accent transition text-gray-400 hover:text-white">Contact Us</Link>
+                    <Link to="/profile/orders" className="hover:text-accent transition text-gray-400 hover:text-white">Track Order</Link>
                 </FooterSection>
             </div>
 
             <div className="text-center text-xs text-gray-600 pt-8 border-t border-white/5">
-                &copy;2024 Plantasy. All rights reserved.
+                &copy;2026 Plantasy. All rights reserved.
             </div>
         </footer>
     );

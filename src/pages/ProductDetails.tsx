@@ -1,10 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // src/pages/ProductDetails.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from "firebase/firestore";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,6 +23,10 @@ import { db } from "../firebase/firebaseConfig";
 import type { Product } from "../types/product";
 import { useCart } from "../context/CartContext";
 import YouMayAlsoLike from "../components/YouMayAlsoLike";
+
+// adjust this import to your auth context / hook
+import { useAuth } from "../context/AuthContext"; // make sure this exists in your project
+import { toast } from "react-hot-toast"; // or your toast lib of choice
 
 const AccordionItem = ({
   title,
@@ -63,19 +73,49 @@ const AccordionItem = ({
 const ProductDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCart();
+  const { user } = useAuth(); // { uid, ... }
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [quantity, setQuantity] = useState(1);
-  // const [size, setSize] = useState("");
 
-  // Optional: prev / next via local state or separate query.
-  // const [prevProduct, setPrevProduct] = useState<Product | null>(null);
-  // const [nextProduct, setNextProduct] = useState<Product | null>(null);
+  // wishlist state for current user
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   // Carousel state
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Pre‑compute delivery date (today + 7 days) on client
+  const deliveryDateText = useMemo(() => {
+    const now = new Date();
+    const future = new Date(now);
+    future.setDate(now.getDate() + 7);
+    return future.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }, []);
+
+  // Helper: fetch user's wishlist array
+  const loadWishlist = async (uid: string) => {
+    try {
+      const userRef = doc(db, "users", uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        const data = snap.data() as any;
+        const arr = Array.isArray(data.wishlist) ? data.wishlist : [];
+        setWishlistIds(arr);
+      } else {
+        setWishlistIds([]);
+      }
+    } catch (e) {
+      console.error("Error loading wishlist:", e);
+      setWishlistIds([]);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -97,20 +137,25 @@ const ProductDetails = () => {
         const mapped: Product = {
           id: snap.id,
           category: data.category,
+          // extra meta fields from admin side (if your Product type includes them)
           coverImage: data.coverImage,
           hoverImage: data.hoverImage,
           images: data.images ?? [],
           name: data.name,
           description: data.description,
           price: data.price,
-          discountPrice: data.discountPrice,
+          discountPrice: data.discountPrice, // null when no discount
           stock: data.stock,
           isActive: data.isActive,
+          // you may have these fields in your Product type now:
+          sku: data.sku,
+          plantType: data.plantType,
+          policy: data.policy,
           badge: data.badge,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
           image: data.coverImage, // Map coverImage to image for compatibility
-        };
+        } as any;
 
         setProduct(mapped);
         setActiveIndex(0);
@@ -125,9 +170,50 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
+  useEffect(() => {
+    if (user?.uid) {
+      loadWishlist(user.uid);
+    }
+  }, [user?.uid]);
+
   const handleAddToCart = () => {
     if (!product) return;
     addToCart(product, quantity);
+    toast.success("Added to cart");
+  };
+
+  const isInWishlist = !!(product && wishlistIds.includes(product.id));
+
+  const handleToggleWishlist = async () => {
+    if (!user?.uid || !product?.id) {
+      toast.error("Please login to manage your wishlist");
+      return;
+    }
+    try {
+      setWishlistLoading(true);
+      const userRef = doc(db, "users", user.uid);
+
+      if (isInWishlist) {
+        await updateDoc(userRef, {
+          wishlist: arrayRemove(product.id),
+        });
+        setWishlistIds((prev) => prev.filter((pid) => pid !== product.id));
+        toast.success("Removed from wishlist");
+      } else {
+        await updateDoc(userRef, {
+          wishlist: arrayUnion(product.id),
+        });
+        setWishlistIds((prev) =>
+          prev.includes(product.id) ? prev : [...prev, product.id]
+        );
+        toast.success("Added to wishlist");
+      }
+    } catch (e) {
+      console.error("Error updating wishlist:", e);
+      toast.error("Unable to update wishlist");
+    } finally {
+      setWishlistLoading(false);
+    }
   };
 
   if (loading) {
@@ -146,13 +232,20 @@ const ProductDetails = () => {
     );
   }
 
-  const displayPrice = product.discountPrice ?? product.price;
-  const hasDiscount = typeof product.discountPrice === "number";
+  // pricing logic
+  const hasDiscount =
+    typeof product.discountPrice === "number" &&
+    product.discountPrice !== null &&
+    product.discountPrice < product.price;
+
+  // Selling price = product.price
+  const sellingPrice = product.price;
+  const originalPrice = hasDiscount ? product.discountPrice! : undefined;
 
   const allImages =
     product.images && product.images.length > 0
       ? product.images
-      : [product.coverImage || product.image || ""];
+      : [product.coverImage || (product as any).image || ""];
 
   const handlePrev = () => {
     setActiveIndex((prev) =>
@@ -164,6 +257,63 @@ const ProductDetails = () => {
     setActiveIndex((prev) =>
       prev === allImages.length - 1 ? 0 : prev + 1
     );
+  };
+
+  // Policy display text based on product.policy
+  const renderPolicySummary = () => {
+    const policy = (product as any).policy as
+      | "return"
+      | "replacement"
+      | "both"
+      | "none"
+      | undefined;
+
+    if (!policy || policy === "none") {
+      return "No return policy available for this product.";
+    }
+    if (policy === "return") {
+      return "Only return available within 7 days of delivery.";
+    }
+    if (policy === "replacement") {
+      return "Only replacement available within 7 days of delivery.";
+    }
+    if (policy === "both") {
+      return "Return and replacement available within 7 days of delivery.";
+    }
+    return "No return policy available for this product.";
+  };
+
+  const renderPolicyDetails = () => {
+    const policy = (product as any).policy as
+      | "return"
+      | "replacement"
+      | "both"
+      | "none"
+      | undefined;
+
+    const baseReturn =
+      "You can initiate a return within 7 days of delivery if the plant arrives damaged, diseased, or significantly different from the description.";
+    const baseReplacement =
+      "You can request a replacement within 7 days of delivery in case of damage in transit, incorrect item delivered, or quality issues.";
+
+    if (!policy || policy === "none") {
+      return "This product is not eligible for return or replacement. Please review your order carefully before confirming.";
+    }
+
+    if (policy === "return") {
+      return `${baseReturn} The refund will be processed once the returned item is inspected and approved.`;
+    }
+
+    if (policy === "replacement") {
+      return `${baseReplacement} Replacement will be shipped after your request is approved.`;
+    }
+
+    // both
+    return `${baseReturn} Alternatively, you may opt for a replacement under the same conditions. Once your request is approved, we will either process your refund or dispatch a replacement as per your choice.`;
+  };
+
+  const renderShippingInfo = () => {
+    return `Book now and you will receive your plant by ${deliveryDateText}. Delivery time may vary slightly based on your location and courier availability, but most orders are delivered within 7 days.`;
   };
 
   return (
@@ -185,31 +335,7 @@ const ProductDetails = () => {
               <span className="text-white font-medium">{product.name}</span>
             </div>
             <div className="flex items-center gap-4">
-              {/* {prevProduct ? (
-                <Link
-                  to={`/product/${prevProduct.id}`}
-                  className="hover:text-accent flex items-center gap-1 transition-colors"
-                >
-                  <ChevronLeft size={16} /> Prev
-                </Link>
-              ) : (
-                <span className="text-gray-600 flex items-center gap-1">
-                  <ChevronLeft size={16} /> Prev
-                </span>
-              )} */}
               <span>|</span>
-              {/* {nextProduct ? (
-                <Link
-                  to={`/product/${nextProduct.id}`}
-                  className="hover:text-accent flex items-center gap-1 transition-colors"
-                >
-                  Next <ChevronRight size={16} />
-                </Link>
-              ) : (
-                <span className="text-gray-600 flex items-center gap-1">
-                  Next <ChevronRight size={16} />
-                </span>
-              )} */}
             </div>
           </div>
 
@@ -257,10 +383,11 @@ const ProductDetails = () => {
                       key={img + index}
                       type="button"
                       onClick={() => setActiveIndex(index)}
-                      className={`relative border transition-colors ${index === activeIndex
-                        ? "border-white"
-                        : "border-transparent hover:border-white/40"
-                        }`}
+                      className={`relative border transition-colors ${
+                        index === activeIndex
+                          ? "border-white"
+                          : "border-transparent hover:border-white/40"
+                      }`}
                     >
                       <img
                         src={img}
@@ -279,57 +406,33 @@ const ProductDetails = () => {
                 <h1 className="text-4xl md:text-5xl font-serif text-white mb-2">
                   {product.name}
                 </h1>
-                <p className="text-xs text-gray-400 mb-6">SKU: {product.id}</p>
+                <p className="text-xs text-gray-400 mb-6">
+                  SKU: {(product as any).sku || product.id}
+                </p>
 
                 <div className="flex items-center gap-3 text-xl">
-                  {hasDiscount && (
+                  {/* strike off discountPrice, selling price = price */}
+                  {hasDiscount && originalPrice !== undefined && (
                     <span className="text-gray-500 line-through decoration-1">
-                      ₹{product.price.toFixed(2)}
+                      ₹{originalPrice.toFixed(2)}
                     </span>
                   )}
                   <span className="text-white font-medium">
-                    ₹{displayPrice.toFixed(2)}
+                    ₹{sellingPrice.toFixed(2)}
                   </span>
                 </div>
               </div>
 
+              {/* Description directly under price/add to cart block */}
+              <div className="space-y-3">
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  {product.description ||
+                    "Detailed information about this plant will appear here once added."}
+                </p>
+              </div>
+
               {/* Options */}
               <div className="space-y-6">
-                {/* Size */}
-                {/* <div className="space-y-2">
-                  <label className="text-sm text-gray-400 block">
-                    Size <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={size}
-                      onChange={(e) => setSize(e.target.value)}
-                      className="w-full appearance-none bg-transparent border border-white/20 px-4 py-3 pr-8 rounded-none text-sm text-white focus:border-white focus:outline-none cursor-pointer"
-                    >
-                      <option
-                        value=""
-                        disabled
-                        className="bg-black text-gray-500"
-                      >
-                        Select
-                      </option>
-                      <option value="small" className="bg-black">
-                        Small
-                      </option>
-                      <option value="medium" className="bg-black">
-                        Medium
-                      </option>
-                      <option value="large" className="bg-black">
-                        Large
-                      </option>
-                    </select>
-                    <ChevronDown
-                      size={16}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"
-                    />
-                  </div>
-                </div> */}
-
                 {/* Quantity */}
                 <div className="space-y-2">
                   <label className="text-sm text-gray-400 block">
@@ -347,15 +450,26 @@ const ProductDetails = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-4 pt-4">
+                <div className="flex gap-4 pt-4 items-center">
                   <button
                     onClick={handleAddToCart}
                     className="flex-1 bg-accent hover:bg-[#b05d35] text-white py-3 px-8 text-sm font-medium tracking-wide transition-colors duration-300"
                   >
                     Add to Cart
                   </button>
-                  <button className="border border-white/20 p-3 flex items-center justify-center hover:bg-white/10 transition-colors">
-                    <Heart size={20} className="text-white" />
+                  <button
+                    type="button"
+                    onClick={handleToggleWishlist}
+                    disabled={wishlistLoading}
+                    className={`border border-white/20 p-3 flex items-center justify-center hover:bg-white/10 transition-colors ${
+                      isInWishlist ? "bg-white/10" : ""
+                    }`}
+                  >
+                    <Heart
+                      size={20}
+                      className={isInWishlist ? "text-red-500" : "text-white"}
+                      fill={isInWishlist ? "currentColor" : "none"}
+                    />
                   </button>
                 </div>
               </div>
@@ -363,16 +477,26 @@ const ProductDetails = () => {
               {/* Accordions */}
               <div className="pt-8">
                 <AccordionItem title="Product Info" defaultOpen={true}>
-                  {product.description ||
-                    "Detailed information about this product will appear here."}
+                  <div className="space-y-2">
+                    <p>{product.description}</p>
+                    <p className="text-xs text-gray-500">
+                      Category: {product.category}
+                    </p>
+                    {(product as any).plantType && (
+                      <p className="text-xs text-gray-500">
+                        Plant type: {(product as any).plantType}
+                      </p>
+                    )}
+                  </div>
                 </AccordionItem>
+
                 <AccordionItem title="Return & Refund Policy">
-                  I’m a Return and Refund policy. Add your real policy text here
-                  to build trust with your customers.
+                  <p className="mb-2">{renderPolicySummary()}</p>
+                  <p>{renderPolicyDetails()}</p>
                 </AccordionItem>
+
                 <AccordionItem title="Shipping Info">
-                  I’m a shipping policy. Add your shipping, packaging, and cost
-                  information here so customers can buy with confidence.
+                  <p>{renderShippingInfo()}</p>
                 </AccordionItem>
               </div>
 

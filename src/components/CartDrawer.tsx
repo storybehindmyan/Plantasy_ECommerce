@@ -7,32 +7,14 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase/firebaseConfig";
 import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
   collection,
   getDocs,
   query,
   where,
   addDoc,
+  serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-
-type FirestoreCartItem = {
-  productId: string;
-  quantity: number;
-  price: number;
-};
-
-type FirestoreCartDoc = {
-  uid: string;
-  items: FirestoreCartItem[];
-  createdAt?: any;
-  updatedAt?: any;
-  lastSeen?: any;
-};
 
 type AddressDoc = {
   id: string;
@@ -77,65 +59,6 @@ const CartDrawer: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const uid = user?.uid || null;
-  const cartDocRef = uid ? doc(db, "cart", uid) : null;
-
-  const ensureCartDoc = useCallback(
-    async (): Promise<FirestoreCartDoc | null> => {
-      if (!cartDocRef || !uid) return null;
-      const snap = await getDoc(cartDocRef);
-      if (!snap.exists()) {
-        const newDoc: FirestoreCartDoc = {
-          uid,
-          items: [],
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          lastSeen: serverTimestamp(),
-        };
-        await setDoc(cartDocRef, newDoc);
-        return newDoc;
-      }
-      return snap.data() as FirestoreCartDoc;
-    },
-    [cartDocRef, uid]
-  );
-
-  const touchLastSeen = useCallback(
-    async (alsoUpdateUpdatedAt: boolean = false) => {
-      if (!cartDocRef || !uid) return;
-      const payload: Partial<FirestoreCartDoc> = { lastSeen: serverTimestamp() };
-      if (alsoUpdateUpdatedAt) {
-        payload.updatedAt = serverTimestamp();
-      }
-      try {
-        await updateDoc(cartDocRef, payload);
-      } catch (err) {
-        console.error("Error updating lastSeen/updatedAt:", err);
-      }
-    },
-    [cartDocRef, uid]
-  );
-
-  const syncItemsToFirestore = useCallback(
-    async (items: typeof cart) => {
-      if (!cartDocRef || !uid) return;
-      const normalizedItems: FirestoreCartItem[] = items.map((item) => ({
-        productId: item.id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-      try {
-        await ensureCartDoc();
-        await updateDoc(cartDocRef, {
-          items: normalizedItems,
-          updatedAt: serverTimestamp(),
-          lastSeen: serverTimestamp(),
-        });
-      } catch (err) {
-        console.error("Error syncing cart items to Firestore:", err);
-      }
-    },
-    [cartDocRef, uid, ensureCartDoc]
-  );
 
   // address + coupon state
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -174,6 +97,7 @@ const CartDrawer: React.FC = () => {
       ? Math.max(0, cartTotal - appliedCoupon.discountAmount)
       : cartTotal;
 
+  // When drawer opens, enforce login
   useEffect(() => {
     if (!isCartOpen) return;
     if (!uid) {
@@ -181,9 +105,9 @@ const CartDrawer: React.FC = () => {
       navigate("/login");
       return;
     }
-    void touchLastSeen(false);
-  }, [isCartOpen, uid, toggleCart, navigate, touchLastSeen]);
+  }, [isCartOpen, uid, toggleCart, navigate]);
 
+  // Quantity change: just use context; Firestore sync is handled in CartContext
   const handleUpdateQuantity = async (id: string, newQty: number) => {
     if (!uid) {
       toggleCart();
@@ -191,10 +115,6 @@ const CartDrawer: React.FC = () => {
       return;
     }
     updateQuantity(id, newQty);
-    const updatedItems = cart.map((item) =>
-      item.id === id ? { ...item, quantity: newQty } : item
-    );
-    await syncItemsToFirestore(updatedItems);
   };
 
   const handleRemoveFromCart = async (id: string) => {
@@ -204,8 +124,6 @@ const CartDrawer: React.FC = () => {
       return;
     }
     removeFromCart(id);
-    const updatedItems = cart.filter((item) => item.id !== id);
-    await syncItemsToFirestore(updatedItems);
   };
 
   const loadAddresses = useCallback(async () => {
@@ -248,7 +166,6 @@ const CartDrawer: React.FC = () => {
       navigate("/login");
       return;
     }
-    await touchLastSeen(true);
     await loadAddresses();
     setIsAddressModalOpen(true);
   };
@@ -365,11 +282,14 @@ const CartDrawer: React.FC = () => {
         applicableProducts: data.applicableProducts || [],
       };
 
-      if (coupon.startDate.toDate() > now) {
+      const start = coupon.startDate?.toDate();
+      const end = coupon.expiryDate?.toDate();
+
+      if (start && start > now) {
         setCouponError("This coupon is not active yet.");
         return;
       }
-      if (coupon.expiryDate.toDate() < now) {
+      if (end && end < now) {
         setCouponError("This coupon has expired.");
         return;
       }
@@ -444,7 +364,6 @@ const CartDrawer: React.FC = () => {
       return;
     }
     if (cart.length === 0) return;
-    await touchLastSeen(true);
     void openAddressModal();
   };
 
@@ -557,7 +476,9 @@ const CartDrawer: React.FC = () => {
                     <>
                       <div className="flex justify-between items-center mb-1 text-sm text-emerald-300">
                         <span>Coupon {appliedCoupon.code} applied</span>
-                        <span>-₹{appliedCoupon.discountAmount.toFixed(2)}</span>
+                        <span>
+                          -₹{appliedCoupon.discountAmount.toFixed(2)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center mb-4 text-sm font-medium">
                         <span className="text-gray-200">Total</span>
@@ -660,7 +581,6 @@ const CartDrawer: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Add new address toggle */}
                     <button
                       type="button"
                       onClick={() =>
@@ -672,7 +592,6 @@ const CartDrawer: React.FC = () => {
                       <span>Add new address</span>
                     </button>
 
-                    {/* New address form */}
                     {showNewAddressForm && (
                       <div className="border border-white/15 rounded-md p-3 mb-3 space-y-2 text-xs md:text-sm">
                         <div className="grid grid-cols-2 gap-2">

@@ -10,6 +10,7 @@ import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
 // import AdminDashboard from './pages/AdminDashboard';
 import CartDrawer from './components/CartDrawer';
+import ScrollToTop from './components/ScrollToTop';
 import OurStory from './pages/OurStory';
 import Care from './pages/Care';
 import UserProfile from './pages/UserProfile';
@@ -24,6 +25,7 @@ const App = () => {
         <CartProvider>
           <ProductProvider>
             <CartDrawer />
+            <ScrollToTop />
             <Routes>
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />

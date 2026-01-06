@@ -26,7 +26,7 @@ import YouMayAlsoLike from "../components/YouMayAlsoLike";
 
 // adjust this import to your auth context / hook
 import { useAuth } from "../context/AuthContext"; // make sure this exists in your project
-import { toast } from "react-hot-toast"; // or your toast lib of choice
+import { toast } from "sonner";
 
 const AccordionItem = ({
   title,
@@ -383,11 +383,10 @@ const ProductDetails = () => {
                       key={img + index}
                       type="button"
                       onClick={() => setActiveIndex(index)}
-                      className={`relative border transition-colors ${
-                        index === activeIndex
+                      className={`relative border transition-colors ${index === activeIndex
                           ? "border-white"
                           : "border-transparent hover:border-white/40"
-                      }`}
+                        }`}
                     >
                       <img
                         src={img}
@@ -461,9 +460,8 @@ const ProductDetails = () => {
                     type="button"
                     onClick={handleToggleWishlist}
                     disabled={wishlistLoading}
-                    className={`border border-white/20 p-3 flex items-center justify-center hover:bg-white/10 transition-colors ${
-                      isInWishlist ? "bg-white/10" : ""
-                    }`}
+                    className={`border border-white/20 p-3 flex items-center justify-center hover:bg-white/10 transition-colors ${isInWishlist ? "bg-white/10" : ""
+                      }`}
                   >
                     <Heart
                       size={20}

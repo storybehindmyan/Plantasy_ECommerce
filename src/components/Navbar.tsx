@@ -379,7 +379,7 @@ const Navbar = () => {
                 {user ? (
                   <div className="relative" ref={userMenuRef}>
                     <div className="flex items-center gap-4">
-                      <Bell
+                      <Heart
                         size={20}
                         className="text-white hover:text-[#c16e41] cursor-pointer transition-colors"
                       />
@@ -400,9 +400,8 @@ const Navbar = () => {
                         </div>
                         <ChevronDown
                           size={16}
-                          className={`text-white transition-transform duration-300 ${
-                            isUserMenuOpen ? "rotate-180" : ""
-                          }`}
+                          className={`text-white transition-transform duration-300 ${isUserMenuOpen ? "rotate-180" : ""
+                            }`}
                         />
                       </button>
                     </div>
@@ -466,11 +465,10 @@ const Navbar = () => {
                               <Link
                                 key={idx}
                                 to={item.path}
-                                className={`block px-6 py-3 text-sm transition-colors flex items-center gap-3 ${
-                                  location.pathname === item.path
-                                    ? "text-[#c16e41]"
-                                    : "text-white hover:text-[#c16e41]"
-                                }`}
+                                className={`block px-6 py-3 text-sm transition-colors flex items-center gap-3 ${location.pathname === item.path
+                                  ? "text-[#c16e41]"
+                                  : "text-white hover:text-[#c16e41]"
+                                  }`}
                               >
                                 <item.icon size={16} />
                                 {item.label}

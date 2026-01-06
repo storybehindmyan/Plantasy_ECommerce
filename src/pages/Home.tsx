@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { PRODUCTS } from "../data/products";
 import type { Product } from "../types/product";
+import PlantCustomizer from "../components/PlantCustomizer";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -105,6 +106,7 @@ const Home = () => {
           discountPrice: data.discountPrice,
           stock: data.stock,
           isActive: data.isActive,
+          policy: data.policy,
           badge: "New Arrival",
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
@@ -228,6 +230,7 @@ const Home = () => {
 
   return (
     <div className="bg-black text-white w-full overflow-x-hidden">
+      <PlantCustomizer />
       {/* 1. Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden bg-[#2C2C2C]">
         <motion.div className="absolute inset-0 z-0" style={{ y: yBg }}>

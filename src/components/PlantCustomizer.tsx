@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronRight, ChevronLeft, Sprout, ShoppingBag, Check } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Sprout, ShoppingBag, Check, Search } from "lucide-react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { useCart } from "../context/CartContext";
@@ -51,8 +51,15 @@ const PlantCustomizer = () => {
 
     // Filtered Data
     const [plants, setPlants] = useState<Product[]>([]);
+
     const [pots, setPots] = useState<Product[]>([]);
     const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+
+    // Reset search when changing steps
+    useEffect(() => {
+        setSearchQuery("");
+    }, [currentStep]);
 
     useEffect(() => {
         if (isOpen && plants.length === 0) {
@@ -197,14 +204,29 @@ const PlantCustomizer = () => {
 
                                 {!loading && (
                                     <>
+                                        {/* Search Bar for Steps 1-3 */}
+                                        {currentStep < 4 && (
+                                            <div className="sticky top-0 z-20 bg-[#1a1a1a] pb-6">
+                                                <div className="relative">
+                                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+                                                    <input
+                                                        type="text"
+                                                        placeholder={`Search ${currentStep === 1 ? 'plants' : currentStep === 2 ? 'pots' : 'compositions'}...`}
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-full py-3 pl-12 pr-4 text-white focus:outline-none focus:border-[#c16e41] transition-colors"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                         {/* Step 1: Plants */}
                                         {currentStep === 1 && (
                                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                {plants.length === 0 ? (
+                                                {plants.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                                                     <div className="col-span-full text-center text-gray-500 py-10">
-                                                        No plants found. Please check back later.
+                                                        No plants found matching "{searchQuery}".
                                                     </div>
-                                                ) : plants.map(p => (
+                                                ) : plants.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
                                                     <div
                                                         key={p.id}
                                                         onClick={() => setSelectedPlant(p)}
@@ -228,11 +250,11 @@ const PlantCustomizer = () => {
                                         {/* Step 2: Pots */}
                                         {currentStep === 2 && (
                                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                                {pots.length === 0 ? (
+                                                {pots.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                                                     <div className="col-span-full text-center text-gray-500 py-10">
-                                                        No pots found.
+                                                        No pots found matching "{searchQuery}".
                                                     </div>
-                                                ) : pots.map(p => (
+                                                ) : pots.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
                                                     <div
                                                         key={p.id}
                                                         onClick={() => setSelectedPot(p)}
@@ -256,7 +278,7 @@ const PlantCustomizer = () => {
                                         {/* Step 3: Composition */}
                                         {currentStep === 3 && (
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                {COMPOSITIONS.map(c => (
+                                                {COMPOSITIONS.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).map(c => (
                                                     <div
                                                         key={c.id}
                                                         onClick={() => setSelectedComp(c)}
@@ -318,22 +340,12 @@ const PlantCustomizer = () => {
                                                 </div>
 
                                                 <div className="bg-white/5 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                                                    <div className="relative mb-8">
-                                                        {/* Simple visual stacking visualization */}
-                                                        <div className="w-48 h-48 relative mx-auto">
-                                                            {/* Pot */}
-                                                            <img
-                                                                src={selectedPot?.coverImage || selectedPot?.image}
-                                                                className="absolute bottom-0 w-32 h-32 left-8 object-contain z-10"
-                                                                alt="Pot Visual"
-                                                            />
-                                                            {/* Plant (positioned slightly higher) */}
-                                                            <img
-                                                                src={selectedPlant?.coverImage || selectedPlant?.image}
-                                                                className="absolute bottom-16 w-40 h-40 left-4 object-contain z-0"
-                                                                alt="Plant Visual"
-                                                            />
-                                                        </div>
+                                                    <div className="relative mb-8 w-full max-w-md aspect-square rounded-xl overflow-hidden shadow-2xl">
+                                                        <img
+                                                            src={selectedPlant?.coverImage || selectedPlant?.image}
+                                                            className="w-full h-full object-cover"
+                                                            alt="Your Custom Plant"
+                                                        />
                                                     </div>
                                                     <h3 className="text-3xl font-serif text-white mb-2">Ready to Grow?</h3>
                                                     <p className="text-gray-400 mb-8 max-w-sm">

@@ -11,7 +11,6 @@ export type ProductCategory =
 
 export interface Product {
   policy: any;
-  policy: any;
   id: string;
   category: ProductCategory;
   coverImage?: string;

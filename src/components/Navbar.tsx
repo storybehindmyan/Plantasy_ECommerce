@@ -7,7 +7,6 @@ import {
   User as UserIcon,
   Menu,
   X,
-  Bell,
   ChevronDown,
   Package,
   MapPin,

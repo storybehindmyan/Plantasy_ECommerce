@@ -10,7 +10,7 @@ export type ProductCategory =
   | string;
 
 export interface Product {
-  policy: any;
+  policy?: any;
   id: string;
   category: ProductCategory;
   coverImage?: string;

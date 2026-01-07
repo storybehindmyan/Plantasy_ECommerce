@@ -54,13 +54,7 @@ const PlantasyLogo = () => (
 const ProfileHeader = () => {
   const { user, updateUser } = useAuth();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [info, setInfo] = React.useState({
-    displayName: user?.name || "",
-    title: user?.title || "",
-    firstName: user?.name?.split(" ")[0] || "",
-    lastName: user?.name?.split(" ").slice(1).join(" ") || "",
-    phone: user?.phone || "",
-  });
+
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -133,7 +127,7 @@ const ProfileHeader = () => {
           <h1 className="text-3xl font-serif mb-1">{user.name}</h1>
           <div className="flex gap-4 text-sm font-light opacity-90">
             <span>+91 {user.phone}</span>
-            
+
           </div>
         </div>
       </div>
@@ -146,8 +140,7 @@ const NavTab = ({ to, label }: { to: string; label: string }) => (
     to={to}
     end={to === "/profile"}
     className={({ isActive }) =>
-      `px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${
-        isActive ? "text-white" : "text-gray-400 hover:text-[#c16e41]"
+      `px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${isActive ? "text-white" : "text-gray-400 hover:text-[#c16e41]"
       }`
     }
   >
@@ -467,15 +460,14 @@ const MyOrders = () => {
                 <div className="flex items-center gap-3">
                   {/* Status badge */}
                   <span
-                    className={`text-xs px-2 py-1 rounded-full border ${
-                      status === "delivered"
+                    className={`text-xs px-2 py-1 rounded-full border ${status === "delivered"
                         ? "border-emerald-500 text-emerald-400"
                         : status === "confirmed"
-                        ? "border-blue-500 text-blue-400"
-                        : status === "cancelled"
-                        ? "border-red-500 text-red-400"
-                        : "border-gray-500 text-gray-300"
-                    }`}
+                          ? "border-blue-500 text-blue-400"
+                          : status === "cancelled"
+                            ? "border-red-500 text-red-400"
+                            : "border-gray-500 text-gray-300"
+                      }`}
                   >
                     {status.toUpperCase()}
                   </span>
@@ -484,9 +476,8 @@ const MyOrders = () => {
                     ₹{order.pricing?.grandTotal ?? order.items?.[0]?.totalPrice}
                   </span>
                   <ChevronDown
-                    className={`text-white transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
+                    className={`text-white transition-transform ${isOpen ? "rotate-180" : ""
+                      }`}
                     size={18}
                   />
                 </div>
@@ -695,33 +686,33 @@ type AddressDoc = {
 const COUNTRY_OPTIONS = ["India"];
 const STATE_OPTIONS = [
   "Andhra Pradesh",
-"Arunachal Pradesh",
-"Assam",
-"Bihar",
-"Chhattisgarh",
-"Goa",
-"Gujarat",
-"Haryana",
-"Himachal Pradesh",
-"Jharkhand",
-"Karnataka",
-"Kerala",
-"Madhya Pradesh",
-"Maharashtra",
-"Manipur",
-"Meghalaya",
-"Mizoram",
-"Nagaland",
-"Odisha",
-"Punjab",
-"Rajasthan",
-"Sikkim",
-"Tamil Nadu",
-"Telangana",
-"Tripura",
-"Uttar Pradesh",
-"Uttarakhand",
-"West Bengal"
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal"
 ];
 
 const Addresses = () => {
@@ -879,7 +870,7 @@ const Addresses = () => {
         address: addr.id,
         updatedAt: serverTimestamp(),
       });
-      updateUser({ address: addr.id }as any);
+      updateUser({ address: addr.id } as any);
 
       setOpenMenuForId(null);
       await loadAddresses();
@@ -982,7 +973,7 @@ const Addresses = () => {
               />
               {/* Region / State dropdown */}
               <select
-              
+
                 className="w-full bg-transparent border border-white/20 p-3 text-white rounded-sm text-sm max-h-40 overflow-y-auto"
                 value={form.region}
                 onChange={(e) =>
@@ -1096,11 +1087,10 @@ const Addresses = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span
-                      className={`px-2 py-0.5 text-xs rounded uppercase tracking-wider ${
-                        addr.isDefault
+                      className={`px-2 py-0.5 text-xs rounded uppercase tracking-wider ${addr.isDefault
                           ? "bg-emerald-500 text-white"
                           : "bg-[#c16e41]/20 text-[#c16e41]"
-                      }`}
+                        }`}
                     >
                       {addr.isDefault ? "Default" : addr.firstName || "Address"}
                     </span>
@@ -1462,7 +1452,7 @@ const UserProfile = () => {
           <NavTab to="/profile/my-account" label="My Account" />
           <NavTab to="/profile/addresses" label="My Addresses" />
           <NavTab to="/profile/wallet" label="My Wallet" />
-          
+
         </div>
 
         {/* Content Area */}

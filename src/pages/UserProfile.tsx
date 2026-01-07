@@ -56,7 +56,6 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const ProfileHeader: React.FC = () => {
   const { user, updateUser } = useAuth();
-<<<<<<< HEAD
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const [info, setInfo] = React.useState<{
@@ -72,10 +71,6 @@ const ProfileHeader: React.FC = () => {
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
     phone: user?.phone || "",
   });
-=======
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -148,11 +143,7 @@ const ProfileHeader: React.FC = () => {
           <h1 className="text-3xl font-serif mb-1">{user.name}</h1>
           <div className="flex gap-4 text-sm font-light opacity-90">
             <span>+91 {user.phone}</span>
-<<<<<<< HEAD
             <span>{user.email}</span>
-=======
-
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
           </div>
         </div>
       </div>
@@ -165,7 +156,8 @@ const NavTab = ({ to, label }: { to: string; label: string }) => (
     to={to}
     end
     className={({ isActive }) =>
-      `px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${isActive ? "text-white" : "text-gray-400 hover:text-[#c16e41]"
+      `px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${
+        isActive ? "text-white" : "text-gray-400 hover:text-[#c16e41]"
       }`
     }
   >
@@ -417,21 +409,7 @@ const MyOrders: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-<<<<<<< HEAD
                   <span className="text-xs px-2 py-1 rounded-full border border-gray-500 text-gray-300">
-=======
-                  {/* Status badge */}
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full border ${status === "delivered"
-                        ? "border-emerald-500 text-emerald-400"
-                        : status === "confirmed"
-                          ? "border-blue-500 text-blue-400"
-                          : status === "cancelled"
-                            ? "border-red-500 text-red-400"
-                            : "border-gray-500 text-gray-300"
-                      }`}
-                  >
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
                     {status.toUpperCase()}
                   </span>
                   <span className="text-sm text-white font-medium">
@@ -441,8 +419,9 @@ const MyOrders: React.FC = () => {
                       0}
                   </span>
                   <ChevronDown
-                    className={`text-white transition-transform ${isOpen ? "rotate-180" : ""
-                      }`}
+                    className={`text-white transition-transform ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
                     size={18}
                   />
                 </div>
@@ -724,11 +703,7 @@ const STATE_OPTIONS = [
   "Tripura",
   "Uttar Pradesh",
   "Uttarakhand",
-<<<<<<< HEAD
   "West Bengal",
-=======
-  "West Bengal"
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
 ];
 
 const Addresses: React.FC = () => {
@@ -911,12 +886,7 @@ const Addresses: React.FC = () => {
         address: addr.id,
         updatedAt: serverTimestamp(),
       });
-<<<<<<< HEAD
       updateUser({ address: addr.id as any });
-=======
-      updateUser({ address: addr.id } as any);
-
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
       setOpenMenuForId(null);
       await loadAddresses();
       toast.success("Default address updated");
@@ -1075,10 +1045,6 @@ const Addresses: React.FC = () => {
               />
               {/* Region / state */}
               <select
-<<<<<<< HEAD
-=======
-
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
                 className="w-full bg-transparent border border-white/20 p-3 text-white rounded-sm text-sm max-h-40 overflow-y-auto"
                 value={form.region}
                 onChange={(e) =>
@@ -1184,7 +1150,6 @@ const Addresses: React.FC = () => {
                   onClick={startAddNewAddress}
                   className="bg-[#c16e41] text-white px-8 py-3 rounded-sm text-sm font-medium hover:bg-[#a05a32] transition-colors"
                 >
-<<<<<<< HEAD
                   Add New Address
                 </button>
                 {/* <PlantasyLogo /> */}
@@ -1203,24 +1168,6 @@ const Addresses: React.FC = () => {
                             ? "bg-emerald-500 text-white"
                             : "bg-[#c16e41]/20 text-[#c16e41]"
                         }`}
-=======
-                  <div className="flex justify-between items-start mb-2">
-                    <span
-                      className={`px-2 py-0.5 text-xs rounded uppercase tracking-wider ${addr.isDefault
-                          ? "bg-emerald-500 text-white"
-                          : "bg-[#c16e41]/20 text-[#c16e41]"
-                        }`}
-                    >
-                      {addr.isDefault ? "Default" : addr.firstName || "Address"}
-                    </span>
-                    <div className="relative">
-                      <button
-                        onClick={() =>
-                          setOpenMenuForId(
-                            openMenuForId === addr.id ? null : addr.id
-                          )
-                        }
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
                       >
                         {addr.isDefault ? "Default" : "Address"}
                       </span>
@@ -1859,12 +1806,8 @@ const UserProfile: React.FC = () => {
           <NavTab to="/profile/my-account" label="My Account" />
           <NavTab to="/profile/addresses" label="My Addresses" />
           <NavTab to="/profile/wallet" label="My Wallet" />
-<<<<<<< HEAD
           {/* <NavTab to="/profile/subscriptions" label="Subscriptions" /> */}
           <NavTab to="/profile/wishlist" label="My Wishlist" />
-=======
-
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
         </div>
 
         {/* Content Area – rendered based on URL, no nested Routes */}

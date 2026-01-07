@@ -1,17 +1,10 @@
 {
   "hosting": {
-<<<<<<< HEAD
-    "public": "public",
-=======
     "public": "dist",
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-<<<<<<< HEAD
-    ]
-=======
     ],
     "rewrites": [
       {
@@ -25,6 +18,5 @@
     "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
->>>>>>> f310d02040f9e29fb471e15e14a7997c8bbb405d
   }
 }

@@ -469,88 +469,69 @@ const Home = () => {
       </section>
 
       {/* 2. Subscription Boxes (Split Layout) */}
+      {/* 2. Subscription Boxes (Split Layout) */}
       <section className="flex flex-col md:flex-row min-h-screen">
+        {/* Left: Soilless Plants (Hydroponics) */}
         <motion.div
-          className="w-full md:w-1/2 relative min-h-[50vh] md:min-h-auto"
+          className="w-full md:w-1/2 relative min-h-[50vh] md:min-h-auto group overflow-hidden cursor-pointer"
           initial={{ opacity: 0, x: -50 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <img
-            src="/subscription-box.jpg"
-            alt="Plant Subscription"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <Link
+            to="/shop"
+            className="block w-full h-full relative"
+          >
+            <img
+              src="/soilless-subscription.png"
+              alt="Soilless Plants Subscription"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-500" />
+            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-12">
+              <h2 className="text-4xl md:text-5xl font-serif text-white mb-4 shadow-sm">
+                Soilless
+              </h2>
+              <p className="text-white/90 text-lg font-light mb-8 tracking-wide">
+                Hydroponic & Water-Rooted
+              </p>
+              <span className="inline-block border border-white px-8 py-3 text-sm tracking-[0.2em] font-medium text-white hover:bg-white hover:text-black transition-all duration-300 uppercase">
+                Shop Collection
+              </span>
+            </div>
+          </Link>
         </motion.div>
 
+        {/* Right: Soil Plants */}
         <motion.div
-          className="w-full md:w-1/2 bg-[#c16e41] flex flex-col justify-center p-12 md:p-20 text-white"
+          className="w-full md:w-1/2 relative min-h-[50vh] md:min-h-auto group overflow-hidden cursor-pointer"
           initial={{ opacity: 0, x: 50 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <h2 className="text-4xl md:text-5xl font-serif mb-6 leading-tight">
-            Shop Our Plant <br /> Subscription Boxes
-          </h2>
-          <p className="text-white/90 mb-12 font-light">
-            And look forward to a new plant every month.
-          </p>
-
-          <div className="space-y-8 mb-12">
-            <Link
-              to="/shop?category=subscriptions"
-              className="flex items-center gap-6 group"
-            >
-              <div className="w-16 h-16 rounded-full border border-white/30 flex items-center justify-center group-hover:bg-white/10 transition">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="text-white"
-                >
-                  <path d="M12 2v20M8 8v4a4 4 0 0 0 4 4 4 4 0 0 0 4-4V8" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-serif">Cactus Lover</h3>
-                <p className="text-sm text-white/70">Subscription</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/shop?category=subscriptions"
-              className="flex items-center gap-6 group"
-            >
-              <div className="w-16 h-16 rounded-full border border-white/30 flex items-center justify-center group-hover:bg-white/10 transition">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="text-white"
-                >
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-serif">Exotic Plants</h3>
-                <p className="text-sm text-white/70">Subscription</p>
-              </div>
-            </Link>
-          </div>
-
           <Link
             to="/shop"
-            className="inline-block border border-white px-8 py-3 w-fit text-sm tracking-widest font-medium hover:bg-white hover:text-[#c16e41] transition-all duration-300 uppercase"
+            className="block w-full h-full relative"
           >
-            Subscription Boxes
+            <img
+              src="/soil-subscription.png"
+              alt="Soil Plants Subscription"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-500" />
+            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-12">
+              <h2 className="text-4xl md:text-5xl font-serif text-white mb-4 shadow-sm">
+                Soiled
+              </h2>
+              <p className="text-white/90 text-lg font-light mb-8 tracking-wide">
+                Traditional Potted Plants
+              </p>
+              <span className="inline-block border border-white px-8 py-3 text-sm tracking-[0.2em] font-medium text-white hover:bg-white hover:text-black transition-all duration-300 uppercase">
+                Shop Collection
+              </span>
+            </div>
           </Link>
         </motion.div>
       </section>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { NavLink, Route, Routes, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   MoreHorizontal,
   Edit3,
@@ -34,7 +34,6 @@ import {
   deleteDoc,
   getDoc,
   setDoc,
-  arrayUnion,
   arrayRemove,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -58,19 +57,7 @@ const ProfileHeader: React.FC = () => {
   const { user, updateUser } = useAuth();
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  const [info, setInfo] = React.useState<{
-    displayName: string;
-    title: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-  }>({
-    displayName: user?.name || "",
-    title: user?.title || "",
-    firstName: user?.name?.split(" ")[0] || "",
-    lastName: user?.name?.split(" ").slice(1).join(" ") || "",
-    phone: user?.phone || "",
-  });
+
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -156,8 +143,7 @@ const NavTab = ({ to, label }: { to: string; label: string }) => (
     to={to}
     end
     className={({ isActive }) =>
-      `px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${
-        isActive ? "text-white" : "text-gray-400 hover:text-[#c16e41]"
+      `px-6 py-4 text-sm font-medium transition-colors relative whitespace-nowrap ${isActive ? "text-white" : "text-gray-400 hover:text-[#c16e41]"
       }`
     }
   >
@@ -419,9 +405,8 @@ const MyOrders: React.FC = () => {
                       0}
                   </span>
                   <ChevronDown
-                    className={`text-white transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
+                    className={`text-white transition-transform ${isOpen ? "rotate-180" : ""
+                      }`}
                     size={18}
                   />
                 </div>
@@ -1163,11 +1148,10 @@ const Addresses: React.FC = () => {
                   >
                     <div className="flex justify-between items-start mb-2">
                       <span
-                        className={`px-2 py-0.5 text-xs rounded uppercase tracking-wider ${
-                          addr.isDefault
+                        className={`px-2 py-0.5 text-xs rounded uppercase tracking-wider ${addr.isDefault
                             ? "bg-emerald-500 text-white"
                             : "bg-[#c16e41]/20 text-[#c16e41]"
-                        }`}
+                          }`}
                       >
                         {addr.isDefault ? "Default" : "Address"}
                       </span>
@@ -1570,7 +1554,7 @@ type WishlistProduct = {
 const MyWishlist: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [wishlistIds, setWishlistIds] = React.useState<string[]>([]);
+
   const [products, setProducts] = React.useState<WishlistProduct[]>([]);
   const [loading, setLoading] = React.useState(false);
 
@@ -1588,7 +1572,7 @@ const MyWishlist: React.FC = () => {
 
       // 2. dedupe IDs
       const uniqueIds = Array.from(new Set(arr));
-      setWishlistIds(uniqueIds);
+
 
       if (!uniqueIds.length) {
         setProducts([]);
@@ -1640,7 +1624,7 @@ const MyWishlist: React.FC = () => {
         wishlist: arrayRemove(productId),
       });
       setProducts((prev) => prev.filter((p) => p.id !== productId));
-      setWishlistIds((prev) => prev.filter((id) => id !== productId));
+
       toast.success("Removed from wishlist");
     } catch (err) {
       console.error("Error removing from wishlist", err);

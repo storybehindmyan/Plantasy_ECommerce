@@ -20,7 +20,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "start": "vite preview --port 8080 --host",
+    "preview": "vite preview --port 8080 --host"
   },
   "dependencies": {
     "clsx": "^2.1.1",

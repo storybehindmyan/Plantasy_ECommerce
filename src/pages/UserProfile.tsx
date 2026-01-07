@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { NavLink, Route, Routes, Navigate, useNavigate } from "react-router-dom";
+import { NavLink, Route, Routes, Navigate, useNavigate, useLocation } from "react-router-dom";
 import {
   MoreHorizontal,
   Edit3,
@@ -41,16 +41,16 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 /* ---------------- Shared Components ---------------- */
 
-const PlantasyLogo = () => (
-  <div className="flex flex-col items-center mt-12 opacity-80">
-    <div className="w-12 h-16 border-2 border-white/80 rounded-full flex items-center justify-center mb-1 drop-shadow-md bg-transparent">
-      <span className="font-serif text-2xl italic text-white pt-1">P</span>
-    </div>
-    <span className="text-xl font-serif font-semibold tracking-tight text-white drop-shadow-md mt-1">
-      Plantasy
-    </span>
-  </div>
-);
+// const PlantasyLogo = () => (
+//   <div className="flex flex-col items-center mt-12 opacity-80">
+//     <div className="w-12 h-16 border-2 border-white/80 rounded-full flex items-center justify-center mb-1 drop-shadow-md bg-transparent">
+//       <span className="font-serif text-2xl italic text-white pt-1">P</span>
+//     </div>
+//     <span className="text-xl font-serif font-semibold tracking-tight text-white drop-shadow-md mt-1">
+//       Plantasy
+//     </span>
+//   </div>
+// );
 
 /* ---------------- Header / Nav ---------------- */
 
@@ -610,27 +610,50 @@ const MyOrders: React.FC = () => {
 const WalletPage: React.FC = () => {
   return (
     <div>
-      <h2 className="text-2xl font-serif text-white mb-6 flex items-center gap-2">
+      <h2 className="mb-6 flex items-center gap-2 text-2xl font-serif text-white">
         <Wallet className="text-[#c16e41]" />
-        My Wallet
+        <span>My Wallet</span>
       </h2>
-      <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] p-8 rounded-lg border border-white/5">
-        <p className="text-gray-400 text-sm mb-1">Total Balance</p>
-        <h3 className="text-4xl text-white font-medium mb-6">
-          ₹0.00
-        </h3>
-        <div className="flex gap-4">
-          <button className="bg-[#c16e41] text-white px-6 py-2 rounded-sm text-sm font-medium">
-            Add Money
-          </button>
-          <button className="border border-white/20 text-white px-6 py-2 rounded-sm text-sm font-medium">
-            History
-          </button>
+
+      <div className="relative">
+        {/* Disabled wallet card */}
+        <div className="rounded-lg border border-white/5 bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] p-8 opacity-40 pointer-events-none">
+          <p className="mb-1 text-sm text-gray-300">Total Balance</p>
+          <h3 className="mb-6 text-4xl font-medium text-white">₹0.00</h3>
+
+          <div className="flex flex-wrap gap-4">
+            <button
+              type="button"
+              className="rounded-sm bg-[#c16e41] px-6 py-2 text-sm font-medium text-white"
+            >
+              Add Money
+            </button>
+            <button
+              type="button"
+              className="rounded-sm border border-white/20 px-6 py-2 text-sm font-medium text-white"
+            >
+              History
+            </button>
+          </div>
+        </div>
+
+        {/* Blocking overlay */}
+        <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-black/70">
+          <h3 className="mb-2 text-xl font-serif text-white">
+            Wallet coming soon
+          </h3>
+          <p className="mb-4 max-w-sm text-center text-sm text-gray-300">
+            Wallet features are under development and will be available in a future update.
+          </p>
+          <span className="rounded-full border border-white/30 px-4 py-1 text-xs uppercase tracking-wide text-white/80">
+            Currently disabled
+          </span>
         </div>
       </div>
     </div>
   );
 };
+
 
 /* ---------------- Addresses ---------------- */
 
@@ -1129,7 +1152,7 @@ const Addresses: React.FC = () => {
                 >
                   Add New Address
                 </button>
-                <PlantasyLogo />
+                {/* <PlantasyLogo /> */}
               </>
             ) : (
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1240,7 +1263,7 @@ const Subscriptions: React.FC = () => {
         <p className="text-gray-400 text-sm mb-8">
           When you purchase a subscription, it&apos;ll appear here.
         </p>
-        <PlantasyLogo />
+        {/* <PlantasyLogo /> */}
       </div>
     </div>
   );
@@ -1634,7 +1657,7 @@ const MyWishlist: React.FC = () => {
         <p className="text-gray-400 text-sm mb-4">
           Please log in to view your wishlist.
         </p>
-        <PlantasyLogo />
+        {/* <PlantasyLogo /> */}
       </div>
     );
   }
@@ -1665,7 +1688,7 @@ const MyWishlist: React.FC = () => {
         >
           Continue Shopping
         </button>
-        <PlantasyLogo />
+        {/* <PlantasyLogo /> */}
       </div>
     );
   }
@@ -1738,39 +1761,61 @@ const MyWishlist: React.FC = () => {
 
 /* ---------------- Main Layout ---------------- */
 
+/* ---------------- Main Layout (no nested Routes) ---------------- */
+
 const UserProfile: React.FC = () => {
+  const location = useLocation();
+
+  const currentPath = location.pathname; // e.g. /profile, /profile/orders, ...
+
+  const renderContent = () => {
+    if (currentPath === "/profile" || currentPath === "/profile/") {
+      return <ProfileInfo />;
+    }
+    if (currentPath.startsWith("/profile/orders")) {
+      return <MyOrders />;
+    }
+    if (currentPath.startsWith("/profile/my-account")) {
+      return <MyAccount />;
+    }
+    if (currentPath.startsWith("/profile/addresses")) {
+      return <Addresses />;
+    }
+    if (currentPath.startsWith("/profile/wallet")) {
+      return <WalletPage />;
+    }
+    if (currentPath.startsWith("/profile/subscriptions")) {
+      return <Subscriptions />;
+    }
+    if (currentPath.startsWith("/profile/wishlist")) {
+      return <MyWishlist />;
+    }
+    // default fallback
+    return <ProfileInfo />;
+  };
+
   return (
     <div className="min-h-screen bg-black pt-32">
       <div className="max-w-5xl mx-auto bg-[#0a0a0a] min-h-[800px] border-x border-white/5 shadow-2xl">
         <ProfileHeader />
 
-        {/* Navigation Bar */}
+        {/* Tabs: always absolute /profile/... to avoid stacking */}
         <div className="border-b border-white/10 px-6 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          <NavTab to="profile" label="Profile" />
-          <NavTab to="profile/orders" label="My Orders" />
-          <NavTab to="profile/my-account" label="My Account" />
-          <NavTab to="profile/addresses" label="My Addresses" />
-          <NavTab to="profile/wallet" label="My Wallet" />
-          <NavTab to="profile/subscriptions" label="Subscriptions" />
-          <NavTab to="profile/wishlist" label="My Wishlist" />
+          <NavTab to="/profile" label="Profile" />
+          <NavTab to="/profile/orders" label="My Orders" />
+          <NavTab to="/profile/my-account" label="My Account" />
+          <NavTab to="/profile/addresses" label="My Addresses" />
+          <NavTab to="/profile/wallet" label="My Wallet" />
+          {/* <NavTab to="/profile/subscriptions" label="Subscriptions" /> */}
+          <NavTab to="/profile/wishlist" label="My Wishlist" />
         </div>
 
-        {/* Content Area */}
-        <div className="p-8 md:p-12 min-h-[600px]">
-          <Routes>
-            <Route index element={<ProfileInfo />} />
-            <Route path="orders" element={<MyOrders />} />
-            <Route path="my-account" element={<MyAccount />} />
-            <Route path="addresses" element={<Addresses />} />
-            <Route path="wallet" element={<WalletPage />} />
-            <Route path="subscriptions" element={<Subscriptions />} />
-            <Route path="wishlist" element={<MyWishlist />} />
-            <Route path="*" element={<Navigate to="" replace />} />
-          </Routes>
-        </div>
+        {/* Content Area – rendered based on URL, no nested Routes */}
+        <div className="p-8 md:p-12 min-h-[600px]">{renderContent()}</div>
       </div>
     </div>
   );
 };
 
 export default UserProfile;
+

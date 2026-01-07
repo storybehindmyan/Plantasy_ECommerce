@@ -16,8 +16,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-// REMOVE useProducts – we no longer search data/products.ts
-// import { useProducts } from "../context/ProductContext";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -29,6 +27,8 @@ import {
   where,
   orderBy,
   Timestamp,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 
 type FirestoreProduct = {
@@ -48,11 +48,17 @@ type Blog = {
   publishedAt?: Timestamp | null;
 };
 
+type WishlistItem = {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  image: string;
+};
+
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { itemsCount, toggleCart } = useCart();
-  // const { products } = useProducts(); // not used for search anymore
-
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -60,11 +66,14 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
-  // Firestore-backed data for search
   const [fsProducts, setFsProducts] = useState<FirestoreProduct[]>([]);
   const [blogs, setBlogs] = useState<Blog[]>([]);
 
-  // Sync Profile Image (unchanged)
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const wishlistRef = useRef<HTMLDivElement>(null);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+
   useEffect(() => {
     const updateImage = () => {
       if (user) {
@@ -81,7 +90,6 @@ const Navbar = () => {
       window.removeEventListener("profile-image-updated", updateImage);
   }, [user, isUserMenuOpen]);
 
-  // Load products from Firestore products/ collection
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -105,7 +113,6 @@ const Navbar = () => {
     void loadProducts();
   }, []);
 
-  // Load blogs once for search (published only)
   useEffect(() => {
     const loadBlogs = async () => {
       try {
@@ -134,7 +141,6 @@ const Navbar = () => {
     void loadBlogs();
   }, []);
 
-  // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResultsProducts, setSearchResultsProducts] = useState<
     FirestoreProduct[]
@@ -157,7 +163,6 @@ const Navbar = () => {
     const trimmed = queryStr.trim().toLowerCase();
 
     if (trimmed.length > 0) {
-      // PRODUCTS: search only in Firestore products collection
       const prodResults = fsProducts
         .filter(
           (product) =>
@@ -166,7 +171,6 @@ const Navbar = () => {
         )
         .slice(0, 5);
 
-      // BLOGS: title / seoTitle / tags
       const blogResults = blogs
         .filter((blog) => {
           const titleMatch = blog.title?.toLowerCase().includes(trimmed);
@@ -197,7 +201,51 @@ const Navbar = () => {
     }
   };
 
-  // Close search/menu when clicking outside
+  const loadWishlistItems = async () => {
+    if (!user?.uid) {
+      setWishlistItems([]);
+      return;
+    }
+    try {
+      setWishlistLoading(true);
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+      const data = snap.exists() ? (snap.data() as any) : null;
+      const wishlist: string[] = Array.isArray(data?.wishlist)
+        ? data!.wishlist
+        : [];
+
+      if (!wishlist.length) {
+        setWishlistItems([]);
+        return;
+      }
+
+      const uniqueIds = Array.from(new Set(wishlist));
+      const prods: WishlistItem[] = [];
+
+      for (const pid of uniqueIds) {
+        const pRef = doc(db, "products", pid);
+        const pSnap = await getDoc(pRef);
+        if (pSnap.exists()) {
+          const pData = pSnap.data() as any;
+          prods.push({
+            id: pSnap.id,
+            name: pData.name,
+            category: pData.category,
+            price: Number(pData.price || 0),
+            image: pData.coverImage || pData.image || pData.images?.[0] || "",
+          });
+        }
+      }
+      setWishlistItems(prods.slice(0, 3));
+    } catch (err) {
+      console.error("Error loading wishlist items:", err);
+      setWishlistItems([]);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -211,6 +259,12 @@ const Navbar = () => {
         !userMenuRef.current.contains(event.target as Node)
       ) {
         setIsUserMenuOpen(false);
+      }
+      if (
+        wishlistRef.current &&
+        !wishlistRef.current.contains(event.target as Node)
+      ) {
+        setIsWishlistOpen(false);
       }
     };
 
@@ -232,7 +286,27 @@ const Navbar = () => {
     setSearchQuery("");
   };
 
-  // Banner Rotation Logic
+  const handleWishlistProductClick = (id: string) => {
+    navigate(`/product/${id}`);
+    setIsWishlistOpen(false);
+  };
+
+  const handleWishlistIconClick = () => {
+    if (!user?.uid) {
+      navigate("/login");
+      return;
+    }
+    // Open immediately
+    setIsWishlistOpen((prev) => !prev);
+    // Then load data in background
+    void loadWishlistItems();
+  };
+
+  const goToWishlistPage = () => {
+    setIsWishlistOpen(false);
+    navigate("/profile/wishlist");
+  };
+
   const [currentBanner, setCurrentBanner] = useState(0);
   const banners = [
     {
@@ -246,12 +320,6 @@ const Navbar = () => {
       content: (
         <div className="flex items-center justify-center gap-4">
           <span>APPLY "FIRST20" TO GET 20% OFF YOUR FIRST PURCHASE</span>
-          {/* <Link
-            to="/login"
-            className="border border-white/40 px-3 py-0.5 text-[10px] uppercase tracking-widest hover:bg-white hover:text-[#5F6F52] transition-colors"
-          >
-            Sign Up
-          </Link> */}
         </div>
       ),
     },
@@ -267,9 +335,10 @@ const Navbar = () => {
   const hasAnySearchResults =
     searchResultsProducts.length > 0 || searchResultsBlogs.length > 0;
 
+  const wishlistCount = wishlistItems.length;
+
   return (
     <>
-      {/* Promo Banner */}
       <div className="relative h-9 overflow-hidden bg-black">
         <AnimatePresence mode="wait">
           <motion.div
@@ -288,11 +357,9 @@ const Navbar = () => {
         </AnimatePresence>
       </div>
 
-      {/* Navbar */}
       <nav className="absolute top-0 left-0 w-full z-40 transition-all duration-300">
         <div className="bg-transparent pt-4 pb-2 mt-12">
           <div className="max-w-[1440px] mx-auto px-4 flex items-center justify-between gap-4">
-            {/* Mobile Toggle */}
             <button
               className="lg:hidden text-white drop-shadow-md z-50 relative"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -300,7 +367,6 @@ const Navbar = () => {
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            {/* Left Nav Section (Desktop) */}
             <div className="hidden lg:flex items-center bg-transparent">
               <Link
                 to="/"
@@ -336,7 +402,6 @@ const Navbar = () => {
               })}
             </div>
 
-            {/* Center Logo Area */}
             <div className="absolute left-1/2 top-10 transform -translate-x-1/2 flex justify-center z-40">
               <Link to="/" className="flex flex-col items-center group">
                 <div className="w-32 md:w-44 h-16 flex items-center justify-center mb-1 group-hover:scale-105 transition-transform duration-300 drop-shadow-md bg-transparent">
@@ -349,9 +414,7 @@ const Navbar = () => {
               </Link>
             </div>
 
-            {/* Right Action Section */}
             <div className="flex items-center gap-2 md:gap-4 ml-auto lg:ml-0 z-50">
-              {/* Mobile User/Login */}
               <div className="lg:hidden">
                 {user ? (
                   <Link to="/profile" className="text-white p-2">
@@ -374,122 +437,212 @@ const Navbar = () => {
                 )}
               </div>
 
-              {/* Desktop Login & Search */}
               <div className="hidden lg:flex items-center gap-4">
                 {user ? (
-                  <div className="relative" ref={userMenuRef}>
-                    <div className="flex items-center gap-4">
-                      <Heart
-                        size={20}
-                        className="text-white hover:text-[#c16e41] cursor-pointer transition-colors"
-                      />
+                  <>
+                    <div className="relative" ref={wishlistRef}>
                       <button
-                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                        className="flex items-center gap-2 group bg-[#2a2a2a]/90 hover:bg-[#2a2a2a] backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5 transition-all"
+                        type="button"
+                        onClick={handleWishlistIconClick}
+                        className="relative text-white hover:text-[#c16e41] cursor-pointer transition-colors p-2"
+                        title="Wishlist"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/20">
-                          {profileImage ? (
-                            <img
-                              src={profileImage}
-                              alt="User"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <UserIcon className="w-full h-full p-1 text-white" />
-                          )}
-                        </div>
-                        <ChevronDown
-                          size={16}
-                          className={`text-white transition-transform duration-300 ${isUserMenuOpen ? "rotate-180" : ""
-                            }`}
+                        <Heart
+                          size={20}
+                          className="transition-colors"
+                          fill={wishlistCount > 0 ? "currentColor" : "none"}
+                          color={wishlistCount > 0 ? "#ef4444" : "currentColor"}
                         />
+                        {wishlistCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                            {wishlistCount}
+                          </span>
+                        )}
                       </button>
+
+                      <AnimatePresence>
+                        {isWishlistOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute right-0 top-full mt-2 w-80 bg-[#1a1a1a] border border-white/10 rounded-sm shadow-2xl z-[60] overflow-hidden"
+                          >
+                            <div className="py-2 max-h-[320px] overflow-y-auto">
+                              <div className="px-4 py-2 flex items-center justify-between">
+                                <span className="text-xs uppercase tracking-widest text-white/60">
+                                  Wishlist
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={goToWishlistPage}
+                                  className="text-[11px] text-[#c16e41] hover:text-[#e08b5b] uppercase tracking-widest"
+                                >
+                                  More
+                                </button>
+                              </div>
+
+                              {wishlistLoading ? (
+                                <div className="px-4 py-4 text-xs text-gray-400">
+                                  Loading wishlist...
+                                </div>
+                              ) : wishlistItems.length === 0 ? (
+                                <div className="px-4 py-4 text-xs text-gray-400">
+                                  No items in wishlist.
+                                </div>
+                              ) : (
+                                wishlistItems.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    onClick={() =>
+                                      handleWishlistProductClick(item.id)
+                                    }
+                                    className="flex items-center gap-4 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-0"
+                                  >
+                                    <div className="w-10 h-10 bg-white/5 rounded-sm overflow-hidden flex-shrink-0">
+                                      {item.image ? (
+                                        <img
+                                          src={item.image}
+                                          alt={item.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[10px] text-white/60">
+                                          Product
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1">
+                                      <h4 className="text-white text-sm font-medium line-clamp-1">
+                                        {item.name}
+                                      </h4>
+                                      <p className="text-white/50 text-xs capitalize">
+                                        {item.category}
+                                      </p>
+                                    </div>
+                                    <span className="text-[#c16e41] text-sm font-medium">
+                                      ₹{item.price.toFixed(2)}
+                                    </span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
-                    {/* Dropdown Menu */}
-                    <AnimatePresence>
-                      {isUserMenuOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          className="absolute right-0 top-full mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                    <div className="relative" ref={userMenuRef}>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                          className="flex items-center gap-2 group bg-[#2a2a2a]/90 hover:bg-[#2a2a2a] backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5 transition-all"
                         >
-                          <div className="py-2">
-                            <Link
-                              to="/profile"
-                              className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3"
-                            >
-                              <UserIcon size={16} /> Profile
-                            </Link>
-                            {user?.role === "admin" && (
+                          <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden border border-white/20">
+                            {profileImage ? (
+                              <img
+                                src={profileImage}
+                                alt="User"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <UserIcon className="w-full h-full p-1 text-white" />
+                            )}
+                          </div>
+                          <ChevronDown
+                            size={16}
+                            className={`text-white transition-transform duration-300 ${
+                              isUserMenuOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <AnimatePresence>
+                        {isUserMenuOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute right-0 top-full mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+                          >
+                            <div className="py-2">
                               <Link
-                                to="/admin"
+                                to="/profile"
                                 className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3"
                               >
-                                <UserIcon size={16} /> Admin Dashboard
+                                <UserIcon size={16} /> Profile
                               </Link>
-                            )}
-                            {[
-                              {
-                                label: "My Orders",
-                                icon: Package,
-                                path: "/profile/orders",
-                              },
-                              {
-                                label: "My Addresses",
-                                icon: MapPin,
-                                path: "/profile/addresses",
-                              },
-                              {
-                                label: "My Wallet",
-                                icon: Wallet,
-                                path: "/profile/wallet",
-                              },
-                              {
-                                label: "My Subscriptions",
-                                icon: Package,
-                                path: "/profile/subscriptions",
-                              },
-                              {
-                                label: "My Wishlist",
-                                icon: Heart,
-                                path: "/profile/wishlist",
-                              },
-                              {
-                                label: "My Account",
-                                icon: UserIcon,
-                                path: "/profile/my-account",
-                              },
-                            ].map((item, idx) => (
-                              <Link
-                                key={idx}
-                                to={item.path}
-                                className={`block px-6 py-3 text-sm transition-colors flex items-center gap-3 ${location.pathname === item.path
-                                  ? "text-[#c16e41]"
-                                  : "text-white hover:text-[#c16e41]"
+                              {user?.role === "admin" && (
+                                <Link
+                                  to="/admin"
+                                  className="block px-6 py-3 text-sm transition-colors text-white hover:text-[#c16e41] flex items-center gap-3"
+                                >
+                                  <UserIcon size={16} /> Admin Dashboard
+                                </Link>
+                              )}
+                              {[
+                                {
+                                  label: "My Orders",
+                                  icon: Package,
+                                  path: "/profile/orders",
+                                },
+                                {
+                                  label: "My Addresses",
+                                  icon: MapPin,
+                                  path: "/profile/addresses",
+                                },
+                                {
+                                  label: "My Wallet",
+                                  icon: Wallet,
+                                  path: "/profile/wallet",
+                                },
+                                {
+                                  label: "My Subscriptions",
+                                  icon: Package,
+                                  path: "/profile/subscriptions",
+                                },
+                                {
+                                  label: "My Wishlist",
+                                  icon: Heart,
+                                  path: "/profile/wishlist",
+                                },
+                                {
+                                  label: "My Account",
+                                  icon: UserIcon,
+                                  path: "/profile/my-account",
+                                },
+                              ].map((item, idx) => (
+                                <Link
+                                  key={idx}
+                                  to={item.path}
+                                  className={`block px-6 py-3 text-sm transition-colors flex items-center gap-3 ${
+                                    location.pathname === item.path
+                                      ? "text-[#c16e41]"
+                                      : "text-white hover:text-[#c16e41]"
                                   }`}
+                                >
+                                  <item.icon size={16} />
+                                  {item.label}
+                                </Link>
+                              ))}
+                              <div className="h-px bg-white/10 my-1 mx-6" />
+                              <button
+                                onClick={() => {
+                                  logout();
+                                  setIsUserMenuOpen(false);
+                                }}
+                                className="w-full text-left px-6 py-3 text-sm text-white hover:text-[#c16e41] transition-colors flex items-center gap-3"
                               >
-                                <item.icon size={16} />
-                                {item.label}
-                              </Link>
-                            ))}
-                            <div className="h-px bg-white/10 my-1 mx-6" />
-                            <button
-                              onClick={() => {
-                                logout();
-                                setIsUserMenuOpen(false);
-                              }}
-                              className="w-full text-left px-6 py-3 text-sm text-white hover:text-[#c16e41] transition-colors flex items-center gap-3"
-                            >
-                              <UserIcon size={16} className="opacity-0" /> Log
-                              Out
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                                <UserIcon size={16} className="opacity-0" /> Log
+                                Out
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </>
                 ) : (
                   <Link
                     to="/login"
@@ -506,7 +659,6 @@ const Navbar = () => {
                 )}
               </div>
 
-              {/* Search Bar */}
               <div className="relative hidden lg:block" ref={searchRef}>
                 <div className="bg-[#2a2a2a]/80 hover:bg-[#2a2a2a] backdrop-blur-md flex itemscenter gap-3 px-4 py-2.5 rounded-lg border border-white/5 focus-within:border-white/20 transition-all min-w-[200px]">
                   <Search size={18} className="text-white/80" />
@@ -519,7 +671,6 @@ const Navbar = () => {
                   />
                 </div>
 
-                {/* Search Results Dropdown */}
                 <AnimatePresence>
                   {isSearchOpen && hasAnySearchResults && (
                     <motion.div
@@ -529,7 +680,6 @@ const Navbar = () => {
                       className="absolute right-0 top-full mt-2 w-96 bg-[#1a1a1a] border border-white/10 rounded-sm shadow-2xl z-[60] overflow-hidden"
                     >
                       <div className="py-2 max-h-[420px] overflow-y-auto">
-                        {/* Products section */}
                         {searchResultsProducts.length > 0 && (
                           <>
                             <div className="px-4 py-2 text-xs uppercase tracking-widest text-white/60">
@@ -570,7 +720,6 @@ const Navbar = () => {
                           </>
                         )}
 
-                        {/* Blogs section */}
                         {searchResultsBlogs.length > 0 && (
                           <>
                             <div className="px-4 pt-3 pb-2 text-xs uppercase tracking-widest text-white/60 border-t border-white/10">
@@ -621,7 +770,6 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Cart */}
               <button
                 onClick={toggleCart}
                 className="flex items-center gap-2 px-2 py-2 text-white hover:text-[#c16e41] transition-colors relative"
@@ -640,7 +788,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Dropdown */}
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div

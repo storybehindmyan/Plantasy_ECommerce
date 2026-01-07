@@ -20,6 +20,7 @@ import BlogsPage from "./pages/blogs/BlogsPage";
 import ReviewsPage from "./pages/reviews/ReviewsPage";
 import SupportPage from "./pages/support/SupportPage";
 import AdminUsersPage from "./pages/admin-users/AdminUsersPage";
+import CategoriesPage from "./pages/categories/CategoriesPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/support" element={<SupportPage />} />
               <Route path="/admin-users" element={<AdminUsersPage />} />
+              <Route path="/categories" element={<CategoriesPage />} />
             </Route>
 
             {/* 404 */}

@@ -47,6 +47,7 @@ type ProductFormData = {
   category: string;
   plantType: PlantType | "";
   policy: PolicyType | "";
+  volume: string; // NEW
   isActive: boolean;
   coverImage: string;
   hoverImage: string;
@@ -61,6 +62,7 @@ type ProductWithMeta = Omit<Product, "createdAt" | "updatedAt"> & {
   updatedAt?: Timestamp | Date;
   isNewArrival?: boolean;
   isOnSale?: boolean;
+  volume?: string | number; // in case it already exists as number
 };
 
 const ProductsPage: React.FC = () => {
@@ -84,6 +86,7 @@ const ProductsPage: React.FC = () => {
     category: "",
     plantType: "",
     policy: "",
+    volume: "", // NEW
     isActive: true,
     coverImage: "",
     hoverImage: "",
@@ -161,6 +164,7 @@ const ProductsPage: React.FC = () => {
           updatedAt,
           isNewArrival,
           isOnSale: hasDiscount,
+          volume: data.volume, // NEW: load from Firestore if present
         });
       });
 
@@ -177,13 +181,11 @@ const ProductsPage: React.FC = () => {
     return `PROD00${random}`;
   };
 
-  // optional helper to suggest a SKU if blank
   const generateSku = () => {
     const random = Math.floor(100000 + Math.random() * 900000);
     return `SKU-${random}`;
   };
 
-  // compress using canvas before upload
   const compressImage = async (file: File, quality = 0.7): Promise<File> => {
     const imageBitmap = await createImageBitmap(file);
     const canvas = document.createElement("canvas");
@@ -226,6 +228,10 @@ const ProductsPage: React.FC = () => {
         category: product.category,
         plantType: (product.plantType as PlantType) || "",
         policy: (product.policy as PolicyType) || "",
+        volume:
+          product.volume !== undefined && product.volume !== null
+            ? String(product.volume)
+            : "", // NEW
         isActive: product.isActive,
         coverImage: cover,
         hoverImage: hover,
@@ -246,6 +252,7 @@ const ProductsPage: React.FC = () => {
         category: "",
         plantType: "",
         policy: "",
+        volume: "", // NEW
         isActive: true,
         coverImage: "",
         hoverImage: "",
@@ -360,7 +367,6 @@ const ProductsPage: React.FC = () => {
     );
     const snap = await getDocs(q);
     if (snap.empty) return true;
-    // allow same SKU for the product being edited
     if (snap.size === 1 && currentId) {
       const docId = snap.docs[0].id;
       return docId === currentId;
@@ -397,12 +403,10 @@ const ProductsPage: React.FC = () => {
       let coverImageUrl = formData.coverImage;
       let hoverImageUrl = formData.hoverImage;
 
-      // Ensure cover image exists and is valid
       if (!coverImageUrl || !allImageUrls.includes(coverImageUrl)) {
         coverImageUrl = allImageUrls[0] || "";
       }
 
-      // Ensure hover image exists and is valid, different from cover if possible
       if (!hoverImageUrl || !allImageUrls.includes(hoverImageUrl)) {
         hoverImageUrl = allImageUrls[1] || allImageUrls[0] || "";
       }
@@ -411,17 +415,22 @@ const ProductsPage: React.FC = () => {
         ? parseFloat(formData.discountPrice)
         : null;
 
+      const volumeValue =
+        formData.volume.trim() === ""
+          ? null
+          : formData.volume.trim(); // keep as string or later parseFloat if needed
+
       const baseData: any = {
         name: formData.name.trim(),
         sku: finalSku,
         description: formData.description,
         price: parseFloat(formData.price),
-        // Use null when discount is not provided, never undefined
         discountPrice: discountPriceNumber,
         stock: parseInt(formData.stock),
         category: formData.category,
         plantType: formData.plantType,
         policy: formData.policy,
+        volume: volumeValue, // NEW
         isActive: formData.isActive,
         images: allImageUrls,
         coverImage: coverImageUrl,
@@ -619,10 +628,7 @@ const ProductsPage: React.FC = () => {
           <h1 className="page-title">Products</h1>
           <p className="page-subtitle">Manage your product inventory</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="admin-btn-primary"
-        >
+        <button onClick={() => handleOpenModal()} className="admin-btn-primary">
           <Plus className="w-5 h-5" />
           Add Product
         </button>
@@ -760,8 +766,8 @@ const ProductsPage: React.FC = () => {
             />
           </div>
 
-          {/* Pricing + Stock */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Pricing + Stock + Volume */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="admin-label">Selling price (₹)</label>
               <input
@@ -801,6 +807,18 @@ const ProductsPage: React.FC = () => {
                 }
                 className="admin-input"
                 required
+              />
+            </div>
+            <div>
+              <label className="admin-label">Volume</label>
+              <input
+                type="text"
+                value={formData.volume}
+                onChange={(e) =>
+                  setFormData({ ...formData, volume: e.target.value })
+                }
+                className="admin-input"
+                placeholder="e.g., 500 ml, 1 L"
               />
             </div>
           </div>

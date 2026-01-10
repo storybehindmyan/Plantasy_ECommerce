@@ -5,8 +5,7 @@ import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   onAuthStateChanged,
   type User as FirebaseUser,
@@ -20,50 +19,56 @@ export const useFirebaseAuth = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any | null>(null);
 
-  // handle auth state + redirect result once on mount
+  // Subscribe to auth state once on mount
   useEffect(() => {
-    let unsub: (() => void) | undefined;
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
 
-    (async () => {
-      try {
-        setLoading(true);
-        // process redirect result (if returning from provider)
-        await getRedirectResult(auth);
-      } catch (err) {
-        console.error("getRedirectResult error:", err);
-        setError(err);
-      } finally {
-        // subscribe to auth state
-        unsub = onAuthStateChanged(auth, (firebaseUser) => {
-          setUser(firebaseUser);
-          setLoading(false);
-        });
-      }
-    })();
-
-    return () => {
-      if (unsub) unsub();
-    };
+    return () => unsub();
   }, []);
 
   const login = async (email: string, password: string) => {
-    setError(null);
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      setError(null);
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      setError(err);
+      throw err;
+    }
   };
 
   const signup = async (email: string, password: string) => {
-    setError(null);
-    await createUserWithEmailAndPassword(auth, email, password);
+    try {
+      setError(null);
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      setError(err);
+      throw err;
+    }
   };
 
   const loginWithGoogle = async () => {
-    setError(null);
-    await signInWithRedirect(auth, provider);
+    try {
+      setError(null);
+      // Popup Google auth
+      const result = await signInWithPopup(auth, provider);
+      setUser(result.user);
+    } catch (err: any) {
+      setError(err);
+      throw err;
+    }
   };
 
   const logout = async () => {
-    setError(null);
-    await signOut(auth);
+    try {
+      setError(null);
+      await signOut(auth);
+    } catch (err: any) {
+      setError(err);
+      throw err;
+    }
   };
 
   return {

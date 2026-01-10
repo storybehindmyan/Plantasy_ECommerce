@@ -28,25 +28,44 @@ export interface User {
 }
 
 interface AuthContextType {
-  [x: string]: any;
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    confirmPassword: string
+  ) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
+  validatePassword: (password: string) => string | null;
   error: any | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Password: min 8 chars, 1 upper, 1 lower, 1 number, 1 special
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&])[A-Za-z\d$@$!%*?&]{8,}$/;
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const firebaseAuth = useFirebaseAuth();
+
+  // Helper: validate password against rules
+  const validatePassword = (password: string): string | null => {
+    if (!PASSWORD_REGEX.test(password)) {
+      return (
+        "Password must be at least 8 characters, " +
+        "include uppercase, lowercase, a number, and a special character."
+      );
+    }
+    return null;
+  };
 
   // Sync Firebase Auth state with custom User state
   useEffect(() => {
@@ -56,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       void loadUserProfile(firebaseAuth.user);
     } else {
       setUser(null);
+      localStorage.removeItem("plantasy_user");
     }
     setLoading(false);
   }, [firebaseAuth.user, firebaseAuth.loading]);
@@ -99,16 +119,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
+    // Let Firebase validate credentials; surface errors in UI via firebaseAuth.error
     await firebaseAuth.login(email, password);
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (
+    email: string,
+    password: string,
+    confirmPassword: string
+  ) => {
+    // Confirm password
+    if (password !== confirmPassword) {
+      throw new Error("Passwords do not match.");
+    }
+
+    const validationError = validatePassword(password);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
     await firebaseAuth.signup(email, password);
+    // Firebase will trigger onAuthStateChanged → loadUserProfile
   };
 
   const loginWithGoogle = async () => {
-    await firebaseAuth.loginWithGoogle(); // now uses signInWithRedirect in the hook
-  };
+  await firebaseAuth.loginWithGoogle(); // now uses signInWithPopup in the hook
+};
+
 
   const logout = async () => {
     await firebaseAuth.logout();
@@ -158,6 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loginWithGoogle,
     logout,
     updateUser,
+    validatePassword,
     error: firebaseAuth.error,
   };
 

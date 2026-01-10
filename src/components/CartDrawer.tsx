@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -367,6 +368,10 @@ const CartDrawer: React.FC = () => {
     void openAddressModal();
   };
 
+  const selectedAddress = addresses.find(
+    (addr) => addr.id === selectedAddressId
+  );
+
   return (
     <>
       <AnimatePresence>
@@ -408,59 +413,75 @@ const CartDrawer: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  cart.map((item) => (
-                    <div key={item.id} className="flex gap-4">
-                      <img
-                        src={item.coverImage ?? item.image}
-                        alt={item.name}
-                        className="w-20 h-20 object-cover rounded bg-white/5"
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-medium text-white line-clamp-1">
-                          {item.name}
-                        </h3>
-                        <p className="text-gray-400 text-sm mb-2">
-                          ₹{item.price.toFixed(2)}
-                        </p>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center border border-white/20 rounded">
+                  cart.map((item, index) => {
+                    const imgSrc =
+                      (item as any).coverImage ??
+                      (item as any).image ??
+                      undefined;
+
+                    // Robust, unique key per cart row
+                    const key =
+                      item.id ??
+                      (item as any).productId ??
+                      `${(item as any).name ?? "item"}-${index}`;
+
+                    return (
+                      <div key={key} className="flex gap-4">
+                        {imgSrc && (
+                          <img
+                            src={imgSrc}
+                            alt={item.name}
+                            className="w-20 h-20 object-cover rounded bg-white/5"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-medium text-white line-clamp-1">
+                            {item.name}
+                          </h3>
+                          <p className="text-gray-400 text-sm mb-2">
+                            ₹{item.price.toFixed(2)}
+                          </p>
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center border border-white/20 rounded">
+                              <button
+                                onClick={() =>
+                                  handleUpdateQuantity(
+                                    item.id,
+                                    item.quantity - 1
+                                  )
+                                }
+                                disabled={item.quantity <= 1}
+                                className="p-1 hover:bg-white/10 disabled:opacity-40"
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <span className="w-8 text-center text-sm">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleUpdateQuantity(
+                                    item.id,
+                                    item.quantity + 1
+                                  )
+                                }
+                                className="p-1 hover:bg-white/10"
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
                             <button
-                              onClick={() =>
-                                handleUpdateQuantity(
-                                  item.id,
-                                  item.quantity - 1
-                                )
-                              }
-                              disabled={item.quantity <= 1}
-                              className="p-1 hover:bg-white/10 disabled:opacity-40"
+                              onClick={() => handleRemoveFromCart(item.id)}
+                              className="text-gray-400 hover:text-red-500 transition ml-auto"
                             >
-                              <Minus size={14} />
-                            </button>
-                            <span className="w-8 text-center text-sm">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() =>
-                                handleUpdateQuantity(
-                                  item.id,
-                                  item.quantity + 1
-                                )
-                              }
-                              className="p-1 hover:bg-white/10"
-                            >
-                              <Plus size={14} />
+                              <Trash2 size={16} />
                             </button>
                           </div>
-                          <button
-                            onClick={() => handleRemoveFromCart(item.id)}
-                            className="text-gray-400 hover:text-red-500 transition ml-auto"
-                          >
-                            <Trash2 size={16} />
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
@@ -718,8 +739,9 @@ const CartDrawer: React.FC = () => {
                     )}
 
                     <p className="text-[11px] text-gray-400 mb-3">
-                      Address selection is <span className="text-red-400">*</span>{" "}
-                      required to continue.
+                      Address selection is{" "}
+                      <span className="text-red-400">*</span> required to
+                      continue.
                     </p>
                     <div className="flex justify-end gap-3">
                       <button

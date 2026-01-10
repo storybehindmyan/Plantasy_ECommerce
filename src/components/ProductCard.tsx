@@ -81,11 +81,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="flex items-center gap-2 font-sans text-sm mb-4">
             {hasDiscount && (
               <span className="text-gray-500 line-through">
-                ₹{product.price.toFixed(2)}
+                ₹{displayPrice.toFixed(2)}
               </span>
             )}
             <span className="text-white/80">
-              ₹{displayPrice.toFixed(2)}
+            ₹{product.price.toFixed(2)}
             </span>
           </div>
 

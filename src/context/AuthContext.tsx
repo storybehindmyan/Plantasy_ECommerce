@@ -28,6 +28,7 @@ export interface User {
 }
 
 interface AuthContextType {
+  [x: string]: any;
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;

@@ -108,6 +108,7 @@ const Home = () => {
           isActive: data.isActive,
           policy: data.policy,
           badge: "New Arrival",
+          volume: data.volume ?? "", // <-- add this line (type as in Product)
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
         };
@@ -341,6 +342,127 @@ const Home = () => {
         </div>
       </section>
 
+      {/* 2. Subscription Boxes (Split Layout) */}
+      <section className="flex flex-col md:flex-row min-h-screen">
+        {/* Left: Soilless Plants (Hydroponics) */}
+        <motion.div
+          className="w-full md:w-1/2 relative min-h-[50vh] md:min-h-auto group overflow-hidden cursor-pointer"
+          initial={{ opacity: 0, x: -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
+          <Link
+            to="/shop"
+            className="block w-full h-full relative"
+          >
+            <img
+              src="/soilless-subscription.png"
+              alt="Soilless Plants Subscription"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/50 group-hover:bg-black/20 transition-colors duration-500" />
+            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-12">
+              <h2 className="text-4xl md:text-5xl font-serif text-white mb-4 shadow-sm">
+                Soil Less
+              </h2>
+              <p className="text-white/90 text-lg font-light mb-8 tracking-wide">
+                Hydroponic & Water-Rooted
+              </p>
+              <span className="inline-block border border-white px-8 py-3 text-sm tracking-[0.2em] font-medium text-white hover:bg-white hover:text-black transition-all duration-300 uppercase">
+                Shop Collection
+              </span>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Right: Soil Plants */}
+        <motion.div
+          className="w-full md:w-1/2 relative min-h-[50vh] md:min-h-auto group overflow-hidden cursor-pointer"
+          initial={{ opacity: 0, x: 50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <Link
+            to="/shop"
+            className="block w-full h-full relative"
+          >
+            <img
+              src="/soil-subscription.png"
+              alt="Soil Plants Subscription"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-500" />
+            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-12">
+  {/* Black overlay on image, not on text */}
+  <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
+
+  {/* Text content above overlay */}
+  <div className="relative">
+    <h2 className="text-4xl md:text-5xl font-serif text-white mb-4 shadow-sm">
+      Soil Based
+    </h2>
+    <p className="text-white/90 text-lg font-light mb-8 tracking-wide">
+      Traditional Potted Plants
+    </p>
+    <span className="inline-block border border-white px-8 py-3 text-sm tracking-[0.2em] font-medium text-white hover:bg-white hover:text-black transition-all duration-300 uppercase">
+      Shop Collection
+    </span>
+  </div>
+</div>
+
+          </Link>
+        </motion.div>
+      </section>
+
+      
+
+      {/* 4. Our Story / From Seed to Sprout Section */}
+      <section
+        ref={storyRef}
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      >
+        <div className="absolute inset-0 z-0">
+          <motion.div
+            className="absolute inset-0 w-full h-full"
+            style={{ y: yStoryBg, scale: 1.25 }}
+          >
+            <img
+              src="/story-bg.png"
+              alt="Background"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/20" />
+          </motion.div>
+        </div>
+
+        <motion.div
+          className="relative z-10 text-center max-w-2xl px-6 text-white"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
+          <h2 className="text-5xl md:text-7xl font-serif mb-6 tracking-tight">
+            From Seed to Sprout
+          </h2>
+          <p className="text-gray-200 text-lg md:text-xl mb-10 leading-relaxed font-light">
+            I'm a paragraph. Click here to add your own text and edit me. It's
+            easy. Just click “Edit Text” or double click me to add your own
+            content and make changes to the font. I’m a great place for you to
+            tell a story and let your users know a little more about you.
+          </p>
+          <Link
+            to="/our-story"
+            className="inline-block border border-white px-10 py-3 text-sm tracking-[0.2em] font-medium hover:bg-white hover:text-black transition-all duration-300 uppercase"
+          >
+            Our Story
+          </Link>
+        </motion.div>
+      </section>
+
+      {/* 2. Subscription Boxes (Split Layout) */}
       {/* 1.8 Discover Sprout Section */}
       <motion.section
         className="relative h-screen bg-black overflow-hidden"
@@ -423,118 +545,6 @@ const Home = () => {
           </h2>
         </motion.div>
       </motion.section>
-
-      {/* 4. Our Story / From Seed to Sprout Section */}
-      <section
-        ref={storyRef}
-        className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      >
-        <div className="absolute inset-0 z-0">
-          <motion.div
-            className="absolute inset-0 w-full h-full"
-            style={{ y: yStoryBg, scale: 1.25 }}
-          >
-            <img
-              src="/story-bg.png"
-              alt="Background"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black/20" />
-          </motion.div>
-        </div>
-
-        <motion.div
-          className="relative z-10 text-center max-w-2xl px-6 text-white"
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <h2 className="text-5xl md:text-7xl font-serif mb-6 tracking-tight">
-            From Seed to Sprout
-          </h2>
-          <p className="text-gray-200 text-lg md:text-xl mb-10 leading-relaxed font-light">
-            I'm a paragraph. Click here to add your own text and edit me. It's
-            easy. Just click “Edit Text” or double click me to add your own
-            content and make changes to the font. I’m a great place for you to
-            tell a story and let your users know a little more about you.
-          </p>
-          <Link
-            to="/our-story"
-            className="inline-block border border-white px-10 py-3 text-sm tracking-[0.2em] font-medium hover:bg-white hover:text-black transition-all duration-300 uppercase"
-          >
-            Our Story
-          </Link>
-        </motion.div>
-      </section>
-
-      {/* 2. Subscription Boxes (Split Layout) */}
-      {/* 2. Subscription Boxes (Split Layout) */}
-      <section className="flex flex-col md:flex-row min-h-screen">
-        {/* Left: Soilless Plants (Hydroponics) */}
-        <motion.div
-          className="w-full md:w-1/2 relative min-h-[50vh] md:min-h-auto group overflow-hidden cursor-pointer"
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <Link
-            to="/shop"
-            className="block w-full h-full relative"
-          >
-            <img
-              src="/soilless-subscription.png"
-              alt="Soilless Plants Subscription"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-500" />
-            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-12">
-              <h2 className="text-4xl md:text-5xl font-serif text-white mb-4 shadow-sm">
-                Soilless
-              </h2>
-              <p className="text-white/90 text-lg font-light mb-8 tracking-wide">
-                Hydroponic & Water-Rooted
-              </p>
-              <span className="inline-block border border-white px-8 py-3 text-sm tracking-[0.2em] font-medium text-white hover:bg-white hover:text-black transition-all duration-300 uppercase">
-                Shop Collection
-              </span>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Right: Soil Plants */}
-        <motion.div
-          className="w-full md:w-1/2 relative min-h-[50vh] md:min-h-auto group overflow-hidden cursor-pointer"
-          initial={{ opacity: 0, x: 50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <Link
-            to="/shop"
-            className="block w-full h-full relative"
-          >
-            <img
-              src="/soil-subscription.png"
-              alt="Soil Plants Subscription"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-500" />
-            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-12">
-              <h2 className="text-4xl md:text-5xl font-serif text-white mb-4 shadow-sm">
-                Soiled
-              </h2>
-              <p className="text-white/90 text-lg font-light mb-8 tracking-wide">
-                Traditional Potted Plants
-              </p>
-              <span className="inline-block border border-white px-8 py-3 text-sm tracking-[0.2em] font-medium text-white hover:bg-white hover:text-black transition-all duration-300 uppercase">
-                Shop Collection
-              </span>
-            </div>
-          </Link>
-        </motion.div>
-      </section>
 
       {/* 3. Blog Section - From Garden to Vase (dynamic) */}
       <section className="bg-[#f4f1ed] py-24 px-6 text-[#2C2C2C]">

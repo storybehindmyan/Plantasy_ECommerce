@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   Search,
@@ -10,6 +10,7 @@ import {
   Upload,
   Star,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import DataTable from "../../components/common/DataTable";
 import Modal from "../../components/common/Modal";
 import StatusBadge from "../../components/common/StatusBadge";
@@ -47,7 +48,7 @@ type ProductFormData = {
   category: string;
   plantType: PlantType | "";
   policy: PolicyType | "";
-  volume: string; // NEW
+  volume: string;
   isActive: boolean;
   coverImage: string;
   hoverImage: string;
@@ -62,10 +63,20 @@ type ProductWithMeta = Omit<Product, "createdAt" | "updatedAt"> & {
   updatedAt?: Timestamp | Date;
   isNewArrival?: boolean;
   isOnSale?: boolean;
-  volume?: string | number; // in case it already exists as number
+  volume?: string | number;
 };
 
+type SortOption =
+  | "none"
+  | "stock-asc"
+  | "updated-latest"
+  | "updated-oldest"
+  | "price-asc"
+  | "price-desc";
+
 const ProductsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+
   const [products, setProducts] = useState<ProductWithMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,17 +97,33 @@ const ProductsPage: React.FC = () => {
     category: "",
     plantType: "",
     policy: "",
-    volume: "", // NEW
+    volume: "",
     isActive: true,
     coverImage: "",
     hoverImage: "",
     images: [],
   });
 
-  // local image state
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const [sortBy, setSortBy] = useState<SortOption>("none");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  useEffect(() => {
+    // Initialize sortBy from ?sort= query param if valid
+    const sortParam = searchParams.get("sort");
+    if (
+      sortParam === "stock-asc" ||
+      sortParam === "updated-latest" ||
+      sortParam === "updated-oldest" ||
+      sortParam === "price-asc" ||
+      sortParam === "price-desc"
+    ) {
+      setSortBy(sortParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchCategories();
@@ -164,7 +191,7 @@ const ProductsPage: React.FC = () => {
           updatedAt,
           isNewArrival,
           isOnSale: hasDiscount,
-          volume: data.volume, // NEW: load from Firestore if present
+          volume: data.volume,
         });
       });
 
@@ -231,7 +258,7 @@ const ProductsPage: React.FC = () => {
         volume:
           product.volume !== undefined && product.volume !== null
             ? String(product.volume)
-            : "", // NEW
+            : "",
         isActive: product.isActive,
         coverImage: cover,
         hoverImage: hover,
@@ -252,7 +279,7 @@ const ProductsPage: React.FC = () => {
         category: "",
         plantType: "",
         policy: "",
-        volume: "", // NEW
+        volume: "",
         isActive: true,
         coverImage: "",
         hoverImage: "",
@@ -386,7 +413,6 @@ const ProductsPage: React.FC = () => {
 
       const productId = editingProduct ? editingProduct.id : generateProductId();
 
-      // Ensure SKU
       let finalSku = formData.sku.trim();
       if (!finalSku) {
         finalSku = generateSku();
@@ -416,9 +442,7 @@ const ProductsPage: React.FC = () => {
         : null;
 
       const volumeValue =
-        formData.volume.trim() === ""
-          ? null
-          : formData.volume.trim(); // keep as string or later parseFloat if needed
+        formData.volume.trim() === "" ? null : formData.volume.trim();
 
       const baseData: any = {
         name: formData.name.trim(),
@@ -430,7 +454,7 @@ const ProductsPage: React.FC = () => {
         category: formData.category,
         plantType: formData.plantType,
         policy: formData.policy,
-        volume: volumeValue, // NEW
+        volume: volumeValue,
         isActive: formData.isActive,
         images: allImageUrls,
         coverImage: coverImageUrl,
@@ -486,13 +510,6 @@ const ProductsPage: React.FC = () => {
     }
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.sku || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const formatTimestamp = (ts?: Timestamp | Date) => {
     if (!ts) return "-";
     let date: Date | null = null;
@@ -504,6 +521,76 @@ const ProductsPage: React.FC = () => {
     return date ? date.toLocaleString() : "-";
   };
 
+  const filteredAndSortedProducts = useMemo(() => {
+    let list = products.filter((product) => {
+      const q = searchQuery.toLowerCase();
+      const matchesText =
+        product.name.toLowerCase().includes(q) ||
+        product.category.toLowerCase().includes(q) ||
+        (product.sku || "").toLowerCase().includes(q);
+
+      const matchesCategory =
+        categoryFilter === "all" || product.category === categoryFilter;
+
+      return matchesText && matchesCategory;
+    });
+
+    switch (sortBy) {
+      case "stock-asc":
+        list = [...list].sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0));
+        break;
+      case "updated-latest":
+        list = [...list].sort((a, b) => {
+          const da =
+            a.updatedAt && (a.updatedAt as any).toDate
+              ? (a.updatedAt as Timestamp).toDate().getTime()
+              : a.updatedAt instanceof Date
+              ? a.updatedAt.getTime()
+              : 0;
+          const db =
+            b.updatedAt && (b.updatedAt as any).toDate
+              ? (b.updatedAt as Timestamp).toDate().getTime()
+              : b.updatedAt instanceof Date
+              ? b.updatedAt.getTime()
+              : 0;
+          return db - da;
+        });
+        break;
+      case "updated-oldest":
+        list = [...list].sort((a, b) => {
+          const da =
+            a.updatedAt && (a.updatedAt as any).toDate
+              ? (a.updatedAt as Timestamp).toDate().getTime()
+              : a.updatedAt instanceof Date
+              ? a.updatedAt.getTime()
+              : 0;
+          const db =
+            b.updatedAt && (b.updatedAt as any).toDate
+              ? (b.updatedAt as Timestamp).toDate().getTime()
+              : b.updatedAt instanceof Date
+              ? b.updatedAt.getTime()
+              : 0;
+          return da - db;
+        });
+        break;
+      case "price-asc":
+        list = [...list].sort(
+          (a, b) => (a.price ?? 0) - (b.price ?? 0)
+        );
+        break;
+      case "price-desc":
+        list = [...list].sort(
+          (a, b) => (b.price ?? 0) - (a.price ?? 0)
+        );
+        break;
+      case "none":
+      default:
+        break;
+    }
+
+    return list;
+  }, [products, searchQuery, categoryFilter, sortBy]);
+
   const columns = [
     {
       key: "name",
@@ -514,23 +601,23 @@ const ProductsPage: React.FC = () => {
             <img
               src={product.coverImage || product.images[0]}
               alt={product.name}
-              className="w-10 h-10 rounded-lg object-cover"
+              className="h-10 w-10 rounded-lg object-cover"
             />
           ) : (
-            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
               <span className="text-xs text-muted-foreground">N/A</span>
             </div>
           )}
           <div>
-            <p className="font-medium flex items-center gap-2">
+            <p className="flex items-center gap-2 font-medium">
               {product.name}
               {product.isNewArrival && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                   New Arrival
                 </span>
               )}
               {product.isOnSale && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700">
+                <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
                   Sale
                 </span>
               )}
@@ -553,7 +640,7 @@ const ProductsPage: React.FC = () => {
               <span className="font-medium">
                 ₹{product.price.toFixed(2)}
               </span>
-              <span className="text-xs text-muted-foreground line-through ml-2">
+              <span className="ml-2 line-through text-xs text-muted-foreground">
                 ₹{product.discountPrice.toFixed(2)}
               </span>
             </>
@@ -571,7 +658,7 @@ const ProductsPage: React.FC = () => {
       render: (product: ProductWithMeta) => (
         <span
           className={
-            product.stock <= 10 ? "text-destructive font-medium" : ""
+            product.stock <= 10 ? "font-medium text-destructive" : ""
           }
         >
           {product.stock}
@@ -596,9 +683,9 @@ const ProductsPage: React.FC = () => {
             title={product.isActive ? "Disable" : "Enable"}
           >
             {product.isActive ? (
-              <EyeOff className="w-4 h-4" />
+              <EyeOff className="h-4 w-4" />
             ) : (
-              <Eye className="w-4 h-4" />
+              <Eye className="h-4 w-4" />
             )}
           </button>
           <button
@@ -606,14 +693,14 @@ const ProductsPage: React.FC = () => {
             className="admin-btn-ghost p-2"
             title="Edit"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="h-4 w-4" />
           </button>
           <button
             onClick={() => setDeleteConfirm(product.id)}
             className="admin-btn-ghost p-2 text-destructive"
             title="Delete"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       ),
@@ -622,22 +709,20 @@ const ProductsPage: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      {/* Page Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Products</h1>
           <p className="page-subtitle">Manage your product inventory</p>
         </div>
         <button onClick={() => handleOpenModal()} className="admin-btn-primary">
-          <Plus className="w-5 h-5" />
+          <Plus className="h-5 w-5" />
           Add Product
         </button>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="relative max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search products..."
@@ -646,17 +731,53 @@ const ProductsPage: React.FC = () => {
             className="admin-input pl-10"
           />
         </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div>
+            <label className="mr-2 text-xs text-muted-foreground">
+              Category
+            </label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="admin-input h-9 py-1 text-sm"
+            >
+              <option value="all">All</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mr-2 text-xs text-muted-foreground">
+              Sort by
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="admin-input h-9 py-1 text-sm"
+            >
+              <option value="none">Default</option>
+              <option value="stock-asc">Stock (low to high)</option>
+              <option value="price-asc">Price (low to high)</option>
+              <option value="price-desc">Price (high to low)</option>
+              <option value="updated-latest">Latest updated</option>
+              <option value="updated-oldest">Least updated</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Products Table */}
       <DataTable
         columns={columns}
-        data={filteredProducts}
+        data={filteredAndSortedProducts}
         isLoading={isLoading}
         emptyMessage="No products found"
       />
 
-      {/* Add/Edit Modal */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
@@ -665,7 +786,7 @@ const ProductsPage: React.FC = () => {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name + SKU */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="admin-label">Product Name</label>
               <input
@@ -693,7 +814,7 @@ const ProductsPage: React.FC = () => {
           </div>
 
           {/* Category + Plant type + Policy */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
               <label className="admin-label">Category</label>
               <select
@@ -729,7 +850,9 @@ const ProductsPage: React.FC = () => {
                 <option value="Soil-less">Soil-less</option>
                 <option value="Soil-Base">Soil-Base</option>
                 <option value="Both">Both</option>
-                <option value="None of the above">None of the above</option>
+                <option value="None of the above">
+                  None of the above
+                </option>
               </select>
             </div>
             <div>
@@ -767,7 +890,7 @@ const ProductsPage: React.FC = () => {
           </div>
 
           {/* Pricing + Stock + Volume */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div>
               <label className="admin-label">Selling price (₹)</label>
               <input
@@ -828,7 +951,7 @@ const ProductsPage: React.FC = () => {
             <label className="admin-label">Product Images</label>
 
             <div
-              className="border-2 border-dashed border-border rounded-lg p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors"
+              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-4 text-center transition-colors hover:border-primary"
               onDragOver={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -845,11 +968,11 @@ const ProductsPage: React.FC = () => {
                 input?.click();
               }}
             >
-              <Upload className="w-6 h-6 text-muted-foreground mb-2" />
+              <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 Drag & drop images here, or click to browse
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Select cover and hover images
               </p>
               <input
@@ -863,13 +986,13 @@ const ProductsPage: React.FC = () => {
             </div>
 
             {imagePreviews.length > 0 && (
-              <div className="mt-3 grid grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="mt-3 grid grid-cols-3 gap-3 md:grid-cols-4">
                 {imagePreviews.map((src, index) => (
-                  <div key={index} className="relative group">
+                  <div key={index} className="group relative">
                     <img
                       src={src}
                       alt={`Product ${index + 1}`}
-                      className={`w-full h-24 object-cover rounded-lg border ${
+                      className={`h-24 w-full rounded-lg border object-cover ${
                         formData.coverImage === src
                           ? "border-primary ring-2 ring-primary/50"
                           : formData.hoverImage === src
@@ -878,28 +1001,28 @@ const ProductsPage: React.FC = () => {
                       }`}
                     />
                     {formData.coverImage === src && (
-                      <span className="absolute top-1 left-1 bg-primary text-xs text-primary-foreground px-2 py-0.5 rounded flex items-center gap-1">
-                        <Star className="w-3 h-3" /> Cover
+                      <span className="absolute left-1 top-1 flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                        <Star className="h-3 w-3" /> Cover
                       </span>
                     )}
                     {formData.hoverImage === src &&
                       formData.coverImage !== src && (
-                        <span className="absolute top-1 right-8 bg-secondary text-xs text-secondary-foreground px-2 py-0.5 rounded flex items-center gap-1">
+                        <span className="absolute right-8 top-1 flex items-center gap-1 rounded bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
                           Hover
                         </span>
                       )}
-                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100">
                       <button
                         type="button"
-                        className="bg-background/80 hover:bg-primary/10 rounded-full p-1.5 text-xs"
+                        className="rounded-full bg-background/80 p-1.5 text-xs hover:bg-primary/10"
                         title="Set as cover"
                         onClick={() => handleSetCover(index)}
                       >
-                        <Star className="w-3 h-3" />
+                        <Star className="h-3 w-3" />
                       </button>
                       <button
                         type="button"
-                        className="bg-background/80 hover:bg-secondary/10 rounded-full p-1.5 text-xs"
+                        className="rounded-full bg-background/80 p-1.5 text-xs hover:bg-secondary/10"
                         title="Set as hover"
                         onClick={() => handleSetHover(index)}
                       >
@@ -907,7 +1030,7 @@ const ProductsPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        className="bg-background/80 rounded-full p-1.5 text-xs text-destructive hover:bg-destructive/10"
+                        className="rounded-full bg-background/80 p-1.5 text-xs text-destructive hover:bg-destructive/10"
                         title="Remove"
                         onClick={() => handleRemoveImage(index)}
                       >
@@ -920,9 +1043,8 @@ const ProductsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Timestamps display */}
           {editingProduct && (
-            <div className="text-xs text-muted-foreground space-y-1">
+            <div className="space-y-1 text-xs text-muted-foreground">
               <p>
                 <span className="font-medium">Created on:</span>{" "}
                 {formatTimestamp(editingProduct.createdAt)}
@@ -942,7 +1064,7 @@ const ProductsPage: React.FC = () => {
               onChange={(e) =>
                 setFormData({ ...formData, isActive: e.target.checked })
               }
-              className="w-4 h-4 rounded border-border"
+              className="h-4 w-4 rounded border-border"
             />
             <label htmlFor="isActive" className="text-sm">
               Product is active
@@ -964,16 +1086,15 @@ const ProductsPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Delete Confirmation */}
       <Modal
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
         title="Delete Product"
         size="sm"
       >
-        <p className="text-muted-foreground mb-6">
-          Are you sure you want to delete this product? This action cannot be
-          undone.
+        <p className="mb-6 text-muted-foreground">
+          Are you sure you want to delete this product? This action cannot
+          be undone.
         </p>
         <div className="flex justify-end gap-3">
           <button

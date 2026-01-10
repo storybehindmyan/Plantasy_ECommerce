@@ -1,7 +1,13 @@
 import React from 'react';
 import { OrderStatus, PaymentStatus, ReviewStatus, TicketStatus } from '../../types';
 
-type BadgeVariant = OrderStatus | PaymentStatus | ReviewStatus | TicketStatus | 'active' | 'inactive';
+export type BadgeVariant =
+  | OrderStatus
+  | PaymentStatus
+  | ReviewStatus
+  | TicketStatus
+  | "active"
+  | "inactive";
 
 interface StatusBadgeProps {
   status: BadgeVariant;

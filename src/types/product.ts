@@ -10,6 +10,8 @@ export type ProductCategory =
   | string;
 
 export interface Product {
+  volume: any;
+  plantType?: any;
   policy?: any;
   id: string;
   category: ProductCategory;

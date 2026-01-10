@@ -147,6 +147,7 @@ const ProductDetails = () => {
           discountPrice: data.discountPrice, // null when no discount
           stock: data.stock,
           isActive: data.isActive,
+          volume: data.volume,
           // you may have these fields in your Product type now:
           sku: data.sku,
           plantType: data.plantType,
@@ -476,15 +477,18 @@ const ProductDetails = () => {
               <div className="pt-8">
                 <AccordionItem title="Product Info" defaultOpen={true}>
                   <div className="space-y-2">
-                    <p>{product.description}</p>
-                    <p className="text-xs text-gray-500">
+                    
+                    <p >
                       Category: {product.category}
                     </p>
                     {(product as any).plantType && (
-                      <p className="text-xs text-gray-500">
+                      <p >
                         Plant type: {(product as any).plantType}
                       </p>
                     )}
+                    <p >
+                      Volume: {product.volume}
+                    </p>
                   </div>
                 </AccordionItem>
 

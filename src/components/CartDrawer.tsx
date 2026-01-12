@@ -368,9 +368,7 @@ const CartDrawer: React.FC = () => {
     void openAddressModal();
   };
 
-  const selectedAddress = addresses.find(
-    (addr) => addr.id === selectedAddressId
-  );
+
 
   return (
     <>
@@ -441,7 +439,7 @@ const CartDrawer: React.FC = () => {
                           <p className="text-gray-400 text-sm mb-2">
                             ₹{item.price.toFixed(2)}
                           </p>
-                          
+
                           <div className="flex items-center gap-3">
                             <div className="flex items-center border border-white/20 rounded">
                               <button
@@ -570,11 +568,10 @@ const CartDrawer: React.FC = () => {
                               key={addr.id}
                               type="button"
                               onClick={() => setSelectedAddressId(addr.id)}
-                              className={`w-full text-left border rounded-md px-3 py-2 text-xs md:text-sm ${
-                                selected
+                              className={`w-full text-left border rounded-md px-3 py-2 text-xs md:text-sm ${selected
                                   ? "border-[#c16e41] bg-[#c16e41]/10"
                                   : "border-white/15 hover:border-white/40"
-                              }`}
+                                }`}
                             >
                               <div className="flex justify-between items-center mb-1">
                                 <span className="text-white font-medium">

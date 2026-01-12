@@ -52,6 +52,9 @@ export const useFirestoreProducts = () => {
             isActive: data.isActive,
             badge: data.badge, // optional manual badge
             createdAt: data.createdAt,
+            volume: data.volume,
+            plantType: data.plantType,
+            policy: data.policy,
             updatedAt,
             isNewArrival,
             isOnSale: hasDiscount,

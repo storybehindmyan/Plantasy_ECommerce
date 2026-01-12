@@ -5,8 +5,7 @@ import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   onAuthStateChanged,
   type User as FirebaseUser,
@@ -20,30 +19,14 @@ export const useFirebaseAuth = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any | null>(null);
 
-  // handle auth state + redirect result once on mount
+  // handle auth state
   useEffect(() => {
-    let unsub: (() => void) | undefined;
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
 
-    (async () => {
-      try {
-        setLoading(true);
-        // process redirect result (if returning from provider)
-        await getRedirectResult(auth);
-      } catch (err) {
-        console.error("getRedirectResult error:", err);
-        setError(err);
-      } finally {
-        // subscribe to auth state
-        unsub = onAuthStateChanged(auth, (firebaseUser) => {
-          setUser(firebaseUser);
-          setLoading(false);
-        });
-      }
-    })();
-
-    return () => {
-      if (unsub) unsub();
-    };
+    return () => unsub();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -58,7 +41,12 @@ export const useFirebaseAuth = () => {
 
   const loginWithGoogle = async () => {
     setError(null);
-    await signInWithRedirect(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.error("Google login error:", err);
+      setError(err);
+    }
   };
 
   const logout = async () => {

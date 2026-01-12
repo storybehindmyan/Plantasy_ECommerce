@@ -19,7 +19,11 @@ export const useFirebaseAuth = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any | null>(null);
 
+<<<<<<< HEAD
   // Subscribe to auth state once on mount
+=======
+  // handle auth state
+>>>>>>> 1ffb36f4a66ab723d2307c47e4eddccbcc9807e2
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
@@ -50,6 +54,7 @@ export const useFirebaseAuth = () => {
   };
 
   const loginWithGoogle = async () => {
+<<<<<<< HEAD
     try {
       setError(null);
       // Popup Google auth
@@ -58,6 +63,14 @@ export const useFirebaseAuth = () => {
     } catch (err: any) {
       setError(err);
       throw err;
+=======
+    setError(null);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.error("Google login error:", err);
+      setError(err);
+>>>>>>> 1ffb36f4a66ab723d2307c47e4eddccbcc9807e2
     }
   };
 

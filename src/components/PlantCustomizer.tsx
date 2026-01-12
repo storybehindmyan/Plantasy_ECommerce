@@ -17,16 +17,11 @@ import {
   getDocs,
   query,
   where,
-  doc,
-  getDoc,
-  setDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { toast } from "sonner";
 import type { Product } from "../types/product";
-import { useAuth } from "../context/AuthContext";
-import { useCart} from "../context/CartContext";
+import { useCart } from "../context/CartContext";
 
 /**
  * Assumed Product type shape:
@@ -53,7 +48,6 @@ const steps = [
 const PlantCustomizer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const { user } = useAuth();
   const { addToCart } = useCart();
 
   // Data Selection State
@@ -214,120 +208,120 @@ const PlantCustomizer = () => {
     });
   };
 
-   const handleAddToCart = () => {
-  if (!selectedPlant || !selectedPot || !selectedComp) {
-    toast.error("Please complete all required selections.");
-    return;
-  }
+  const handleAddToCart = () => {
+    if (!selectedPlant || !selectedPot || !selectedComp) {
+      toast.error("Please complete all required selections.");
+      return;
+    }
 
-  const type = "combo";
-  console.log("Adding to cart with type:", type); // ✅ Debug
+    const type = "combo";
+    console.log("Adding to cart with type:", type); // ✅ Debug
 
-  addToCart(selectedPlant, 1, type);
-  addToCart(selectedPot, 1, type);
-  addToCart(selectedComp, selectedCompQty, type);
-  
-  selectedAddons.forEach((addon) => {
-    addToCart(addon, 1, type);
-  });
+    addToCart(selectedPlant, 1, type);
+    addToCart(selectedPot, 1, type);
+    addToCart(selectedComp, selectedCompQty, type);
 
-  toast.success("Custom plant bundle added to cart!");
-  reset();
-};
+    selectedAddons.forEach((addon) => {
+      addToCart(addon, 1, type);
+    });
 
-
+    toast.success("Custom plant bundle added to cart!");
+    reset();
+  };
 
 
-//   const handleAddToCart = async () => {
-//     if (!selectedPlant || !selectedPot || !selectedComp) {
-//       toast.error("Please complete all required selections.");
-//       return;
-//     }
-//     if (!user?.uid) {
-//       toast.error("Please log in to add items to cart.");
-//       return;
-//     }
 
-//     try {
-//       const ensureNumber = (val: unknown): number =>
-//         typeof val === "number" && !Number.isNaN(val) ? val : 0;
 
-//       const basePrice =
-//         ensureNumber(selectedPlant.price) +
-//         ensureNumber(selectedPot.price) +
-//         ensureNumber(selectedComp.price) * selectedCompQty;
+  //   const handleAddToCart = async () => {
+  //     if (!selectedPlant || !selectedPot || !selectedComp) {
+  //       toast.error("Please complete all required selections.");
+  //       return;
+  //     }
+  //     if (!user?.uid) {
+  //       toast.error("Please log in to add items to cart.");
+  //       return;
+  //     }
 
-//       const addonsPrice = selectedAddons.reduce(
-//         (sum, a) => sum + ensureNumber(a.price),
-//         0
-//       );
+  //     try {
+  //       const ensureNumber = (val: unknown): number =>
+  //         typeof val === "number" && !Number.isNaN(val) ? val : 0;
 
-//       const total = basePrice + addonsPrice;
+  //       const basePrice =
+  //         ensureNumber(selectedPlant.price) +
+  //         ensureNumber(selectedPot.price) +
+  //         ensureNumber(selectedComp.price) * selectedCompQty;
 
-//       // For now treat the custom bundle as a single cart line:
-//       // price: total, productId: combo id, quantity: 1, type: "combo"
-//       const comboProductId = `COMBO-${selectedPlant.id}-${selectedPot.id}-${Date.now()}`;
+  //       const addonsPrice = selectedAddons.reduce(
+  //         (sum, a) => sum + ensureNumber(a.price),
+  //         0
+  //       );
 
-//       const newCartItem = {
-//         price: total,
-//         productId: comboProductId,
-//         quantity: 1,
-//         type: "combo" as const,
-//       };
+  //       const total = basePrice + addonsPrice;
 
-//       const cartRef = doc(db, "cart", user.uid);
-//       const cartSnap = await getDoc(cartRef);
+  //       // For now treat the custom bundle as a single cart line:
+  //       // price: total, productId: combo id, quantity: 1, type: "combo"
+  //       const comboProductId = `COMBO-${selectedPlant.id}-${selectedPot.id}-${Date.now()}`;
 
-//       if (!cartSnap.exists()) {
-//         await setDoc(cartRef, {
-//           uid: user.uid,
-//           items: [newCartItem],
-//           createdAt: serverTimestamp(),
-//           updatedAt: serverTimestamp(),
-//           lastSeen: serverTimestamp(),
-//         });
-//       } else {
-//         const data = cartSnap.data() as any;
-//         const prevItems: any[] = Array.isArray(data.items) ? data.items : [];
+  //       const newCartItem = {
+  //         price: total,
+  //         productId: comboProductId,
+  //         quantity: 1,
+  //         type: "combo" as const,
+  //       };
 
-//         // Check if this combo already exists (by productId); if yes, increase quantity
-//         const idx = prevItems.findIndex(
-//           (it) => it.productId === comboProductId && it.type === "combo"
-//         );
+  //       const cartRef = doc(db, "cart", user.uid);
+  //       const cartSnap = await getDoc(cartRef);
 
-//         let updatedItems: any[];
+  //       if (!cartSnap.exists()) {
+  //         await setDoc(cartRef, {
+  //           uid: user.uid,
+  //           items: [newCartItem],
+  //           createdAt: serverTimestamp(),
+  //           updatedAt: serverTimestamp(),
+  //           lastSeen: serverTimestamp(),
+  //         });
+  //       } else {
+  //         const data = cartSnap.data() as any;
+  //         const prevItems: any[] = Array.isArray(data.items) ? data.items : [];
 
-//         if (idx === -1) {
-//           updatedItems = [...prevItems, newCartItem];
-//         } else {
-//           updatedItems = [...prevItems];
-//           const existing = updatedItems[idx];
-//           const currentQty =
-//             typeof existing.quantity === "number" ? existing.quantity : 0;
-//           updatedItems[idx] = {
-//             ...existing,
-//             quantity: currentQty + 1,
-//           };
-//         }
+  //         // Check if this combo already exists (by productId); if yes, increase quantity
+  //         const idx = prevItems.findIndex(
+  //           (it) => it.productId === comboProductId && it.type === "combo"
+  //         );
 
-//         await setDoc(
-//           cartRef,
-//           {
-//             items: updatedItems,
-//             updatedAt: serverTimestamp(),
-//             lastSeen: serverTimestamp(),
-//           },
-//           { merge: true }
-//         );
-//       }
+  //         let updatedItems: any[];
 
-//       toast.success("Custom plant bundle added to cart!");
-//       reset();
-//     } catch (error) {
-//       console.error("Error adding to cart:", error);
-//       toast.error("Failed to add to cart. Please try again.");
-//     }
-//   };
+  //         if (idx === -1) {
+  //           updatedItems = [...prevItems, newCartItem];
+  //         } else {
+  //           updatedItems = [...prevItems];
+  //           const existing = updatedItems[idx];
+  //           const currentQty =
+  //             typeof existing.quantity === "number" ? existing.quantity : 0;
+  //           updatedItems[idx] = {
+  //             ...existing,
+  //             quantity: currentQty + 1,
+  //           };
+  //         }
+
+  //         await setDoc(
+  //           cartRef,
+  //           {
+  //             items: updatedItems,
+  //             updatedAt: serverTimestamp(),
+  //             lastSeen: serverTimestamp(),
+  //           },
+  //           { merge: true }
+  //         );
+  //       }
+
+  //       toast.success("Custom plant bundle added to cart!");
+  //       reset();
+  //     } catch (error) {
+  //       console.error("Error adding to cart:", error);
+  //       toast.error("Failed to add to cart. Please try again.");
+  //     }
+  //   };
 
   const totalPrice =
     (selectedPlant?.price || 0) +
@@ -352,11 +346,10 @@ const PlantCustomizer = () => {
       <div
         key={p.id}
         onClick={onSelect}
-        className={`cursor-pointer group relative ${aspect} rounded-lg overflow-hidden border-2 transition-all ${
-          isSelected
-            ? "border-[#c16e41]"
-            : "border-transparent hover:border-white/30"
-        }`}
+        className={`cursor-pointer group relative ${aspect} rounded-lg overflow-hidden border-2 transition-all ${isSelected
+          ? "border-[#c16e41]"
+          : "border-transparent hover:border-white/30"
+          }`}
       >
         <div className="absolute top-2 right-2 z-20">
           <button
@@ -396,10 +389,10 @@ const PlantCustomizer = () => {
             </h3>
             <p className="whitespace-pre-line">
               {p.description || "No description available."}
-              
+
             </p>
             <p className="mt-4 text-xs italic text-gray-400">
-                Volume:{p.volume || "Volume not available."}
+              Volume:{p.volume || "Volume not available."}
             </p>
           </div>
         )}
@@ -475,13 +468,12 @@ const PlantCustomizer = () => {
                     {[1, 2, 3, 4, 5].map((step) => (
                       <div
                         key={step}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          step === currentStep
-                            ? "bg-[#c16e41]"
-                            : step < currentStep
+                        className={`w-2 h-2 rounded-full transition-colors ${step === currentStep
+                          ? "bg-[#c16e41]"
+                          : step < currentStep
                             ? "bg-white"
                             : "bg-white/20"
-                        }`}
+                          }`}
                       />
                     ))}
                   </div>
@@ -514,23 +506,22 @@ const PlantCustomizer = () => {
                           />
                           <input
                             type="text"
-                            placeholder={`Search ${
-                              currentStep === 1
-                                ? "plants"
-                                : currentStep === 2
+                            placeholder={`Search ${currentStep === 1
+                              ? "plants"
+                              : currentStep === 2
                                 ? "pots"
                                 : currentStep === 3
-                                ? "compositions"
-                                : "add-ons"
-                            }...`}
+                                  ? "compositions"
+                                  : "add-ons"
+                              }...`}
                             value={
                               currentStep === 1
                                 ? searchPlant
                                 : currentStep === 2
-                                ? searchPot
-                                : currentStep === 3
-                                ? searchComp
-                                : searchAddon
+                                  ? searchPot
+                                  : currentStep === 3
+                                    ? searchComp
+                                    : searchAddon
                             }
                             onChange={(e) => {
                               const val = e.target.value;
@@ -587,7 +578,7 @@ const PlantCustomizer = () => {
                               {"volume" in selectedPot && (
                                 <p>
                                   Approx. volume:{" "}
-                                  {(selectedPot as any).volume} 
+                                  {(selectedPot as any).volume}
                                 </p>
                               )}
                             </div>
@@ -641,7 +632,7 @@ const PlantCustomizer = () => {
                                 {"volume" in selectedPot && (
                                   <p>
                                     Approx. volume:{" "}
-                                      {(selectedPot as any).volume} 
+                                    {(selectedPot as any).volume}
                                   </p>
                                 )}
                                 {suggestedQty && (
@@ -898,11 +889,10 @@ const PlantCustomizer = () => {
               <div className="p-6 border-t border-white/10 bg-[#1a1a1a] flex justify-between items-center">
                 <button
                   onClick={handleBack}
-                  className={`flex items-center gap-2 text-white hover:text-gray-300 transition-colors ${
-                    currentStep === 1
-                      ? "opacity-0 pointer-events-none"
-                      : "opacity-100"
-                  }`}
+                  className={`flex items-center gap-2 text-white hover:text-gray-300 transition-colors ${currentStep === 1
+                    ? "opacity-0 pointer-events-none"
+                    : "opacity-100"
+                    }`}
                 >
                   <ChevronLeft size={20} />
                   Back

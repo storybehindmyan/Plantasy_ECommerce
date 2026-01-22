@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, Plus, Minus } from "lucide-react";
+import { X, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useCheckout } from "../hooks/useCheckout";
 import { db } from "../firebase/firebaseConfig";
 import {
   collection,
@@ -16,10 +17,12 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
+import { DelhiveryService } from "../services/DelhiveryService";
+import { toast } from "sonner";
 
 type AddressDoc = {
   id: string;
-  Country: string;
+  country: string;
   addressLine1: string;
   addressLine2: string;
   city: string;
@@ -68,6 +71,9 @@ const CartDrawer: React.FC = () => {
   const [addresses, setAddresses] = useState<AddressDoc[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [verifyingDelivery, setVerifyingDelivery] = useState(false);
+
+  const { paymentStatus, handleCheckout } = useCheckout();
 
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
@@ -98,6 +104,47 @@ const CartDrawer: React.FC = () => {
       ? Math.max(0, cartTotal - appliedCoupon.discountAmount)
       : cartTotal;
 
+  // const handleProceedToPay = async () => {
+  //   if (!selectedAddressId) {
+  //     toast.error("Please select an address");
+  //     return;
+  //   }
+
+  //   const selectedAddr = addresses.find((a) => a.id === selectedAddressId);
+  //   if (!selectedAddr) {
+  //     toast.error("Selected address not found");
+  //     return;
+  //   }
+
+  //   // Calculate pricing
+  //   const subtotal = cartTotal;
+  //   const tax = Math.round(subtotal * 0.05); // 5% tax
+  //   const discount = appliedCoupon?.discountAmount || 0;
+  //   const shippingCharge = 50; // From DelhiveryService
+  //   const grandTotal = subtotal + tax + shippingCharge - discount;
+
+  //   // Close modals
+  //   setIsCouponModalOpen(false);
+  //   toggleCart();
+
+  //   await handleCheckout({
+  //     deliveryAddress: selectedAddr,
+  //     cartItems: cart,
+  //     totalAmount: grandTotal,
+  //     pricing: {
+  //       subTotal: subtotal,
+  //       tax,
+  //       discount,
+  //       couponCode: appliedCoupon?.code || "",
+  //       shippingCharge,
+  //       grandTotal,
+  //     },
+  //   });
+
+  //   if (paymentStatus === "success") {
+  //     navigate("/profile/orders");
+  //   }
+  // };
   // When drawer opens, enforce login
   useEffect(() => {
     if (!isCartOpen) return;
@@ -138,7 +185,7 @@ const CartDrawer: React.FC = () => {
         const data = d.data() as any;
         list.push({
           id: d.id,
-          Country: data.Country,
+          country: data.country,
           addressLine1: data.addressLine1,
           addressLine2: data.addressLine2,
           city: data.city,
@@ -193,6 +240,19 @@ const CartDrawer: React.FC = () => {
       setAddressError("You must be logged in.");
       return;
     }
+
+    // Validate ZIP code (6 digits for India)
+    if (!/^\d{6}$/.test(newAddress.zip)) {
+      setAddressError("Please enter a valid 6-digit PIN code.");
+      return;
+    }
+
+    // Validate phone (10 digits)
+    if (!/^\d{10}$/.test(newAddress.phone.replace(/\D/g, ""))) {
+      setAddressError("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
     try {
       setSavingAddress(true);
       const addrCol = collection(db, "users", uid, "addresses");
@@ -203,6 +263,7 @@ const CartDrawer: React.FC = () => {
       const newDoc: AddressDoc = {
         id: docRef.id,
         ...newAddress,
+        country: ""
       };
       setAddresses((prev) => [...prev, newDoc]);
       setSelectedAddressId(docRef.id);
@@ -219,6 +280,7 @@ const CartDrawer: React.FC = () => {
         Country: "India",
         isDefault: false,
       });
+      toast.success("Address saved successfully!");
     } catch (err) {
       console.error("Error saving address:", err);
       setAddressError("Failed to save address. Please try again.");
@@ -227,13 +289,46 @@ const CartDrawer: React.FC = () => {
     }
   };
 
-  const handleAddressContinue = () => {
+  const handleAddressContinue = async () => {
     if (!selectedAddressId) {
-      alert("Please select or add an address to continue.");
+      toast.error("Please select or add an address to continue.");
       return;
     }
-    setIsAddressModalOpen(false);
-    setIsCouponModalOpen(true);
+
+    // Find selected address
+    const selectedAddr = addresses.find((a) => a.id === selectedAddressId);
+    if (!selectedAddr) {
+      toast.error("Selected address not found.");
+      return;
+    }
+
+    // ✅ Verify delivery availability before proceeding
+    setVerifyingDelivery(true);
+    try {
+      const isAvailable = await DelhiveryService.verifyDeliveryAvailability(
+        selectedAddr.zip,
+      );
+
+      if (!isAvailable) {
+        toast.error(
+          "Delivery not available for PIN code " +
+            selectedAddr.zip +
+            ". Please select another address.",
+        );
+        setVerifyingDelivery(false);
+        return;
+      }
+
+      // Delivery available, proceed to coupon
+      toast.success("Delivery available for this location!");
+      setIsAddressModalOpen(false);
+      setIsCouponModalOpen(true);
+    } catch (error) {
+      console.error("Error verifying delivery:", error);
+      toast.error("Error verifying delivery. Please try again.");
+    } finally {
+      setVerifyingDelivery(false);
+    }
   };
 
   const handleApplyCoupon = async () => {
@@ -257,7 +352,7 @@ const CartDrawer: React.FC = () => {
       const qCoupon = query(
         couponsRef,
         where("code", "==", code),
-        where("isActive", "==", true)
+        where("isActive", "==", true),
       );
       const snap = await getDocs(qCoupon);
       if (snap.empty) {
@@ -300,7 +395,7 @@ const CartDrawer: React.FC = () => {
       }
       if (cartTotal < coupon.minOrderValue) {
         setCouponError(
-          `Minimum order value for this coupon is ₹${coupon.minOrderValue}.`
+          `Minimum order value for this coupon is ₹${coupon.minOrderValue}.`,
         );
         return;
       }
@@ -312,19 +407,19 @@ const CartDrawer: React.FC = () => {
           const catOk =
             !coupon.applicableCategories?.length ||
             coupon.applicableCategories.includes(
-              (item as any).categoryId || ""
+              (item as any).categoryId || "",
             );
           const prodOk =
             !coupon.applicableProducts?.length ||
             coupon.applicableProducts.includes(
-              (item as any).productId || item.id
+              (item as any).productId || item.id,
             );
           return catOk && prodOk;
         });
 
       if (!hasApplicableItem) {
         setCouponError(
-          "This coupon is not applicable to any items in your cart."
+          "This coupon is not applicable to any items in your cart.",
         );
         return;
       }
@@ -344,6 +439,7 @@ const CartDrawer: React.FC = () => {
       }
 
       setAppliedCoupon({ code: coupon.code, discountAmount });
+      toast.success(`Coupon applied! You saved ₹${discountAmount.toFixed(2)}`);
     } catch (err) {
       console.error("Error validating coupon:", err);
       setCouponError("Failed to validate coupon. Please try again.");
@@ -352,10 +448,46 @@ const CartDrawer: React.FC = () => {
     }
   };
 
-  const handleProceedToPay = () => {
-    alert("We are trying to implement the payments soon.");
+  const handleProceedToPay = async () => {
+    if (!selectedAddressId) {
+      toast.error("Please select an address");
+      return;
+    }
+
+    const selectedAddr = addresses.find((a) => a.id === selectedAddressId);
+    if (!selectedAddr) {
+      toast.error("Selected address not found");
+      return;
+    }
+
+    // Calculate pricing
+    const subtotal = cartTotal;
+    const tax = Math.round(subtotal * 0.18); // 18% tax
+    const discount = appliedCoupon?.discountAmount || 0;
+    const shippingCharge = 0; // From DelhiveryService
+    const grandTotal = subtotal + tax + shippingCharge - discount;
+
+    // Close modals
     setIsCouponModalOpen(false);
     toggleCart();
+
+    await handleCheckout({
+      deliveryAddress: selectedAddr,
+      cartItems: cart,
+      totalAmount: grandTotal,
+      pricing: {
+        subTotal: subtotal,
+        tax,
+        discount,
+        couponCode: appliedCoupon?.code || "",
+        shippingCharge,
+        grandTotal,
+      },
+    });
+
+    if (paymentStatus === "success") {
+      navigate("/profile/orders");
+    }
   };
 
   const handleCheckoutClick = async () => {
@@ -364,11 +496,12 @@ const CartDrawer: React.FC = () => {
       navigate("/login");
       return;
     }
-    if (cart.length === 0) return;
+    if (cart.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
     void openAddressModal();
   };
-
-
 
   return (
     <>
@@ -402,10 +535,11 @@ const CartDrawer: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                    <ShoppingBag size={48} className="text-gray-600" />
                     <p className="text-gray-400">Your cart is empty.</p>
                     <button
                       onClick={toggleCart}
-                      className="text-accent hover:underline"
+                      className="text-[#c16e41] hover:underline"
                     >
                       Continue Shopping
                     </button>
@@ -417,7 +551,6 @@ const CartDrawer: React.FC = () => {
                       (item as any).image ??
                       undefined;
 
-                    // Robust, unique key per cart row
                     const key =
                       item.id ??
                       (item as any).productId ??
@@ -446,7 +579,7 @@ const CartDrawer: React.FC = () => {
                                 onClick={() =>
                                   handleUpdateQuantity(
                                     item.id,
-                                    item.quantity - 1
+                                    item.quantity - 1,
                                   )
                                 }
                                 disabled={item.quantity <= 1}
@@ -461,7 +594,7 @@ const CartDrawer: React.FC = () => {
                                 onClick={() =>
                                   handleUpdateQuantity(
                                     item.id,
-                                    item.quantity + 1
+                                    item.quantity + 1,
                                   )
                                 }
                                 className="p-1 hover:bg-white/10"
@@ -487,17 +620,13 @@ const CartDrawer: React.FC = () => {
                 <div className="p-6 border-t border-white/10 bg-black z-50 backdrop-blur-sm">
                   <div className="flex justify-between items-center mb-2 text-lg font-medium">
                     <span className="text-gray-200">Subtotal</span>
-                    <span className="text-white">
-                      ₹{cartTotal.toFixed(2)}
-                    </span>
+                    <span className="text-white">₹{cartTotal.toFixed(2)}</span>
                   </div>
                   {appliedCoupon && (
                     <>
                       <div className="flex justify-between items-center mb-1 text-sm text-emerald-300">
                         <span>Coupon {appliedCoupon.code} applied</span>
-                        <span>
-                          -₹{appliedCoupon.discountAmount.toFixed(2)}
-                        </span>
+                        <span>-₹{appliedCoupon.discountAmount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between items-center mb-4 text-sm font-medium">
                         <span className="text-gray-200">Total</span>
@@ -509,7 +638,7 @@ const CartDrawer: React.FC = () => {
                   )}
                   <button
                     onClick={handleCheckoutClick}
-                    className="w-full bg-accent text-white py-3 font-semibold tracking-wide hover:bg-[#b05d35] transition duration-300"
+                    className="w-full bg-[#c16e41] text-white py-3 font-semibold tracking-wide hover:bg-[#a05a32] transition duration-300 rounded-lg"
                   >
                     CHECKOUT
                   </button>
@@ -520,7 +649,7 @@ const CartDrawer: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Address selection + add new address */}
+      {/* Address selection + add new address with delivery verification */}
       <AnimatePresence>
         {isAddressModalOpen && (
           <>
@@ -538,7 +667,7 @@ const CartDrawer: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95 }}
             >
               <div
-                className="bg-[#050505] border border-white/10 rounded-lg max-w-lg w-full p-6 relative"
+                className="bg-[#050505] border border-white/10 rounded-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex justify-between items-center mb-4">
@@ -568,10 +697,11 @@ const CartDrawer: React.FC = () => {
                               key={addr.id}
                               type="button"
                               onClick={() => setSelectedAddressId(addr.id)}
-                              className={`w-full text-left border rounded-md px-3 py-2 text-xs md:text-sm ${selected
+                              className={`w-full text-left border rounded-md px-3 py-2 text-xs md:text-sm ${
+                                selected
                                   ? "border-[#c16e41] bg-[#c16e41]/10"
                                   : "border-white/15 hover:border-white/40"
-                                }`}
+                              }`}
                             >
                               <div className="flex justify-between items-center mb-1">
                                 <span className="text-white font-medium">
@@ -591,7 +721,7 @@ const CartDrawer: React.FC = () => {
                                 {addr.city}, {addr.region} {addr.zip}
                               </p>
                               <p className="text-gray-400">
-                                {addr.Country} • {addr.phone}
+                                {addr.country} • {addr.phone}
                               </p>
                             </button>
                           );
@@ -601,10 +731,8 @@ const CartDrawer: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowNewAddressForm((prev) => !prev)
-                      }
-                      className="flex items-center gap-2 text-sm text-accent hover:underline mb-3"
+                      onClick={() => setShowNewAddressForm((prev) => !prev)}
+                      className="flex items-center gap-2 text-sm text-[#c16e41] hover:underline mb-3"
                     >
                       <Plus size={14} />
                       <span>Add new address</span>
@@ -638,7 +766,7 @@ const CartDrawer: React.FC = () => {
                         </div>
                         <input
                           className="bg-transparent border border-white/20 rounded px-2 py-1 w-full text-white placeholder:text-gray-500 text-xs"
-                          placeholder="Phone *"
+                          placeholder="Phone (10 digits) *"
                           value={newAddress.phone}
                           onChange={(e) =>
                             setNewAddress((p) => ({
@@ -696,8 +824,9 @@ const CartDrawer: React.FC = () => {
                         <div className="grid grid-cols-2 gap-2">
                           <input
                             className="bg-transparent border border-white/20 rounded px-2 py-1 text-white placeholder:text-gray-500 text-xs"
-                            placeholder="PIN code *"
+                            placeholder="PIN code (6 digits) *"
                             value={newAddress.zip}
+                            maxLength={6}
                             onChange={(e) =>
                               setNewAddress((p) => ({
                                 ...p,
@@ -738,7 +867,7 @@ const CartDrawer: React.FC = () => {
                     <p className="text-[11px] text-gray-400 mb-3">
                       Address selection is{" "}
                       <span className="text-red-400">*</span> required to
-                      continue.
+                      continue. Delivery availability will be verified.
                     </p>
                     <div className="flex justify-end gap-3">
                       <button
@@ -749,9 +878,10 @@ const CartDrawer: React.FC = () => {
                       </button>
                       <button
                         onClick={handleAddressContinue}
-                        className="px-4 py-2 text-sm bg-[#c16e41] text-white rounded hover:bg-[#a05a32]"
+                        disabled={verifyingDelivery}
+                        className="px-4 py-2 text-sm bg-[#c16e41] text-white rounded hover:bg-[#a05a32] disabled:opacity-50"
                       >
-                        Continue
+                        {verifyingDelivery ? "Verifying..." : "Continue"}
                       </button>
                     </div>
                   </>
@@ -820,9 +950,7 @@ const CartDrawer: React.FC = () => {
                       </button>
                     </div>
                     {couponError && (
-                      <p className="text-xs text-red-400 mt-1">
-                        {couponError}
-                      </p>
+                      <p className="text-xs text-red-400 mt-1">{couponError}</p>
                     )}
                     {appliedCoupon && !couponError && (
                       <p className="text-xs text-emerald-300 mt-1">
@@ -834,12 +962,17 @@ const CartDrawer: React.FC = () => {
 
                   <div className="border-t border-white/10 pt-3 text-sm">
                     <div className="flex justify-between mb-1">
-                      <span className="text-gray-300">Subtotal</span>
-                      <span className="text-white">
-                        ₹{cartTotal.toFixed(2)}
+                      <span className="text-gray-500">Cart Value</span>
+                      <span className="text-gray-400">
+                        +₹{cartTotal.toFixed(2)}
                       </span>
                     </div>
-                    {appliedCoupon && (
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-500">Shipping Charges</span>
+                      <span className="text-gray-400">+₹50.00</span>
+                    </div>
+
+                    {(appliedCoupon)? (
                       <>
                         <div className="flex justify-between mb-1">
                           <span className="text-emerald-300">
@@ -850,13 +983,20 @@ const CartDrawer: React.FC = () => {
                           </span>
                         </div>
                         <div className="flex justify-between mt-1 font-medium">
-                          <span className="text-gray-100">Total</span>
+                          <span className="text-gray-100">Grand Total</span>
                           <span className="text-white">
-                            ₹{effectiveTotal.toFixed(2)}
+                            ₹{(effectiveTotal + 50.00).toFixed(2)}
                           </span>
                         </div>
                       </>
-                    )}
+                    ):(<>
+                    <div className="flex justify-between mt-1 font-medium">
+                          <span className="text-gray-100">Grand Total</span>
+                          <span className="text-white">
+                            ₹{(effectiveTotal + 50.00).toFixed(2)}
+                          </span>
+                        </div>
+                    </>)}
                   </div>
                 </div>
 

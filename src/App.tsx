@@ -16,7 +16,11 @@ import Care from './pages/Care';
 import UserProfile from './pages/UserProfile';
 import ShippingReturns from './pages/ShippingReturns';
 import ContactUs from './pages/ContactUs';
-// import LoginPage from '../Admin-plantasy/src/pages/auth/LoginPage';
+import LoginPage from '../Admin-plantasy/src/pages/auth/LoginPage';
+import Checkout from "./pages/Checkout"; // ✅ NEW
+import ProtectedRoute from './components/ProtectedRoute';
+
+
 
 const App = () => {
   return (
@@ -38,8 +42,17 @@ const App = () => {
                 <Route path="shipping-returns" element={<ShippingReturns />} />
                 <Route path="contact" element={<ContactUs />} />
                 <Route path="profile/*" element={<UserProfile />} />
-                {/* <Route path="admin" element={<LoginPage />} /> */}
+                <Route path="admin" element={<LoginPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
+                {/* User Routes (Protected) */}
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
 
               </Route>
             </Routes>

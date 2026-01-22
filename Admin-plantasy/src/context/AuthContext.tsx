@@ -1,13 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from "react";
+
 import { 
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  User
 } from 'firebase/auth';
+import type { User  } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebaseConfig';
-import { AdminUser, AdminRole } from '../types';
+import type { AdminRole } from '../types';
+import type { AdminUser} from '../types';
 
 interface AuthContextType {
   user: User | null;

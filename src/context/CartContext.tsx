@@ -20,7 +20,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-interface CartItem extends Product {
+export interface CartItem extends Product {
   type: string;
   coverImage: string;
   quantity: number;
@@ -84,7 +84,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       productId: item.id,
       quantity: item.quantity,
       price: item.price,
-      type: item.type && item.type.trim() ? item.type : "regular", // ✅ Ensure type is not empty
+      type: item.type && item.type.trim() ? item.type : "regular",
     }));
 
     await ensureCartDoc();
@@ -121,7 +121,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const quantity: number = line.quantity ?? 1;
         const priceFromCart: number = line.price ?? 0;
         const itemType: string =
-          line.type && line.type.trim() ? line.type : "regular"; // ✅ Ensure type is not empty
+          line.type && line.type.trim() ? line.type : "regular";
 
         try {
           const productRef = doc(db, "products", productId);
@@ -156,7 +156,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             price: typeof productData.price === "number"
               ? productData.price
               : priceFromCart,
-            type: itemType, // ✅ Explicitly set after spread
+            type: itemType,
           };
 
           hydratedItems.push(cartItem);
@@ -214,7 +214,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           name: product.name || "",
           price: product.price || 0,
           quantity,
-          type: finalType, // ✅ Use finalType here
+          type: finalType,
           coverImage:
             (product as any).coverImage ||
             (product as any).hoverImage ||
@@ -227,7 +227,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           ...prev,
           {
             ...(product as any),
-            ...newItem, // This ensures our id, name, price, quantity, type, coverImage override product properties
+            ...newItem,
           } as CartItem,
         ];
       }

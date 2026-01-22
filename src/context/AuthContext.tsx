@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/immutability */
 import {
@@ -42,6 +42,7 @@ interface AuthContextType {
   updateUser: (updates: Partial<User>) => Promise<void>;
   validatePassword: (password: string) => string | null;
   error: any | null;
+  hasPermission: (permissions: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -119,7 +120,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-    // Let Firebase validate credentials; surface errors in UI via firebaseAuth.error
     await firebaseAuth.login(email, password);
   };
 
@@ -128,7 +128,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     confirmPassword: string
   ) => {
-    // Confirm password
     if (password !== confirmPassword) {
       throw new Error("Passwords do not match.");
     }
@@ -139,13 +138,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     await firebaseAuth.signup(email, password);
-    // Firebase will trigger onAuthStateChanged → loadUserProfile
   };
 
   const loginWithGoogle = async () => {
-  await firebaseAuth.loginWithGoogle(); // now uses signInWithPopup in the hook
-};
-
+    await firebaseAuth.loginWithGoogle();
+  };
 
   const logout = async () => {
     await firebaseAuth.logout();
@@ -158,11 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const userRef = doc(db, "users", user.uid);
-      await setDoc(
-        userRef,
-        { ...user, ...updates },
-        { merge: true }
-      );
+      await setDoc(userRef, { ...user, ...updates }, { merge: true });
 
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
@@ -171,6 +164,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error updating user:", error);
       throw error;
     }
+  };
+
+  // ✅ hasPermission function
+  const hasPermission = (permissions: string[]): boolean => {
+    if (!user) return false;
+
+    const userRole = (user as any).role || "";
+    return permissions.includes(userRole);
   };
 
   // Persist login on app reload (fallback)
@@ -184,8 +185,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("plantasy_user");
       }
     }
-  }, []);
+  }, [firebaseAuth.user]);
 
+  // ✅ Create value object with all properties
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -197,13 +199,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateUser,
     validatePassword,
     error: firebaseAuth.error,
+    hasPermission, // ✅ Add the function here
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

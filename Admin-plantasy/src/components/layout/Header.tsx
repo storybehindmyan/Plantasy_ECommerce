@@ -29,9 +29,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton }) => {
       <div className="flex items-center gap-2">
         {/* replace src with your logo path */}
         <img
-          src="..\clogo.png"
+          src="\favicon.ico"
           alt="Plantasy"
-          className="h-8 w-auto object-contain"
+          className="h-36 w-auto object-contain"
         />
       </div>
     </div>

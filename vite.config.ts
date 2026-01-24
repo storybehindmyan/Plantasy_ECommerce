@@ -5,6 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   // base: process.env.NODE_ENV === "production" ? "/" : "/Plant_Ecommers/",
+  //  resolve: {
+  //   extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.cjs'],
+  //   alias: { '@firebase/auth': 'node_modules/@firebase/auth/dist/esm2017/index.js' }, // If needed
+  // },
+  optimizeDeps: { include: ['firebase/auth'] },
   server: {
     proxy: {
       '/api': {
@@ -14,4 +19,6 @@ export default defineConfig({
     },
   },
 });
+
+
 

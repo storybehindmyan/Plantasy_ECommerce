@@ -13,7 +13,6 @@ import type { OrderData, PaymentDetails } from "../types/payment";
 import { Timestamp } from "firebase/firestore";
 import type { CartItem } from "../context/CartContext";
 
-
 interface CheckoutParams {
   deliveryAddress: any;
   cartItems: CartItem[];
@@ -61,16 +60,17 @@ export const useCheckout = () => {
       );
       console.log("Delivery Charge:", deliveryCharge);
 
-      
-      const finalAmount = params.totalAmount + deliveryCharge;
-      const amountInPaisa = Math.round(finalAmount * 100); // Convert to paisa
+      // 4. Compute final amount from params.totalAmount + deliveryCharge
+      // const finalAmount = params.totalAmount + deliveryCharge;
+      const finalAmount = 1;
+      const amountInPaisa = Math.round(finalAmount * 100);
 
-      // 4. Create Razorpay order (backend)
+      // 5. Create Razorpay order (backend)
       const razorpayOrderId = await PaymentService.createRazorpayOrder(
         amountInPaisa
       );
 
-      // 5. Initiate Razorpay payment
+      // 6. Initiate Razorpay payment
       await RazorpayService.initiatePayment(
         amountInPaisa,
         razorpayOrderId,
@@ -120,7 +120,21 @@ export const useCheckout = () => {
 
       await PaymentService.storePaymentDetails(paymentData);
 
-      // 2. Create order document
+      // 2. Sanitize deliveryAddress to avoid undefined fields
+      const addr = params.deliveryAddress || {};
+      const safeDeliveryAddress = {
+        firstName: addr.firstName ?? "",
+        lastName: addr.lastName ?? "",
+        addressLine1: addr.addressLine1 ?? "",
+        addressLine2: addr.addressLine2 ?? "",
+        city: addr.city ?? "",
+        region: addr.region ?? "",
+        zip: addr.zip ?? "",
+        country: addr.country ?? "", // <-- no undefined
+        phone: addr.phone ?? "",
+      };
+
+      // 3. Create order document
       const invoiceId = `INV${Date.now().toString().slice(-10)}`;
 
       const orderData: Omit<OrderData, "createdAt" | "updatedAt"> = {
@@ -131,7 +145,7 @@ export const useCheckout = () => {
         orderType: "NORMAL",
         isCancelable: true,
         isReturnEligible: true,
-        deliveryAddress: params.deliveryAddress,
+        deliveryAddress: safeDeliveryAddress,
         items: params.cartItems.map((item) => ({
           productId: item.id,
           productName: item.name,
@@ -167,16 +181,16 @@ export const useCheckout = () => {
 
       await orderService.createOrder(orderData);
 
-      // 3. Clear cart items
+      // 4. Clear cart items
       params.cartItems.forEach((item) => {
         removeFromCart(item.id);
       });
 
-      // 4. Update payment status
+      // 5. Update payment status
       setPaymentStatus("success");
       toast.success("Order placed successfully!");
 
-      // 5. Store order ID for later
+      // 6. Store order ID for later
       localStorage.setItem("lastOrderId", orderId);
     } catch (error) {
       console.error("Error processing payment success:", error);

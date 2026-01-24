@@ -1,5 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
-import { Search, MessageSquare, Clock, CheckCircle, Send } from 'lucide-react';
+import { 
+  Search, 
+  MessageSquare, 
+  Clock, 
+  CheckCircle, 
+  Phone, 
+  Mail, 
+  Eye, 
+  EyeOff 
+} from 'lucide-react';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -23,7 +33,14 @@ const SupportPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [replyMessage, setReplyMessage] = useState('');
+  const [reportMessage, setReportMessage] = useState('');
+  const [statusSelect, setStatusSelect] = useState<TicketStatus>('PENDING');
+
+  // email modal state
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     fetchTickets();
@@ -32,18 +49,38 @@ const SupportPage: React.FC = () => {
   const fetchTickets = async () => {
     try {
       setIsLoading(true);
-      const q = query(collection(db, 'support_tickets'), orderBy('createdAt', 'desc'));
+      const q = query(collection(db, 'support'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
-      const ticketsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-        messages: doc.data().messages?.map((m: TicketMessage & { createdAt: Timestamp }) => ({
-          ...m,
-          createdAt: m.createdAt?.toDate ? m.createdAt.toDate() : m.createdAt,
-        })) || [],
-      })) as SupportTicket[];
+      const ticketsData = snapshot.docs.map((snap) => {
+        const data = snap.data() as any;
+        const ticket: SupportTicket = {
+          id: snap.id,
+          Id: data.Id || '',
+          ticketId: data.ticketId || '',
+          uid: data.uid || '',
+          email: data.email || '',
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          phone: data.phone || '',
+          subject: data.subject || '',
+          message: data.message || '',
+          report: data.report || '',
+          status: (data.status as TicketStatus) || 'PENDING',
+          isActive: data.isActive ?? true,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+          lastSeen: data.lastSeen?.toDate ? data.lastSeen.toDate() : undefined,
+          messages: (data.messages || []).map((m: any) => ({
+            id: m.id || '',
+            senderId: m.senderId || '',
+            senderName: m.senderName || '',
+            isAdmin: m.isAdmin || false,
+            message: m.message || '',
+            createdAt: m.createdAt?.toDate ? m.createdAt.toDate() : new Date(),
+          })) as TicketMessage[],
+        };
+        return ticket;
+      });
       setTickets(ticketsData);
     } catch (error) {
       console.error('Error fetching tickets:', error);
@@ -54,71 +91,187 @@ const SupportPage: React.FC = () => {
 
   const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
     try {
-      const docRef = doc(db, 'support_tickets', ticketId);
+      const docRef = doc(db, 'support', ticketId);
       await updateDoc(docRef, { 
         status,
         updatedAt: Timestamp.now(),
       });
-      fetchTickets();
+      setTickets(prev =>
+        prev.map(t => t.id === ticketId ? { ...t, status } : t)
+      );
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket({ ...selectedTicket, status });
+        setStatusSelect(status);
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
     }
   };
 
-  const handleSendReply = async () => {
-    if (!selectedTicket || !replyMessage.trim() || !adminUser) return;
-    
+  const handleToggleActive = async (ticket: SupportTicket) => {
     try {
-      const newMessage: Omit<TicketMessage, 'createdAt'> & { createdAt: Timestamp } = {
-        id: `msg_${Date.now()}`,
-        senderId: adminUser.uid,
-        senderName: adminUser.displayName,
-        isAdmin: true,
-        message: replyMessage,
-        createdAt: Timestamp.now(),
-      };
-
-      const docRef = doc(db, 'support_tickets', selectedTicket.id);
-      await updateDoc(docRef, { 
-        messages: arrayUnion(newMessage),
-        status: 'in_progress',
+      const docRef = doc(db, 'support', ticket.id);
+      const newActive = !ticket.isActive;
+      await updateDoc(docRef, {
+        isActive: newActive,
         updatedAt: Timestamp.now(),
       });
-      
-      setReplyMessage('');
-      fetchTickets();
-      
-      // Update local state
-      const updatedMessages = [
-        ...selectedTicket.messages,
-        { ...newMessage, createdAt: new Date() as unknown as Date },
-      ];
-      setSelectedTicket({ 
-        ...selectedTicket, 
-        messages: updatedMessages,
-        status: 'in_progress',
-      });
+      setTickets(prev =>
+        prev.map(t => t.id === ticket.id ? { ...t, isActive: newActive } : t)
+      );
+      if (selectedTicket?.id === ticket.id) {
+        setSelectedTicket({ ...selectedTicket, isActive: newActive });
+      }
     } catch (error) {
-      console.error('Error sending reply:', error);
+      console.error('Error toggling active state:', error);
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-destructive';
-      case 'medium': return 'text-warning';
-      default: return 'text-muted-foreground';
+  const handleSaveReportAndStatus = async () => {
+    if (!selectedTicket) return;
+    if (!reportMessage.trim()) {
+      alert('Report is required.');
+      return;
+    }
+    try {
+      const docRef = doc(db, 'support', selectedTicket.id);
+      await updateDoc(docRef, {
+        report: reportMessage.trim(),
+        status: statusSelect,
+        updatedAt: Timestamp.now(),
+      });
+
+      const updatedTicket: SupportTicket = {
+        ...selectedTicket,
+        report: reportMessage.trim(),
+        status: statusSelect,
+      };
+
+      setSelectedTicket(updatedTicket);
+      setTickets(prev =>
+        prev.map(t => t.id === selectedTicket.id ? updatedTicket : t)
+      );
+    } catch (error) {
+      console.error('Error updating report/status:', error);
     }
   };
 
-  const filteredTickets = tickets.filter(ticket =>
-    ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.customerEmail.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getStatusBadgeClasses = (status: TicketStatus) => {
+    // simple Tailwind-like classes for badge background + text
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-800';
+      case 'RESOLVED':
+        return 'bg-green-100 text-green-800';
+      case 'CLOSED':
+        return 'bg-gray-200 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const filteredTickets = tickets.filter(ticket => {
+    const fullName = `${ticket.firstName} ${ticket.lastName}`.toLowerCase();
+    return (
+      ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      fullName.includes(searchQuery.toLowerCase()) ||
+      ticket.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.ticketId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.Id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
+  const openEmailModal = (ticket: SupportTicket) => {
+    if (!adminUser) return;
+
+    const baseSubject = `Re: ${ticket.subject} (Ticket #${ticket.ticketId})`;
+    const baseBody =
+      `Hi ${ticket.firstName},\n\n` +
+      `Thank you for reaching out regarding your order.\n\n` +
+      `Your message:\n` +
+      `"${ticket.message}"\n\n` +
+      `Current status: ${ticket.status}.\n\n` +
+      `Please let us know if you have any additional details to share so we can assist you better.\n\n` +
+      `Best regards,\n` +
+      `${adminUser.displayName || 'Support Team'}`;
+
+    setSelectedTicket(ticket);
+    setEmailSubject(baseSubject);
+    setEmailBody(baseBody);
+    setIsEmailModalOpen(true);
+  };
+
+  // This function must call your backend or third‑party email API
+const sendSupportEmail = async (to: string, subject: string, body: string) => {
+  const res = await fetch('http://localhost:5000/api/send-support-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, subject, body }),
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to send email');
+  }
+};
+
+
+
+
+
+  const handleEmailSend = async () => {
+    if (!selectedTicket) return;
+    if (!emailSubject.trim() || !emailBody.trim()) {
+      alert('Subject and body are required.');
+      return;
+    }
+    try {
+      setIsSendingEmail(true);
+      await sendSupportEmail(selectedTicket.email, emailSubject.trim(), emailBody.trim());
+
+      // Optionally log email as an admin message in Firestore
+      if (adminUser) {
+        const newMessage: Omit<TicketMessage, 'createdAt'> & { createdAt: Timestamp } = {
+          id: `msg_email_${Date.now()}`,
+          senderId: adminUser.uid,
+          senderName: adminUser.displayName || 'Admin',
+          isAdmin: true,
+          message: `Email sent to customer:\n\nSubject: ${emailSubject.trim()}\n\n${emailBody.trim()}`,
+          createdAt: Timestamp.now(),
+        };
+        const docRef = doc(db, 'support', selectedTicket.id);
+        await updateDoc(docRef, {
+          messages: arrayUnion(newMessage),
+          updatedAt: Timestamp.now(),
+        });
+        const updatedMessages = [
+          ...selectedTicket.messages,
+          { ...newMessage, createdAt: new Date() as unknown as Date },
+        ];
+        const updatedTicket: SupportTicket = {
+          ...selectedTicket,
+          messages: updatedMessages,
+        };
+        setSelectedTicket(updatedTicket);
+        setTickets(prev =>
+          prev.map(t => t.id === selectedTicket.id ? updatedTicket : t)
+        );
+      }
+
+      setIsEmailModalOpen(false);
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('Failed to send email. Check console for details.');
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const handleCallClick = (ticket: SupportTicket) => {
+    if (!ticket.phone) return;
+    window.location.href = `tel:${ticket.phone}`;
+  };
 
   const columns = [
     {
@@ -127,29 +280,40 @@ const SupportPage: React.FC = () => {
       render: (ticket: SupportTicket) => (
         <div>
           <p className="font-medium">{ticket.subject}</p>
-          <p className="text-xs text-muted-foreground">{ticket.customerName}</p>
+          <p className="text-xs text-muted-foreground">
+            {ticket.firstName} {ticket.lastName} • #{ticket.ticketId}
+          </p>
         </div>
-      ),
-    },
-    {
-      key: 'priority',
-      header: 'Priority',
-      render: (ticket: SupportTicket) => (
-        <span className={`font-medium capitalize ${getPriorityColor(ticket.priority)}`}>
-          {ticket.priority}
-        </span>
       ),
     },
     {
       key: 'status',
       header: 'Status',
-      render: (ticket: SupportTicket) => <StatusBadge status={ticket.status} />,
+      render: (ticket: SupportTicket) => (
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClasses(
+            ticket.status
+          )}`}
+        >
+          {ticket.status.replace('_', ' ')}
+        </span>
+      ),
     },
     {
-      key: 'messages',
-      header: 'Messages',
+      key: 'isActive',
+      header: 'Active',
       render: (ticket: SupportTicket) => (
-        <span>{ticket.messages.length}</span>
+        <button
+          onClick={() => handleToggleActive(ticket)}
+          className="admin-btn-ghost p-1"
+          title={ticket.isActive ? 'Set inactive' : 'Set active'}
+        >
+          {ticket.isActive ? (
+            <Eye className="w-4 h-4 text-success" />
+          ) : (
+            <EyeOff className="w-4 h-4 text-muted-foreground" />
+          )}
+        </button>
       ),
     },
     {
@@ -167,21 +331,30 @@ const SupportPage: React.FC = () => {
       render: (ticket: SupportTicket) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setSelectedTicket(ticket)}
+            onClick={() => openEmailModal(ticket)}
             className="admin-btn-ghost p-2"
-            title="View"
+            title="Email"
+          >
+            <Mail className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleCallClick(ticket)}
+            className="admin-btn-ghost p-2"
+            title="Call"
+          >
+            <Phone className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              setSelectedTicket(ticket);
+              setReportMessage(ticket.report || '');
+              setStatusSelect(ticket.status);
+            }}
+            className="admin-btn-ghost p-2"
+            title="Open ticket"
           >
             <MessageSquare className="w-4 h-4" />
           </button>
-          {ticket.status !== 'closed' && (
-            <button
-              onClick={() => handleStatusChange(ticket.id, 'closed')}
-              className="admin-btn-ghost p-2 text-success"
-              title="Close Ticket"
-            >
-              <CheckCircle className="w-4 h-4" />
-            </button>
-          )}
         </div>
       ),
     },
@@ -204,20 +377,20 @@ const SupportPage: React.FC = () => {
             <Clock className="w-5 h-5 text-warning" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Open</p>
+            <p className="text-sm text-muted-foreground">Pending</p>
             <p className="text-xl font-bold">
-              {tickets.filter(t => t.status === 'open').length}
+              {tickets.filter(t => t.status === 'PENDING').length}
             </p>
           </div>
         </div>
         <div className="admin-card flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <MessageSquare className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+            <MessageSquare className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground">In Progress</p>
             <p className="text-xl font-bold">
-              {tickets.filter(t => t.status === 'in_progress').length}
+              {tickets.filter(t => t.status === 'IN_PROGRESS').length}
             </p>
           </div>
         </div>
@@ -226,9 +399,9 @@ const SupportPage: React.FC = () => {
             <CheckCircle className="w-5 h-5 text-success" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Closed</p>
+            <p className="text-sm text-muted-foreground">Closed / Resolved</p>
             <p className="text-xl font-bold">
-              {tickets.filter(t => t.status === 'closed').length}
+              {tickets.filter(t => t.status === 'CLOSED' || t.status === 'RESOLVED').length}
             </p>
           </div>
         </div>
@@ -240,7 +413,7 @@ const SupportPage: React.FC = () => {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search tickets..."
+            placeholder="Search by name, email, ticket id..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="admin-input pl-10"
@@ -256,31 +429,94 @@ const SupportPage: React.FC = () => {
         emptyMessage="No support tickets found"
       />
 
-      {/* Ticket Details Modal */}
+      {/* Ticket Details Modal (Report + Status only, no reply input) */}
       <Modal
         isOpen={!!selectedTicket}
         onClose={() => setSelectedTicket(null)}
-        title={selectedTicket?.subject || 'Ticket Details'}
+        title={
+          selectedTicket
+            ? `${selectedTicket.subject} (#${selectedTicket.ticketId})`
+            : 'Ticket Details'
+        }
         size="lg"
       >
         {selectedTicket && (
           <div className="space-y-6">
             {/* Ticket Info */}
             <div className="flex items-start justify-between p-4 bg-muted/30 rounded-lg">
-              <div>
+              <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Customer</p>
-                <p className="font-medium">{selectedTicket.customerName}</p>
-                <p className="text-sm text-muted-foreground">{selectedTicket.customerEmail}</p>
-              </div>
-              <div className="text-right">
-                <StatusBadge status={selectedTicket.status} />
-                <p className={`text-sm mt-1 capitalize ${getPriorityColor(selectedTicket.priority)}`}>
-                  {selectedTicket.priority} Priority
+                <p className="font-medium">
+                  {selectedTicket.firstName} {selectedTicket.lastName}
                 </p>
+                <p className="text-sm text-muted-foreground">{selectedTicket.email}</p>
+                <p className="text-sm text-muted-foreground">{selectedTicket.phone}</p>
+                <p className="text-xs text-muted-foreground">
+                  UID: {selectedTicket.uid}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Internal ID: {selectedTicket.Id} • Ticket ID: {selectedTicket.ticketId}
+                </p>
+              </div>
+              <div className="text-right space-y-2">
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClasses(
+                    selectedTicket.status
+                  )}`}
+                >
+                  {selectedTicket.status.replace('_', ' ')}
+                </span>
+                <button
+                  onClick={() => handleToggleActive(selectedTicket)}
+                  className="admin-btn-ghost flex items-center gap-1 text-xs ml-auto"
+                >
+                  {selectedTicket.isActive ? (
+                    <>
+                      <Eye className="w-3 h-3" /> Active
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-3 h-3" /> Inactive
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Messages */}
+            {/* User Original Message */}
+            <div className="p-4 border border-border rounded-lg space-y-2">
+              <p className="text-sm font-medium">Customer Message</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {selectedTicket.message}
+              </p>
+            </div>
+
+            {/* Admin Report + Status */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium">
+                Admin Report / Notes <span className="text-red-500">*</span>
+              </p>
+              <textarea
+                className="admin-input w-full min-h-[80px] resize-y"
+                placeholder="Add a report or internal note about this ticket (required)..."
+                value={reportMessage}
+                onChange={(e) => setReportMessage(e.target.value)}
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  className="admin-input w-48"
+                  value={statusSelect}
+                  onChange={(e) => setStatusSelect(e.target.value as TicketStatus)}
+                >
+                  <option value="PENDING">PENDING</option>
+                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  <option value="RESOLVED">RESOLVED</option>
+                  <option value="CLOSED">CLOSED</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Messages history (read‑only) */}
             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
               {selectedTicket.messages.map((msg, index) => (
                 <div
@@ -296,64 +532,78 @@ const SupportPage: React.FC = () => {
                       {msg.senderName} {msg.isAdmin && '(Admin)'}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : '-'}
+                      {msg.createdAt ? new Date(msg.createdAt as any).toLocaleString() : '-'}
                     </span>
                   </div>
-                  <p className="text-sm">{msg.message}</p>
+                  <p className="text-sm whitespace-pre-line">{msg.message}</p>
                 </div>
               ))}
             </div>
 
-            {/* Reply Form */}
-            {selectedTicket.status !== 'closed' && (
-              <div className="border-t border-border pt-4">
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={replyMessage}
-                    onChange={(e) => setReplyMessage(e.target.value)}
-                    className="admin-input flex-1"
-                    placeholder="Type your reply..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendReply();
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={handleSendReply}
-                    disabled={!replyMessage.trim()}
-                    className="admin-btn-primary disabled:opacity-50"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex justify-between pt-4 border-t border-border">
-              {selectedTicket.status !== 'closed' ? (
-                <button
-                  onClick={() => handleStatusChange(selectedTicket.id, 'closed')}
-                  className="admin-btn-secondary"
-                >
-                  Close Ticket
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleStatusChange(selectedTicket.id, 'open')}
-                  className="admin-btn-secondary"
-                >
-                  Reopen Ticket
-                </button>
-              )}
+            {/* Actions: Cancel + Save side by side */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
               <button
                 onClick={() => setSelectedTicket(null)}
                 className="admin-btn-outline"
               >
-                Close
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveReportAndStatus}
+                className="admin-btn-primary"
+              >
+                Save Report
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Email Template Modal */}
+      <Modal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        title="Send Email to Customer"
+        size="md"
+      >
+        {selectedTicket && (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">To</p>
+              <p className="text-sm font-medium">{selectedTicket.email}</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subject</label>
+              <input
+                className="admin-input w-full"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Email subject"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Body</label>
+              <textarea
+                className="admin-input w-full min-h-[160px] resize-y"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                placeholder="Write your email content here..."
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-3 border-t border-border">
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="admin-btn-outline"
+                disabled={isSendingEmail}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEmailSend}
+                className="admin-btn-primary"
+                disabled={isSendingEmail}
+              >
+                {isSendingEmail ? 'Sending...' : 'Send Email'}
               </button>
             </div>
           </div>

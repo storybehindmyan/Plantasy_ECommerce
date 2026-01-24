@@ -125,8 +125,10 @@ export interface Review {
 }
 
 // Support Ticket Types
-export type TicketStatus = 'open' | 'in_progress' | 'closed';
+// export type TicketStatus = 'open' | 'in_progress' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high';
+
+export type TicketStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
 
 export interface TicketMessage {
   id: string;
@@ -134,21 +136,29 @@ export interface TicketMessage {
   senderName: string;
   isAdmin: boolean;
   message: string;
-  createdAt: Date;
+  createdAt: Date | { toDate: () => Date };
 }
 
 export interface SupportTicket {
-  id: string;
+  id: string;            // Firestore doc id
+  Id: string;            // "SUP000654321"
+  ticketId: string;      // "654321"
+  uid: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
   subject: string;
-  customerId: string;
-  customerName: string;
-  customerEmail: string;
+  message: string;       // main user message
+  report?: string;       // extra report text
   status: TicketStatus;
-  priority: TicketPriority;
-  messages: TicketMessage[];
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  lastSeen?: Date;
+  messages: TicketMessage[];
 }
+
 
 // Dashboard Stats
 export interface DashboardStats {

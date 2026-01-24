@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
   { label: 'Blogs', path: '/blogs', icon: FileText,  },
   { label: 'Categories', path: '/categories', icon: Settings,  },
   // { label: 'Reviews', path: '/reviews', icon: Star },
-  // { label: 'Support', path: '/support', icon: MessageSquare },
+  { label: 'Support', path: '/support', icon: MessageSquare },
   { label: 'Admin Users', path: '/admin-users', icon: Users,  },
 ];
 

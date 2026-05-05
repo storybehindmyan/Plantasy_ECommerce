@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {
   collection,
   doc,
@@ -38,6 +39,7 @@ interface SupportTicket {
 }
 
 const ContactUs = () => {
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<"raise" | "check">("raise");
 
   // Raise ticket form state
@@ -68,6 +70,16 @@ const ContactUs = () => {
 
   // Simple placeholder for auth uid
   const currentUid = "ANONYMOUS_USER";
+
+  // Prefill from /contact?orderId=... (used by "Query" button in orders)
+  useEffect(() => {
+    const oid = searchParams.get("orderId");
+    if (oid) {
+      setMode("raise");
+      setSubject("Order Inquiry");
+      setOrderId(oid);
+    }
+  }, [searchParams]);
 
   const generateSixDigitTicketId = () => {
     const num = Math.floor(100000 + Math.random() * 900000);
@@ -244,7 +256,7 @@ const ContactUs = () => {
             <button
               type="button"
               onClick={() => handleCopyTicketId(createdTicketId)}
-              className="mt-2 px-3 py-2 bg-accent/80 hover:bg-accent text-white rounded-sm text-xs uppercase tracking-widest"
+              className="mt-2 px-3 py-2 bg-shop-terracotta/80 hover:bg-shop-terracotta text-white rounded-sm text-xs uppercase tracking-widest"
             >
               {copyStatus || "Copy Ticket ID"}
             </button>
@@ -343,7 +355,7 @@ const ContactUs = () => {
               <button
                 type="button"
                 onClick={() => handleCopyTicketId(ticketId)}
-                className="px-3 py-2 bg-accent/80 hover:bg-accent text-white rounded-sm text-xs uppercase tracking-widest font-mono"
+                className="px-3 py-2 bg-shop-terracotta/80 hover:bg-shop-terracotta text-white rounded-sm text-xs uppercase tracking-widest font-mono"
               >
                 {ticketId}
               </button>
@@ -380,12 +392,12 @@ const ContactUs = () => {
           {/* Contact Info */}
           <div className="space-y-12">
             <div>
-              <h2 className="text-3xl font-serif text-accent mb-8">
+              <h2 className="text-3xl font-serif text-shop-terracotta mb-8">
                 Contact Information
               </h2>
               <div className="space-y-8 text-gray-300 font-light">
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-white/5 rounded-full text-accent">
+                  <div className="p-3 bg-white/5 rounded-full text-shop-terracotta">
                     <MapPin size={24} />
                   </div>
                   <div>
@@ -396,7 +408,7 @@ const ContactUs = () => {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-white/5 rounded-full text-accent">
+                  <div className="p-3 bg-white/5 rounded-full text-shop-terracotta">
                     <Mail size={24} />
                   </div>
                   <div>
@@ -407,7 +419,7 @@ const ContactUs = () => {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-white/5 rounded-full text-accent">
+                  <div className="p-3 bg-white/5 rounded-full text-shop-terracotta">
                     <Phone size={24} />
                   </div>
                   <div>
@@ -427,7 +439,7 @@ const ContactUs = () => {
               </p>
               <a
                 href="/care"
-                className="text-accent hover:underline text-sm uppercase tracking-widest"
+                className="text-shop-terracotta hover:underline text-sm uppercase tracking-widest"
               >
                 Visit Help Center
               </a>
@@ -445,7 +457,7 @@ const ContactUs = () => {
                 onClick={() =>
                   setMode((prev) => (prev === "raise" ? "check" : "raise"))
                 }
-                className="text-xs uppercase tracking-widest text-accent border border-accent px-3 py-2 rounded-sm hover:bg-accent/10"
+                className="text-xs uppercase tracking-widest text-shop-terracotta border border-shop-terracotta px-3 py-2 rounded-sm hover:bg-shop-terracotta/10"
               >
                 {mode === "raise"
                   ? "Check Existing Ticket"
@@ -463,7 +475,7 @@ const ContactUs = () => {
                       </label>
                       <input
                         type="text"
-                        className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors"
+                        className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors"
                         placeholder="John"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
@@ -476,7 +488,7 @@ const ContactUs = () => {
                       </label>
                       <input
                         type="text"
-                        className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors"
+                        className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors"
                         placeholder="Doe"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
@@ -491,7 +503,7 @@ const ContactUs = () => {
                     </label>
                     <input
                       type="email"
-                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors"
+                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors"
                       placeholder="john@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -505,7 +517,7 @@ const ContactUs = () => {
                     </label>
                     <input
                       type="tel"
-                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors"
+                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors"
                       placeholder="+91 9876543210"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
@@ -518,7 +530,7 @@ const ContactUs = () => {
                       Subject
                     </label>
                     <select
-                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors"
+                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors"
                       value={subject}
                       onChange={(e) =>
                         setSubject(e.target.value as SupportSubject)
@@ -538,7 +550,7 @@ const ContactUs = () => {
                       </label>
                       <input
                         type="text"
-                        className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors"
+                        className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors"
                         placeholder="Enter your Order ID"
                         value={orderId}
                         onChange={(e) => setOrderId(e.target.value)}
@@ -552,7 +564,7 @@ const ContactUs = () => {
                     </label>
                     <textarea
                       rows={5}
-                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors resize-none"
+                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors resize-none"
                       placeholder="How can we help you?"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
@@ -562,7 +574,7 @@ const ContactUs = () => {
 
                   <button
                     type="submit"
-                    className="w-full bg-accent hover:bg-accent/90 text-white font-medium py-4 rounded-sm transition-colors uppercase tracking-widest text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full bg-shop-terracotta hover:bg-shop-terracotta/90 text-white font-medium py-4 rounded-sm transition-colors uppercase tracking-widest text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     disabled={loading}
                   >
                     {loading ? "Submitting..." : "Submit Ticket"}
@@ -578,7 +590,7 @@ const ContactUs = () => {
                     </label>
                     <input
                       type="text"
-                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-accent focus:outline-none transition-colors"
+                      className="w-full bg-black/50 border border-white/10 p-3 text-white rounded-sm focus:border-shop-terracotta focus:outline-none transition-colors"
                       placeholder="e.g. 654321"
                       maxLength={6}
                       value={searchTicketId}
@@ -589,7 +601,7 @@ const ContactUs = () => {
 
                   <button
                     type="submit"
-                    className="w-full bg-accent hover:bg-accent/90 text-white font-medium py-4 rounded-sm transition-colors uppercase tracking-widest text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full bg-shop-terracotta hover:bg-shop-terracotta/90 text-white font-medium py-4 rounded-sm transition-colors uppercase tracking-widest text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     disabled={searchLoading}
                   >
                     {searchLoading ? "Searching..." : "Search Ticket"}
@@ -600,7 +612,7 @@ const ContactUs = () => {
                   <button
                     type="button"
                     onClick={() => setMode("raise")}
-                    className="text-xs uppercase tracking-widest text-accent underline"
+                    className="text-xs uppercase tracking-widest text-shop-terracotta underline"
                   >
                     Raise a new ticket instead
                   </button>

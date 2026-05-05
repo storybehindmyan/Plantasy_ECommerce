@@ -26,6 +26,12 @@ export interface Product {
   stock?: number;
   isActive?: boolean;
   badge?: string; // e.g. "New Arrival", "Sale"
+  dimensions?: {
+    height: string; // e.g. "55cm" | "21in"
+    width: string;
+    length: string;
+    weight: number; // grams
+  };
   createdAt?: any;
   updatedAt?: any;
 }

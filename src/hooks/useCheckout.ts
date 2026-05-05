@@ -9,9 +9,12 @@ import { PaymentService } from "../services/PaymentService";
 import { RazorpayService } from "../services/RazorpayService";
 import { orderService } from "../services/OrderService";
 import { DelhiveryService } from "../services/DelhiveryService";
+import { ShippingQuoteService } from "../services/ShippingQuoteService";
 import type { OrderData, PaymentDetails } from "../types/payment";
 import { Timestamp } from "firebase/firestore";
 import type { CartItem } from "../context/CartContext";
+import {getDoc, setDoc, doc} from "firebase/firestore"; 
+import { db } from "../firebase/firebaseConfig";
 
 interface CheckoutParams {
   deliveryAddress: any;
@@ -42,35 +45,48 @@ export const useCheckout = () => {
       const orderId = generateOrderId();
       setCurrentOrderId(orderId);
 
-      // 2. Verify delivery one more time
-      const deliveryAvailable =
-        await DelhiveryService.verifyDeliveryAvailability(
+      // 2. Quote shipping (server-first). Fallback to client mock if backend is unavailable.
+      let deliveryCharge = 0;
+      let estimatedDelivery: string | null = null;
+      try {
+        const quote = await ShippingQuoteService.quote(
+          params.deliveryAddress.zip,
+          params.cartItems.map((it) => ({
+            productId: it.id,
+            quantity: it.quantity,
+          }))
+        );
+        deliveryCharge = Number(quote.shippingCost) || 0;
+        estimatedDelivery = quote.estimatedDelivery || null;
+      } catch (e) {
+        console.error("Shipping quote failed, falling back:", e);
+        const deliveryAvailable = await DelhiveryService.verifyDeliveryAvailability(
           params.deliveryAddress.zip
         );
-
-      if (!deliveryAvailable) {
-        toast.error("Delivery not available for this location");
-        setPaymentStatus("failed");
-        return;
+        if (!deliveryAvailable) {
+          toast.error("Delivery not available for this location");
+          setPaymentStatus("failed");
+          return;
+        }
+        deliveryCharge = await DelhiveryService.getDeliveryCharges(
+          params.deliveryAddress.zip
+        );
       }
 
-      // 3. Get delivery charges
-      const deliveryCharge = await DelhiveryService.getDeliveryCharges(
-        params.deliveryAddress.zip
-      );
-      console.log("Delivery Charge:", deliveryCharge);
-
-      // 4. Compute final amount from params.totalAmount + deliveryCharge
-      // const finalAmount = params.totalAmount + deliveryCharge;
-      const finalAmount = 1;
+      // 3. Compute final amount
+      const finalAmount =
+        Number(params.pricing?.subTotal || 0) +
+        Number(params.pricing?.tax || 0) -
+        Number(params.pricing?.discount || 0) +
+        deliveryCharge;
       const amountInPaisa = Math.round(finalAmount * 100);
 
-      // 5. Create Razorpay order (backend)
+      // 4. Create Razorpay order (backend)
       const razorpayOrderId = await PaymentService.createRazorpayOrder(
         amountInPaisa
       );
 
-      // 6. Initiate Razorpay payment
+      // 5. Initiate Razorpay payment
       await RazorpayService.initiatePayment(
         amountInPaisa,
         razorpayOrderId,
@@ -83,7 +99,9 @@ export const useCheckout = () => {
             orderId,
             params,
             deliveryCharge,
-            razorpayOrderId
+            razorpayOrderId,
+            estimatedDelivery,
+            finalAmount
           );
         },
         (error) => {
@@ -103,16 +121,24 @@ export const useCheckout = () => {
     orderId: string,
     params: CheckoutParams,
     deliveryCharge: number,
-    razorpayOrderId: string
+    razorpayOrderId: string,
+    estimatedDelivery: string | null,
+    finalAmount: number
   ) => {
     try {
+      await PaymentService.verifyRazorpayPayment({
+        razorpay_order_id: razorpayResponse.razorpay_order_id,
+        razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+        razorpay_signature: razorpayResponse.razorpay_signature,
+      });
+
       // 1. Store payment details
       const paymentData: Omit<PaymentDetails, "createdAt"> = {
         uid: user?.uid || "",
         paymentId: razorpayResponse.razorpay_payment_id,
         transactionId: razorpayResponse.razorpay_payment_id,
         orderId,
-        amount: params.totalAmount + deliveryCharge,
+        amount: finalAmount,
         paymentMethod: "Razorpay",
         transactionRef: razorpayOrderId,
         status: "SUCCESS",
@@ -167,8 +193,9 @@ export const useCheckout = () => {
           discount: params.pricing.discount,
           couponCode: params.pricing.couponCode || "",
           shippingCharge: deliveryCharge,
-          grandTotal: params.totalAmount + deliveryCharge,
+          grandTotal: finalAmount,
         },
+        estimatedDelivery: estimatedDelivery || "",
         timestamps: {
           orderedAt: Timestamp.now(),
           confirmedAt: Timestamp.now(),
@@ -181,10 +208,28 @@ export const useCheckout = () => {
 
       await orderService.createOrder(orderData);
 
+      //Add orderId in user's order history array
+      const userOrdersRef = doc(db, "users", user?.uid || "");
+      const userOrdersSnap = await getDoc(userOrdersRef);
+      if (userOrdersSnap.exists()) {
+        const userData = userOrdersSnap.data();
+        const existingOrders: string[] = userData.orders || [];
+        await setDoc(
+          userOrdersRef,
+          { orders: [...existingOrders, orderId] },
+          { merge: true }
+        );
+      }else{
+        console.error("User document does not exist to update order history");
+      }
+
       // 4. Clear cart items
       params.cartItems.forEach((item) => {
         removeFromCart(item.id);
       });
+
+
+      // Shipment + pickup will be triggered server-side when admin confirms the order.
 
       // 5. Update payment status
       setPaymentStatus("success");

@@ -7,7 +7,7 @@ const FooterSection = ({ title, children }: { title: string, children: React.Rea
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="border-b border-primary/10 md:border-none">
+        <div className="border-b border-shop-ink/10 md:border-none">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center justify-between w-full py-4 md:py-0 md:mb-4 group"
@@ -62,24 +62,24 @@ const Footer = () => {
 
                 {/* Links */}
                 <FooterSection title="Shop">
-                    <Link to="/shop?category=all" className="hover:text-accent transition text-gray-400 hover:text-white">All Plants</Link>
-                    <Link to="/shop?category=new-arrivals" className="hover:text-accent transition text-gray-400 hover:text-white">New Arrivals</Link>
-                    <Link to="/shop?category=pots" className="hover:text-accent transition text-gray-400 hover:text-white">Pots & Planters</Link>
-                    <Link to="/care" className="hover:text-accent transition text-gray-400 hover:text-white">Plant Care</Link>
+                    <Link to="/shop?category=all" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">All Plants</Link>
+                    <Link to="/shop?category=new-arrivals" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">New Arrivals</Link>
+                    <Link to="/shop?category=pots" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Pots & Planters</Link>
+                    <Link to="/care" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Plant Care</Link>
                 </FooterSection>
 
                 <FooterSection title="Company">
-                    <Link to="/our-story" className="hover:text-accent transition text-gray-400 hover:text-white">Our Story</Link>
-                    {/* <Link to="/our-story" className="hover:text-accent transition text-gray-400 hover:text-white">Sustainability</Link>
-                    <Link to="#" className="hover:text-accent transition text-gray-400 hover:text-white">Careers</Link>
-                    <Link to="#" className="hover:text-accent transition text-gray-400 hover:text-white">Terms of Service</Link> */}
+                    <Link to="/our-story" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Our Story</Link>
+                    {/* <Link to="/our-story" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Sustainability</Link>
+                    <Link to="#" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Careers</Link>
+                    <Link to="#" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Terms of Service</Link> */}
                 </FooterSection>
 
                 <FooterSection title="Support">
-                    {/* <Link to="/care" className="hover:text-accent transition text-gray-400 hover:text-white">FAQ</Link> */}
-                    <Link to="/shipping-returns" className="hover:text-accent transition text-gray-400 hover:text-white">Shipping & Returns</Link>
-                    <Link to="/contact" className="hover:text-accent transition text-gray-400 hover:text-white">Contact Us</Link>
-                    <Link to="/profile/orders" className="hover:text-accent transition text-gray-400 hover:text-white">Track Order</Link>
+                    {/* <Link to="/care" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">FAQ</Link> */}
+                    <Link to="/shipping-returns" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Shipping & Returns</Link>
+                    <Link to="/contact" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Contact Us</Link>
+                    <Link to="/profile/orders" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Track Order</Link>
                 </FooterSection>
             </div>
 

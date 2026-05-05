@@ -129,7 +129,7 @@ const ProfileHeader: React.FC = () => {
         </div>
 
         <div className="text-white">
-          <h1 className="text-3xl font-serif mb-1">{user.name}</h1>
+          <h1 className="text-3xl  font-serif mb-1 text-white">{user.name}</h1>
           <div className="flex gap-4 text-sm font-light opacity-90">
             <span>+91 {user.phone}</span>
             <span>{user.email}</span>
@@ -224,11 +224,19 @@ type OrderDoc = {
   pricing?: OrderPricing;
   timestamps?: OrderTimestamps;
   track?: string;
+  waybill?: string;
+  courier?: string;
+  shipmentStatus?: string;
+  trackingUrl?: string;
+  labelUrl?: string;
+  trackingEvents?: { status: string; message?: string; location?: string; timestamp: string }[];
+  estimatedDelivery?: string;
 };
 
 /* ---------------- My Orders ---------------- */
 const MyOrders: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = React.useState<OrderDoc[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [openOrderId, setOpenOrderId] = React.useState<string | null>(null);
@@ -273,6 +281,13 @@ const MyOrders: React.FC = () => {
             pricing: data.pricing,
             timestamps: data.timestamps,
             track: data.track,
+            waybill: data.waybill,
+            courier: data.courier,
+            shipmentStatus: data.shipmentStatus,
+            trackingUrl: data.trackingUrl,
+            labelUrl: data.labelUrl,
+            trackingEvents: Array.isArray(data.trackingEvents) ? data.trackingEvents : [],
+            estimatedDelivery: data.estimatedDelivery,
           });
         }
       }
@@ -508,14 +523,14 @@ const MyOrders: React.FC = () => {
 
                       <div>
                         <p className="font-semibold mb-1">Tracking</p>
-                        {order.track ? (
+                        {order.trackingUrl || order.track ? (
                           <a
-                            href={order.track}
+                            href={order.trackingUrl || order.track}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[#c16e41] hover:underline text-xs md:text-sm"
                           >
-                            Here is your tracking link
+                            Track Order
                             <ChevronRight size={14} />
                           </a>
                         ) : (
@@ -525,11 +540,54 @@ const MyOrders: React.FC = () => {
                         )}
                       </div>
 
+                      {/* Tracking timeline */}
+                      {Array.isArray(order.trackingEvents) &&
+                        order.trackingEvents.length > 0 && (
+                          <div>
+                            <p className="font-semibold mb-2">Shipment Updates</p>
+                            <div className="space-y-2 text-xs text-gray-300">
+                              {order.trackingEvents
+                                .slice()
+                                .sort((a, b) =>
+                                  String(b.timestamp).localeCompare(String(a.timestamp))
+                                )
+                                .slice(0, 6)
+                                .map((ev, idx) => (
+                                  <div
+                                    key={`${order.id}-ev-${idx}`}
+                                    className="border border-white/10 rounded-sm p-2 bg-white/5"
+                                  >
+                                    <p className="text-white/90 font-medium">
+                                      {ev.status}
+                                    </p>
+                                    {(ev.location || ev.message) && (
+                                      <p className="text-gray-400">
+                                        {[ev.location, ev.message].filter(Boolean).join(" · ")}
+                                      </p>
+                                    )}
+                                    <p className="text-gray-500">
+                                      {ev.timestamp ? new Date(ev.timestamp).toLocaleString() : ""}
+                                    </p>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
                       <button
                         onClick={() => void handleGenerateInvoice(order)}
                         className="inline-flex items-center gap-2 px-4 py-2 text-xs md:text-sm border border-white/20 text-white rounded-sm hover:bg-white/10 transition-colors"
                       >
                         Generate Invoice
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          navigate(`/contact?orderId=${encodeURIComponent(order.orderId || order.id)}`)
+                        }
+                        className="inline-flex items-center gap-2 px-4 py-2 text-xs md:text-sm border border-white/20 text-white rounded-sm hover:bg-white/10 transition-colors"
+                      >
+                        Query
                       </button>
                     </div>
                   </div>

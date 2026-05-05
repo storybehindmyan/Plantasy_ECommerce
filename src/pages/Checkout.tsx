@@ -10,6 +10,7 @@ import PaymentModal from "../components/PaymentModal";
 import { useCheckout } from "../hooks/useCheckout";
 import { toast } from "sonner";
 import { DelhiveryService } from "../services/DelhiveryService";
+import { ShippingQuoteService } from "../services/ShippingQuoteService";
 
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
@@ -66,9 +67,18 @@ const Checkout: React.FC = () => {
       setIsLoadingDelivery(true);
       setDeliveryAddress(address);
 
-      // Get delivery charges
-      const charges = await DelhiveryService.getDeliveryCharges(address.zip);
-      setDeliveryCharge(charges);
+      // Preview shipping quote (server-first). Fallback to existing mock.
+      try {
+        const quote = await ShippingQuoteService.quote(address.zip, cart.map((it) => ({
+          productId: it.id,
+          quantity: it.quantity,
+        })));
+        setDeliveryCharge(Number(quote.shippingCost) || 0);
+      } catch (e) {
+        console.error("Checkout quote preview failed, falling back:", e);
+        const charges = await DelhiveryService.getDeliveryCharges(address.zip);
+        setDeliveryCharge(charges);
+      }
 
       toast.success("Address verified successfully!");
     } catch (error) {

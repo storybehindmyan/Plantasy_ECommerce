@@ -148,6 +148,7 @@ const ProductDetails = () => {
           stock: data.stock,
           isActive: data.isActive,
           volume: data.volume,
+          dimensions: data.dimensions,
           // you may have these fields in your Product type now:
           sku: data.sku,
           plantType: data.plantType,
@@ -184,6 +185,16 @@ const ProductDetails = () => {
   };
 
   const isInWishlist = !!(product && wishlistIds.includes(product.id));
+
+  const formatWeight = (grams: number) => {
+    if (!Number.isFinite(grams) || grams <= 0) return "-";
+    if (grams > 1000) {
+      const kg = grams / 1000;
+      const txt = kg >= 10 ? kg.toFixed(1) : kg.toFixed(2);
+      return `${txt} kg`;
+    }
+    return `${Math.round(grams)} g`;
+  };
 
   const handleToggleWishlist = async () => {
     if (!user?.uid || !product?.id) {
@@ -227,7 +238,7 @@ const ProductDetails = () => {
 
   if (!product) {
     return (
-      <div className="p-20 text-center text-white bg-primary min-h-screen">
+      <div className="p-20 text-center text-white bg-shop-ink min-h-screen">
         Product not found.
       </div>
     );
@@ -453,7 +464,7 @@ const ProductDetails = () => {
                 <div className="flex gap-4 pt-4 items-center">
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 bg-accent hover:bg-[#b05d35] text-white py-3 px-8 text-sm font-medium tracking-wide transition-colors duration-300"
+                    className="flex-1 bg-shop-terracotta hover:bg-[#b05d35] text-white py-3 px-8 text-sm font-medium tracking-wide transition-colors duration-300"
                   >
                     Add to Cart
                   </button>
@@ -492,6 +503,42 @@ const ProductDetails = () => {
                   </div>
                 </AccordionItem>
 
+                {(product.dimensions?.height ||
+                  product.dimensions?.width ||
+                  product.dimensions?.length ||
+                  typeof product.dimensions?.weight === "number") && (
+                  <AccordionItem title="Product Dimensions">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <p>
+                        <span className="text-gray-400">Height:</span>{" "}
+                        <span className="text-gray-200">
+                          {product.dimensions?.height || "-"}
+                        </span>
+                      </p>
+                      <p>
+                        <span className="text-gray-400">Width:</span>{" "}
+                        <span className="text-gray-200">
+                          {product.dimensions?.width || "-"}
+                        </span>
+                      </p>
+                      <p>
+                        <span className="text-gray-400">Length:</span>{" "}
+                        <span className="text-gray-200">
+                          {product.dimensions?.length || "-"}
+                        </span>
+                      </p>
+                      <p>
+                        <span className="text-gray-400">Weight:</span>{" "}
+                        <span className="text-gray-200">
+                          {typeof product.dimensions?.weight === "number"
+                            ? formatWeight(product.dimensions.weight)
+                            : "-"}
+                        </span>
+                      </p>
+                    </div>
+                  </AccordionItem>
+                )}
+
                 <AccordionItem title="Return & Refund Policy">
                   <p className="mb-2">{renderPolicySummary()}</p>
                   <p>{renderPolicyDetails()}</p>
@@ -525,7 +572,7 @@ const ProductDetails = () => {
       {/* Related Products */}
       <YouMayAlsoLike
         currentProductId={id}
-        bgColor="bg-primary border-t border-white/10"
+        bgColor="bg-shop-ink border-t border-white/10"
       />
     </div>
   );

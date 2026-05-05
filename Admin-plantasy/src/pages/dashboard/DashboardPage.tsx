@@ -7,6 +7,7 @@ import {
   Ticket,
   Clock,
   AlertTriangle,
+  MessageSquare,
 } from "lucide-react";
 import StatCard from "../../components/common/StatCard";
 import DataTable from "../../components/common/DataTable";
@@ -35,6 +36,7 @@ const DashboardPage: React.FC = () => {
     activeCoupons: 0,
     pendingOrders: 0,
     lowStockProducts: 0,
+    pendingSupportTickets: 0,
   });
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,12 +81,21 @@ const DashboardPage: React.FC = () => {
           activeCouponsCount,
           pendingCount,
           lowStock,
+          pendingTicketsCount,
         ] = await Promise.all([
           orderService.getRecentOrders(5),
           productService.getProductsCount(),
           couponService.getActiveCouponsCount(),
           orderService.getPendingOrdersCount(),
           productService.getLowStockProducts(),
+          (async () => {
+            const q = query(
+              collection(db, "support"),
+              where("status", "==", "PENDING")
+            );
+            const snap = await getDocs(q);
+            return snap.size;
+          })(),
         ]);
 
         setRecentOrders(recent);
@@ -94,6 +105,7 @@ const DashboardPage: React.FC = () => {
           activeCoupons: activeCouponsCount,
           pendingOrders: pendingCount,
           lowStockProducts: lowStock.length,
+          pendingSupportTickets: pendingTicketsCount,
         }));
 
         // Load all orders
@@ -343,7 +355,7 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Quick Stats Row */}
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="admin-card flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-warning/10">
             <Clock className="h-6 w-6 text-warning" />
@@ -363,6 +375,16 @@ const DashboardPage: React.FC = () => {
               Low Stock Products
             </p>
             <p className="text-2xl font-bold">{stats.lowStockProducts}</p>
+          </div>
+        </div>
+
+        <div className="admin-card flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <MessageSquare className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Pending Tickets</p>
+            <p className="text-2xl font-bold">{stats.pendingSupportTickets}</p>
           </div>
         </div>
       </div>

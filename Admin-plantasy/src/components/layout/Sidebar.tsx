@@ -7,7 +7,6 @@ import {
   ShoppingCart,
   Ticket,
   FileText,
-  Star,
   MessageSquare,
   Users,
   Settings,
@@ -29,16 +28,16 @@ interface NavItem {
   roles?: ('super_admin' | 'editor' | 'support')[];
 }
 
+/** Paths are segments under /admin (see AdminRoot basename) */
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Products', path: '/products', icon: Package, },
-  { label: 'Orders', path: '/orders', icon: ShoppingCart },
-  { label: 'Coupons', path: '/coupons', icon: Ticket,  },
-  { label: 'Blogs', path: '/blogs', icon: FileText,  },
-  { label: 'Categories', path: '/categories', icon: Settings,  },
-  // { label: 'Reviews', path: '/reviews', icon: Star },
-  { label: 'Support', path: '/support', icon: MessageSquare },
-  { label: 'Admin Users', path: '/admin-users', icon: Users,  },
+  { label: 'Dashboard', path: 'dashboard', icon: LayoutDashboard },
+  { label: 'Products', path: 'products', icon: Package },
+  { label: 'Orders', path: 'orders', icon: ShoppingCart },
+  { label: 'Coupons', path: 'coupons', icon: Ticket },
+  { label: 'Blogs', path: 'blogs', icon: FileText },
+  { label: 'Categories', path: 'categories', icon: Settings },
+  { label: 'Support', path: 'support', icon: MessageSquare },
+  { label: 'Admin Users', path: 'admin-users', icon: Users },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
@@ -94,12 +93,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
         <ul className="space-y-1">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
-            
+            const href = `/admin/${item.path}`;
+            const isActive =
+              location.pathname === href ||
+              location.pathname.startsWith(`${href}/`);
+
             return (
               <li key={item.path}>
                 <NavLink
-                  to={item.path}
+                  to={href}
                   className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''} ${
                     isCollapsed ? 'justify-center px-3' : ''
                   }`}

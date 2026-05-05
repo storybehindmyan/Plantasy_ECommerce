@@ -65,6 +65,8 @@ export interface OrderData {
     deliveredAt?: any;
     updatedAt: any;
   };
+
+  estimatedDelivery?: string;
   
   track?: string;
   createdAt: any;

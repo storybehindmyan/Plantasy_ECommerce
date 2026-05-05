@@ -64,7 +64,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {/* Badge */}
           {product.badge && (
             <span
-              className={`absolute top-2 left-2 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-1 ${product.badge === "Sale" ? "bg-accent" : "bg-[#686736]/70 backdrop-blur-md border border-[#686736]/90"
+              className={`absolute top-2 left-2 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-1 ${product.badge === "Sale" ? "bg-shop-terracotta" : "bg-[#686736]/70 backdrop-blur-md border border-[#686736]/90"
                 }`}
             >
               {product.badge}
@@ -74,7 +74,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         {/* Text content */}
         <div className="text-left">
-          <h3 className="font-serif text-lg leading-tight mb-1 text-white/90 group-hover:text-accent transition-colors tracking-wide">
+          <h3 className="font-serif text-lg leading-tight mb-1 text-white/90 group-hover:text-shop-terracotta transition-colors tracking-wide">
             {product.name}
           </h3>
 
@@ -91,7 +91,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           <button
             onClick={handleAddContext}
-            className="w-full border border-white/30 text-white py-2 text-sm font-medium tracking-wider hover:bg-white hover:text-primary transition-all duration-300"
+            className="w-full border border-white/30 text-white py-2 text-sm font-medium tracking-wider hover:bg-white hover:text-shop-ink transition-all duration-300"
           >
             {isAdded ? "Added" : "Add to Cart"}
           </button>

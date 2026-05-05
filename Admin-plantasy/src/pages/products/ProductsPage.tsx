@@ -37,6 +37,7 @@ type Category = {
 
 type PlantType = "Soil-less" | "Soil-Base" | "Both" | "None of the above";
 type PolicyType = "return" | "replacement" | "both" | "none";
+type DimensionUnit = "cm" | "in";
 
 type ProductFormData = {
   name: string;
@@ -49,6 +50,13 @@ type ProductFormData = {
   plantType: PlantType | "";
   policy: PolicyType | "";
   volume: string;
+  heightValue: string;
+  heightUnit: DimensionUnit;
+  widthValue: string;
+  widthUnit: DimensionUnit;
+  lengthValue: string;
+  lengthUnit: DimensionUnit;
+  weightGrams: string;
   isActive: boolean;
   coverImage: string;
   hoverImage: string;
@@ -98,6 +106,13 @@ const ProductsPage: React.FC = () => {
     plantType: "",
     policy: "",
     volume: "",
+    heightValue: "",
+    heightUnit: "cm",
+    widthValue: "",
+    widthUnit: "cm",
+    lengthValue: "",
+    lengthUnit: "cm",
+    weightGrams: "",
     isActive: true,
     coverImage: "",
     hoverImage: "",
@@ -187,6 +202,7 @@ const ProductsPage: React.FC = () => {
           images,
           coverImage,
           hoverImage,
+          dimensions: data.dimensions,
           createdAt: data.createdAt,
           updatedAt,
           isNewArrival,
@@ -236,11 +252,38 @@ const ProductsPage: React.FC = () => {
   };
 
   const handleOpenModal = (product?: ProductWithMeta) => {
+    const parseDim = (
+      value: unknown
+    ): { num: string; unit: DimensionUnit } => {
+      if (typeof value !== "string") return { num: "", unit: "cm" };
+      const m = value.trim().match(/^(\d+(?:\.\d+)?)(cm|in)$/i);
+      if (!m) return { num: "", unit: "cm" };
+      const unit = (m[2].toLowerCase() as DimensionUnit) ?? "cm";
+      return { num: m[1], unit };
+    };
+
     if (product) {
       setEditingProduct(product);
       const imgs = product.images || [];
       const cover = product.coverImage || imgs[0] || "";
       const hover = product.hoverImage || "";
+
+      const dims = (product as any).dimensions as
+        | {
+            height?: unknown;
+            width?: unknown;
+            length?: unknown;
+            weight?: unknown;
+          }
+        | undefined;
+      const height = parseDim(dims?.height);
+      const width = parseDim(dims?.width);
+      const length = parseDim(dims?.length);
+      const weightGrams =
+        typeof dims?.weight === "number" && dims.weight > 0
+          ? String(dims.weight)
+          : "";
+
       setFormData({
         name: product.name,
         sku: product.sku || "",
@@ -259,6 +302,13 @@ const ProductsPage: React.FC = () => {
           product.volume !== undefined && product.volume !== null
             ? String(product.volume)
             : "",
+        heightValue: height.num,
+        heightUnit: height.unit,
+        widthValue: width.num,
+        widthUnit: width.unit,
+        lengthValue: length.num,
+        lengthUnit: length.unit,
+        weightGrams,
         isActive: product.isActive,
         coverImage: cover,
         hoverImage: hover,
@@ -280,6 +330,13 @@ const ProductsPage: React.FC = () => {
         plantType: "",
         policy: "",
         volume: "",
+        heightValue: "",
+        heightUnit: "cm",
+        widthValue: "",
+        widthUnit: "cm",
+        lengthValue: "",
+        lengthUnit: "cm",
+        weightGrams: "",
         isActive: true,
         coverImage: "",
         hoverImage: "",
@@ -408,6 +465,29 @@ const ProductsPage: React.FC = () => {
     if (!formData.policy) return;
     if (!formData.name.trim()) return;
 
+    const positiveNum = (v: string) => {
+      if (v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+
+    const heightN = positiveNum(formData.heightValue);
+    const widthN = positiveNum(formData.widthValue);
+    const lengthN = positiveNum(formData.lengthValue);
+    const weightN = positiveNum(formData.weightGrams);
+
+    if (
+      heightN === null ||
+      widthN === null ||
+      lengthN === null ||
+      weightN === null
+    ) {
+      alert(
+        "Please enter valid positive values for Height, Width, Length and Weight."
+      );
+      return;
+    }
+
     try {
       setIsLoading(true);
 
@@ -459,6 +539,12 @@ const ProductsPage: React.FC = () => {
         images: allImageUrls,
         coverImage: coverImageUrl,
         hoverImage: hoverImageUrl,
+        dimensions: {
+          height: `${heightN}${formData.heightUnit}`,
+          width: `${widthN}${formData.widthUnit}`,
+          length: `${lengthN}${formData.lengthUnit}`,
+          weight: Math.round(weightN),
+        },
       };
 
       const productRef = doc(db, "products", productId);
@@ -943,6 +1029,114 @@ const ProductsPage: React.FC = () => {
                 className="admin-input"
                 placeholder="e.g., 500 ml, 1 L"
               />
+            </div>
+          </div>
+
+          {/* Dimensions + Weight */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div className="md:col-span-1">
+              <label className="admin-label">Weight (g)</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={formData.weightGrams}
+                onChange={(e) =>
+                  setFormData({ ...formData, weightGrams: e.target.value })
+                }
+                className="admin-input"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="admin-label">Height</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={formData.heightValue}
+                  onChange={(e) =>
+                    setFormData({ ...formData, heightValue: e.target.value })
+                  }
+                  className="admin-input"
+                  required
+                />
+                <select
+                  value={formData.heightUnit}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      heightUnit: e.target.value as DimensionUnit,
+                    })
+                  }
+                  className="admin-input w-24"
+                >
+                  <option value="cm">cm</option>
+                  <option value="in">in</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="admin-label">Width</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={formData.widthValue}
+                  onChange={(e) =>
+                    setFormData({ ...formData, widthValue: e.target.value })
+                  }
+                  className="admin-input"
+                  required
+                />
+                <select
+                  value={formData.widthUnit}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      widthUnit: e.target.value as DimensionUnit,
+                    })
+                  }
+                  className="admin-input w-24"
+                >
+                  <option value="cm">cm</option>
+                  <option value="in">in</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="admin-label">Length</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={formData.lengthValue}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lengthValue: e.target.value })
+                  }
+                  className="admin-input"
+                  required
+                />
+                <select
+                  value={formData.lengthUnit}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      lengthUnit: e.target.value as DimensionUnit,
+                    })
+                  }
+                  className="admin-input w-24"
+                >
+                  <option value="cm">cm</option>
+                  <option value="in">in</option>
+                </select>
+              </div>
             </div>
           </div>
 

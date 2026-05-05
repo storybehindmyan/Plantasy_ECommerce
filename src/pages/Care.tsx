@@ -30,7 +30,7 @@ const CareItem = ({ title, icon: Icon, children }: any) => {
         className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition group"
       >
         <div className="flex items-center gap-4">
-          <div className="p-2 bg-white/5 rounded-full text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+          <div className="p-2 bg-white/5 rounded-full text-shop-terracotta group-hover:bg-shop-terracotta group-hover:text-white transition-colors">
             <Icon size={24} />
           </div>
           <span className="font-serif text-xl text-white">{title}</span>
@@ -186,7 +186,7 @@ const Care = () => {
               transition={{ duration: 0.8 }}
               className="border-t border-white/20 pt-20 mb-24"
             >
-              <span className="text-accent text-sm font-bold tracking-widest uppercase mb-4 block">
+              <span className="text-shop-terracotta text-sm font-bold tracking-widest uppercase mb-4 block">
                 {formatDate(activeBlog.publishedAt)}
               </span>
               <h2 className="text-4xl md:text-5xl font-serif text-white mb-8">
@@ -235,7 +235,7 @@ const Care = () => {
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="text-white hover:text-accent transition-colors text-sm tracking-widest uppercase"
+                  className="text-white hover:text-shop-terracotta transition-colors text-sm tracking-widest uppercase"
                 >
                   Back to Top
                 </button>
@@ -270,10 +270,10 @@ const Care = () => {
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-accent text-xs font-bold tracking-widest uppercase mb-2">
+                    <span className="text-shop-terracotta text-xs font-bold tracking-widest uppercase mb-2">
                       {formatDate(post.publishedAt)}
                     </span>
-                    <h3 className="text-2xl font-serif text-white mb-2 group-hover:text-accent transition-colors">
+                    <h3 className="text-2xl font-serif text-white mb-2 group-hover:text-shop-terracotta transition-colors">
                       {post.title}
                     </h3>
                     {/* Excerpt below title */}

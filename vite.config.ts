@@ -1,24 +1,56 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// https://vite.dev/config/
-export default defineConfig({
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default defineConfig(() => ({
   plugins: [react()],
-  // base: process.env.NODE_ENV === "production" ? "/" : "/Plant_Ecommers/",
-  //  resolve: {
-  //   extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.cjs'],
-  //   alias: { '@firebase/auth': 'node_modules/@firebase/auth/dist/esm2017/index.js' }, // If needed
-  // },
-  optimizeDeps: { include: ['firebase/auth'] },
+  define: {
+    global: 'globalThis',
+  },
   server: {
+    port: 5173,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },
+    watch: {
+      ignored: ['**/server/**'],
+    },
   },
-});
-
-
-
+  optimizeDeps: {
+    entries: [
+      path.resolve(__dirname, 'index.html'),
+      path.resolve(__dirname, 'Admin-plantasy/index.html'),
+    ],
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        admin: path.resolve(__dirname, 'Admin-plantasy/index.html'),
+      },
+    },
+    target: 'esnext',
+    cssTarget: 'chrome80',
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
+  },
+  resolve: {
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.cjs'],
+    alias: {
+      '@': path.resolve(__dirname, 'Admin-plantasy/src'),
+      'virtual:admin-root': path.resolve(
+        __dirname,
+        'Admin-plantasy/src/AdminRoot.tsx'
+      ),
+    },
+  },
+}));

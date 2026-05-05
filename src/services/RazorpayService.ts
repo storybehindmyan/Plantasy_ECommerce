@@ -14,7 +14,7 @@ export const RazorpayService = {
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
       script.onload = () => {
-        console.log("✅ Razorpay script loaded");
+        // console.log("✅ Razorpay script loaded");
         resolve(true);
       };
       script.onerror = () => {
@@ -47,8 +47,8 @@ export const RazorpayService = {
     }
 
     console.log("🔑 Using Razorpay Key:", RAZORPAY_KEY_ID.slice(0, 10) + "...");
-    console.log("💰 Amount:", amount, "paisa");
-    console.log("📝 Order ID:", orderId);
+    // console.log("💰 Amount:", amount, "paisa");
+    // console.log("📝 Order ID:", orderId);
 
     const options = {
       key: RAZORPAY_KEY_ID,
@@ -58,7 +58,7 @@ export const RazorpayService = {
       description: `Order Payment`,
       order_id: orderId, // ✅ Must be valid Razorpay order ID
       handler: function (response: any) {
-        console.log("✅ Payment Success:", response);
+        // console.log("✅ Payment Success:", response);
         onSuccess(response);
       },
       prefill: {
@@ -76,7 +76,7 @@ export const RazorpayService = {
       },
     };
 
-    console.log("🚀 Opening Razorpay with options:", options);
+    // console.log("🚀 Opening Razorpay with options:", options);
 
     try {
       const razorpay = new window.Razorpay(options);

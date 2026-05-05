@@ -4,8 +4,8 @@ const OurStory = () => {
     return (
         <div className="max-w-4xl mx-auto px-6 py-20 space-y-12">
             <div className="text-center space-y-6">
-                <span className="text-accent text-sm font-bold tracking-widest uppercase">Since 2024</span>
-                <h1 className="text-4xl md:text-6xl font-serif text-primary">Growing Green</h1>
+                <span className="text-shop-terracotta text-sm font-bold tracking-widest uppercase">Since 2024</span>
+                <h1 className="text-4xl md:text-6xl font-serif text-shop-ink">Growing Green</h1>
             </div>
 
             <motion.div

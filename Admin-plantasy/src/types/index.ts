@@ -27,6 +27,16 @@ export interface Product {
   images: string[];
   videos?: string[];
   isActive: boolean;
+  /**
+   * Physical dimensions snapshot for shipping.
+   * Stored in Firestore exactly as strings with units + weight in grams.
+   */
+  dimensions?: {
+    height: string; // e.g. "55cm" | "21in"
+    width: string;  // e.g. "12cm"
+    length: string; // e.g. "18cm"
+    weight: number; // grams
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -168,4 +178,5 @@ export interface DashboardStats {
   activeCoupons: number;
   pendingOrders: number;
   lowStockProducts: number;
+  pendingSupportTickets: number;
 }

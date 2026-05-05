@@ -355,7 +355,7 @@ const Shop = () => {
   }, [activeCategory, categoryFilters]);
 
   return (
-    <div className="min-h-screen bg-black text-secondary pt-32 pb-20 transition-colors duration-300">
+    <div className="min-h-screen bg-black text-shop-canvas pt-32 pb-20 transition-colors duration-300">
       {/* Centered Title */}
       <div className="text-center mt-12 mb-20 px-4 relative">
         <h1 className="text-6xl md:text-8xl font-serif font-medium tracking-tight mb-4 capitalize text-white">

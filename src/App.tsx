@@ -8,7 +8,6 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
-// import AdminDashboard from './pages/AdminDashboard';
 import CartDrawer from './components/CartDrawer';
 import ScrollToTop from './components/ScrollToTop';
 import OurStory from './pages/OurStory';
@@ -16,11 +15,9 @@ import Care from './pages/Care';
 import UserProfile from './pages/UserProfile';
 import ShippingReturns from './pages/ShippingReturns';
 import ContactUs from './pages/ContactUs';
-import LoginPage from '../Admin-plantasy/src/pages/auth/LoginPage';
-import Checkout from "./pages/Checkout"; // ✅ NEW
+import Checkout from "./pages/Checkout";
 import ProtectedRoute from './components/ProtectedRoute';
-
-
+import AdminShell from './admin/AdminShell';
 
 const App = () => {
   return (
@@ -31,6 +28,7 @@ const App = () => {
             <CartDrawer />
             <ScrollToTop />
             <Routes>
+              <Route path="/admin/*" element={<AdminShell />} />
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="login" element={<Login initialView="login" />} />
@@ -42,29 +40,23 @@ const App = () => {
                 <Route path="shipping-returns" element={<ShippingReturns />} />
                 <Route path="contact" element={<ContactUs />} />
                 <Route path="profile/*" element={<UserProfile />} />
-                <Route path="admin" element={<LoginPage />} />
+                <Route
+                  path="checkout"
+                  element={
+                    <ProtectedRoute>
+                      <Checkout />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="*" element={<Navigate to="/" replace />} />
-                {/* User Routes (Protected) */}
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              }
-            />
-
               </Route>
             </Routes>
           </ProductProvider>
         </CartProvider>
-        {/* other layout */}
         <Toaster richColors position="bottom-center" />
       </AuthProvider>
     </BrowserRouter>
   );
 };
-
-
 
 export default App;

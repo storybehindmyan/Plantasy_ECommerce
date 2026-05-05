@@ -1,4 +1,3 @@
-// AFTER (Admin-plantasy/src/AdminRoot.tsx)
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
@@ -16,8 +15,8 @@ import BlogsPage from "./pages/blogs/BlogsPage";
 import ReviewsPage from "./pages/reviews/ReviewsPage";
 import SupportPage from "./pages/support/SupportPage";
 import AdminUsersPage from "./pages/admin-users/AdminUsersPage";
+import CategoriesPage from "./pages/categories/CategoriesPage";
 import NotFound from "./pages/NotFound";
-
 
 const queryClient = new QueryClient();
 
@@ -27,14 +26,11 @@ const AdminRoot = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <Routes>
-          {/* Auth routes under /admin */}
+        <Routes basename="/admin">
           <Route path="auth/login" element={<LoginPage />} />
 
-          {/* Default /admin -> /admin/dashboard */}
-          <Route path="/" element={<Navigate to="dashboard" replace />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
 
-          {/* Admin routes inside AdminLayout */}
           <Route element={<AdminLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="products" element={<ProductsPage />} />
@@ -44,6 +40,7 @@ const AdminRoot = () => (
             <Route path="reviews" element={<ReviewsPage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="admin-users" element={<AdminUsersPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

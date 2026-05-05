@@ -20,7 +20,7 @@ const AdminLayout: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to="/admin/auth/login" replace />;
   }
 
   return (

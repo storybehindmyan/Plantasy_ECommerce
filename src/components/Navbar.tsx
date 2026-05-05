@@ -779,7 +779,7 @@ const Navbar = () => {
                   Cart {itemsCount}
                 </span>
                 {itemsCount > 0 && (
-                  <span className="lg:hidden absolute top-0 right-0 bg-accent text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                  <span className="lg:hidden absolute top-0 right-0 bg-shop-terracotta text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
                     {itemsCount}
                   </span>
                 )}

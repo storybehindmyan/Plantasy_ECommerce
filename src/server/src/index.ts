@@ -1,10 +1,44 @@
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
-// ✅ Fix: Go up ONE level from src/index.ts to reach server/.env
-const envPath = path.resolve(__dirname, "../.env");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load env with priority:
+// 1) repo root .env (preferred for unified deployment)
+// 2) server-local .env (fallback)
+const candidateEnvPaths = [
+  path.resolve(process.cwd(), "../../.env"),
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(__dirname, "../../.env"),
+  path.resolve(__dirname, "../.env"),
+];
+let envPath = "";
+for (const p of candidateEnvPaths) {
+  if (!fs.existsSync(p)) continue;
+  const rawEnv = fs.readFileSync(p);
+  let envText = "";
+  // Handle UTF-16LE encoded .env files (common on Windows editors)
+  if (rawEnv.length >= 2 && rawEnv[0] === 0xff && rawEnv[1] === 0xfe) {
+    envText = rawEnv.toString("utf16le");
+  } else {
+    envText = rawEnv.toString("utf8");
+  }
+  const parsed = dotenv.parse(envText);
+  if (parsed.RAZORPAY_KEY_ID && parsed.RAZORPAY_KEY_SECRET) {
+    envPath = p;
+    for (const [k, v] of Object.entries(parsed)) {
+      if (!process.env[k]) process.env[k] = v;
+    }
+    break;
+  }
+}
+if (!envPath) {
+  envPath = candidateEnvPaths.find((p) => fs.existsSync(p)) || candidateEnvPaths[0];
+}
 console.log("📁 Loading .env from:", envPath);
-dotenv.config({ path: envPath });
 
 // ✅ Validate required environment variables
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
@@ -30,7 +64,8 @@ console.log("   KEY TYPE:", RAZORPAY_KEY_ID.startsWith("rzp_live_") ? "🔴 LIVE
 
 import express from "express";
 import cors from "cors";
-import razorpayRoutes from "./routes/razorpay";
+import razorpayRoutes from "./routes/razorpay.js";
+import shippingRoutes from "./routes/shipping.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +86,7 @@ app.use((req, _res, next) => {
 });
 
 app.use("/api/razorpay", razorpayRoutes);
+app.use("/api/shipping", shippingRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "Plantasy Backend API is running" });

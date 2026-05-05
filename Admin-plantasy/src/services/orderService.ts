@@ -98,6 +98,16 @@ export const orderService = {
             orderType: data.orderType || 'standard',
             isCancelable: data.isCancelable ?? true,
             isReturnEligible: data.isReturnEligible ?? false,
+            waybill: data.waybill || '',
+            courier: data.courier || '',
+            shipmentStatus: data.shipmentStatus || '',
+            pickupScheduled: data.pickupScheduled ?? false,
+            trackingUrl: data.trackingUrl || '',
+            labelUrl: data.labelUrl || '',
+            trackingEvents: Array.isArray(data.trackingEvents)
+              ? data.trackingEvents
+              : [],
+            estimatedDelivery: data.estimatedDelivery || '',
             items: hydratedItems,
             deliveryAddress: data.deliveryAddress,
             payment: data.payment || {
@@ -161,6 +171,16 @@ export const orderService = {
           orderType: data.orderType || 'standard',
           isCancelable: data.isCancelable ?? true,
           isReturnEligible: data.isReturnEligible ?? false,
+          waybill: data.waybill || '',
+          courier: data.courier || '',
+          shipmentStatus: data.shipmentStatus || '',
+          pickupScheduled: data.pickupScheduled ?? false,
+          trackingUrl: data.trackingUrl || '',
+          labelUrl: data.labelUrl || '',
+          trackingEvents: Array.isArray(data.trackingEvents)
+            ? data.trackingEvents
+            : [],
+          estimatedDelivery: data.estimatedDelivery || '',
           items: hydratedItems,
           deliveryAddress: data.deliveryAddress,
           payment: data.payment || {

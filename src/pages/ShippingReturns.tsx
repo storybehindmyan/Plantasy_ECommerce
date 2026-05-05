@@ -19,7 +19,7 @@ const ShippingReturns = () => {
 
                 <div className="space-y-16">
                     <section className="space-y-6">
-                        <h2 className="text-3xl font-serif text-accent">Shipping Policy</h2>
+                        <h2 className="text-3xl font-serif text-shop-terracotta">Shipping Policy</h2>
 
                         <div className="space-y-8 text-gray-300 font-light leading-relaxed">
                             <div>
@@ -66,7 +66,7 @@ const ShippingReturns = () => {
                     <div className="w-full h-px bg-white/10" />
 
                     <section className="space-y-6">
-                        <h2 className="text-3xl font-serif text-accent">Return Policy</h2>
+                        <h2 className="text-3xl font-serif text-shop-terracotta">Return Policy</h2>
 
                         <div className="space-y-8 text-gray-300 font-light leading-relaxed">
                             <div>
@@ -88,7 +88,7 @@ const ShippingReturns = () => {
                             <div>
                                 <h3 className="text-white text-xl font-medium mb-2">How to Initiate a Return</h3>
                                 <p>
-                                    To start a return, you can contact us at <a href="mailto:support@plantasy.com" className="text-accent underline">support@plantasy.com</a>. If your return is accepted, we’ll send you a return shipping label, as well as instructions on how and where to send your package.
+                                    To start a return, you can contact us at <a href="mailto:support@plantasy.com" className="text-shop-terracotta underline">support@plantasy.com</a>. If your return is accepted, we’ll send you a return shipping label, as well as instructions on how and where to send your package.
                                 </p>
                             </div>
                         </div>

@@ -2,13 +2,24 @@
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
-export type ShippingQuoteItem = { productId: string; quantity: number };
+// Item with optional dimensions for accurate shipping calculation
+export interface ShippingQuoteItem {
+  productId: string;
+  quantity: number;
+  dimensions?: {
+    height: string;
+    width: string;
+    length: string;
+    weight: number;
+  };
+}
 
 export type ShippingQuoteResponse = {
   courier: "Delhivery";
   shippingCost: number;
   estimatedDelivery: string;
   billableWeightGrams?: number;
+  volumetricWeightKg?: number;
 };
 
 export const ShippingQuoteService = {
@@ -26,5 +37,32 @@ export const ShippingQuoteService = {
 
     return (await res.json()) as any;
   },
-};
 
+  // Helper: Format dimensions from product data
+  formatItemWithDimensions(product: any, quantity: number): ShippingQuoteItem {
+    return {
+      productId: product.id,
+      quantity,
+      dimensions: product.dimensions || {
+        height: "10cm",
+        width: "10cm",
+        length: "10cm",
+        weight: 500,
+      },
+    };
+  },
+
+  // Helper: Calculate shipping for cart items with product dimensions
+  async quoteWithProducts(
+    pincode: string,
+    cartItems: Array<{ id: string; quantity: number; dimensions?: any }>
+  ): Promise<ShippingQuoteResponse> {
+    const items: ShippingQuoteItem[] = cartItems.map((item) => ({
+      productId: item.id,
+      quantity: item.quantity,
+      dimensions: item.dimensions,
+    }));
+
+    return this.quote(pincode, items);
+  },
+};

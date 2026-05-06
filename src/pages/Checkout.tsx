@@ -68,10 +68,12 @@ const Checkout: React.FC = () => {
       setDeliveryAddress(address);
 
       // Preview shipping quote (server-first). Fallback to existing mock.
+      // Send product dimensions for accurate volumetric weight calculation
       try {
-        const quote = await ShippingQuoteService.quote(address.zip, cart.map((it) => ({
-          productId: it.id,
+        const quote = await ShippingQuoteService.quoteWithProducts(address.zip, cart.map((it) => ({
+          id: it.id,
           quantity: it.quantity,
+          dimensions: it.dimensions,
         })));
         setDeliveryCharge(Number(quote.shippingCost) || 0);
       } catch (e) {

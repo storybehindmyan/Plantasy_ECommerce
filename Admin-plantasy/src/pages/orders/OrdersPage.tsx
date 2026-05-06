@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Eye, ChevronDown } from 'lucide-react';
+import { Search, Eye, ChevronDown, Truck, Download } from 'lucide-react';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
 import StatusBadge from '../../components/common/StatusBadge';
 import { orderService } from '../../services/orderService';
+import { DelhiveryService } from '../../../../src/services/DelhiveryService';
+import { toast } from 'sonner';
 
 const statusOptions = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
 type OrderStatus = (typeof statusOptions)[number];
@@ -160,10 +162,45 @@ const OrdersPage: React.FC = () => {
     newStatus: OrderStatus,
     order: Order
   ) => {
+    const oldStatus = String(order.orderStatus).toLowerCase() as OrderStatus;
+
     // Use current trackInput value; do not mutate other order fields.
     if (newStatus === 'shipped' && !trackInput.trim()) {
       alert('Please add a valid tracking URL before marking this order as shipped.');
       return;
+    }
+
+    // Auto-create pickup request when status changes from pending to confirmed
+    if (oldStatus === 'pending' && newStatus === 'confirmed') {
+      try {
+        toast.loading('Creating pickup request...', { id: `pickup-${orderId}` });
+        
+        // Create pickup request directly via Delhivery API (no server needed)
+        const pickupResult = await DelhiveryService.createPickupRequestNew({
+          orderId: order.orderId,
+          pickupLocation: import.meta.env.VITE_WAREHOUSE_NAME || 'Plantasy',
+          expectedPackageCount: order.items.length || 1,
+        });
+
+        if (pickupResult.success) {
+          // Auto-set tracking URL from pickup response
+          const trackingUrl = pickupResult.trackingUrl;
+          await orderService.updateOrderTrack(orderId, trackingUrl);
+          setTrackInput(trackingUrl);
+          
+          toast.success('Pickup request created! Tracking URL added.', { 
+            id: `pickup-${orderId}`,
+            duration: 4000,
+          });
+        } else {
+          throw new Error(pickupResult.message || 'Pickup request failed');
+        }
+      } catch (error) {
+        console.error('Error creating pickup request:', error);
+        toast.error('Failed to create pickup request. Please try manually.', { 
+          id: `pickup-${orderId}`,
+        });
+      }
     }
 
     // Persist track if changed
@@ -182,6 +219,35 @@ const OrdersPage: React.FC = () => {
       await orderService.downloadInvoice(order.id);
     } catch (error) {
       console.error('Error downloading invoice:', error);
+    }
+  };
+
+  const handleDownloadLabel = async (order: Order) => {
+    try {
+      toast.loading('Generating label...', { id: `label-${order.id}` });
+      
+      // Generate label via Delhivery service
+      const labelResult = await DelhiveryService.generateLabel({
+        orderId: order.orderId,
+      });
+
+      if (labelResult.success && labelResult.labelUrl) {
+        // Store label URL in database
+        await orderService.updateOrderLabelUrl(order.id, labelResult.labelUrl);
+        
+        // Open label in new tab for download/print
+        window.open(labelResult.labelUrl, '_blank');
+        
+        toast.success('Label generated and ready for download!', { 
+          id: `label-${order.id}`,
+          duration: 4000,
+        });
+      }
+    } catch (error) {
+      console.error('Error generating label:', error);
+      toast.error('Failed to generate label. Please try again.', { 
+        id: `label-${order.id}`,
+      });
     }
   };
 
@@ -504,6 +570,16 @@ const OrdersPage: React.FC = () => {
                   className="admin-btn-outline whitespace-nowrap"
                 >
                   Download Invoice
+                </button>
+
+                {/* Download Label Button */}
+                <button
+                  type="button"
+                  onClick={() => handleDownloadLabel(selectedOrder)}
+                  className="admin-btn-outline whitespace-nowrap flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Label
                 </button>
               </div>
             </div>

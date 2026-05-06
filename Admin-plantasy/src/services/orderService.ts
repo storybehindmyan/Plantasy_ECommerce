@@ -144,7 +144,7 @@ export const orderService = {
 
       const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null;
 
-      return { orders, lastDoc: lastVisible };
+      return { orders, lastDoc: lastVisible as DocumentSnapshot | null };
     } catch (error) {
       console.error('Error fetching orders:', error);
       throw error;
@@ -227,6 +227,20 @@ export const orderService = {
       });
     } catch (error) {
       console.error('Error updating tracking URL:', error);
+      throw error;
+    }
+  },
+
+  // Update label URL
+  async updateOrderLabelUrl(id: string, labelUrl: string): Promise<void> {
+    try {
+      const docRef = doc(db, COLLECTION_NAME, id);
+      await updateDoc(docRef, {
+        labelUrl,
+        'timestamps.updatedAt': Timestamp.now(),
+      });
+    } catch (error) {
+      console.error('Error updating label URL:', error);
       throw error;
     }
   },

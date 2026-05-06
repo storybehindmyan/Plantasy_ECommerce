@@ -55,6 +55,9 @@ export interface OrderItem {
 }
 
 export interface Order {
+  payment: any;
+  userId: any;
+  payment: any;
   grandTotal: any;
   orderId: any;
   deliveryAddress: any;

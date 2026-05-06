@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -46,14 +46,16 @@ export const useCheckout = () => {
       setCurrentOrderId(orderId);
 
       // 2. Quote shipping (server-first). Fallback to client mock if backend is unavailable.
+      // Send product dimensions for accurate volumetric weight calculation
       let deliveryCharge = 0;
       let estimatedDelivery: string | null = null;
       try {
-        const quote = await ShippingQuoteService.quote(
+        const quote = await ShippingQuoteService.quoteWithProducts(
           params.deliveryAddress.zip,
           params.cartItems.map((it) => ({
-            productId: it.id,
+            id: it.id,
             quantity: it.quantity,
+            dimensions: it.dimensions,
           }))
         );
         deliveryCharge = Number(quote.shippingCost) || 0;

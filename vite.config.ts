@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig(() => ({
+export default defineConfig({
   plugins: [react()],
   define: {
     global: 'globalThis',
@@ -55,4 +55,4 @@ export default defineConfig(() => ({
       ),
     },
   },
-}));
+});

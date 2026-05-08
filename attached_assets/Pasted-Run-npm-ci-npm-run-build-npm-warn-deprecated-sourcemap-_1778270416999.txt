@@ -1,0 +1,37 @@
+Run npm ci && npm run build
+npm warn deprecated sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+npm warn deprecated rollup-plugin-inject@3.0.2: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-inject.
+npm warn deprecated google-p12-pem@3.1.4: Package is no longer maintained
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+
+added 794 packages, and audited 795 packages in 15s
+
+156 packages are looking for funding
+  run `npm fund` for details
+
+17 vulnerabilities (4 low, 4 moderate, 4 high, 5 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+
+> qwert@0.0.0 build
+> tsc -b && vite build
+
+src/pages/TermsAndConditions.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/server/src/routes/shipping.ts(25,35): error TS6133: 'pincode' is declared but its value is never read.
+vite.config.ts(8,29): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '() => *** plugins: Plugin<any>[][]; define: *** global: string; ***; server: *** host: string; port: number; strictPort: boolean; allowedHosts: boolean; proxy: *** '/api': *** target: string; changeOrigin: boolean; ***; ***; watch: *** ...; ***; ***; optimizeDeps: *** ...; ***; build: *** ...; ***; resolve: *** ...; ***; ***' is not assignable to parameter of type 'UserConfigExport'.
+      Type '() => *** plugins: Plugin<any>[][]; define: *** global: string; ***; server: *** host: string; port: number; strictPort: boolean; allowedHosts: boolean; proxy: *** '/api': *** target: string; changeOrigin: boolean; ***; ***; watch: *** ...; ***; ***; optimizeDeps: *** ...; ***; build: *** ...; ***; resolve: *** ...; ***; ***' is not assignable to type 'UserConfigFnObject'.
+        Call signature return types '*** plugins: Plugin<any>[][]; define: *** global: string; ***; server: *** host: string; port: number; strictPort: boolean; allowedHosts: boolean; proxy: *** '/api': *** target: string; changeOrigin: boolean; ***; ***; watch: *** ...; ***; ***; optimizeDeps: *** ...; ***; build: *** ...; ***; resolve: *** ...; ***; ***' and 'UserConfig' are incompatible.
+          The types of 'server.allowedHosts' are incompatible between these types.
+            Type 'boolean' is not assignable to type 'true | string[] | undefined'.
+Error: Process completed with exit code 1.

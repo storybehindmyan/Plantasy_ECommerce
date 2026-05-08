@@ -22,7 +22,7 @@ const getMockShippingCost = (_pincode: string, itemCount: number): number => {
   return shippingCost;
 };
 
-const getMockEstimatedDelivery = (pincode: string): string => {
+const getMockEstimatedDelivery = (_pincode: string): string => {
   // Mock delivery estimate: 3-7 business days
   const today = new Date();
   const minDays = 3;

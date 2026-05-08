@@ -1,0 +1,35 @@
+Run FirebaseExtended/action-hosting-deploy@v0
+Verifying firebase.json exists
+Setting up CLI credentials
+Deploying to production site
+  /usr/local/bin/npx firebase-tools@latest deploy --only hosting --project plantasy-bharat --json
+  npm warn exec The following package was not found and will be installed: firebase-tools@15.17.0
+  npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+  npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+  npm warn deprecated json-ptr@3.1.1: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+  npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+  npm warn deprecated uuid@9.0.1: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+  ***
+    "status": "error",
+    "error": "Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only hosting'."
+  ***
+    "status": "error",
+    "error": "Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only hosting'."
+  ***
+  The process '/usr/local/bin/npx' failed with exit code 1
+  Retrying deploy with the --debug flag for better error output
+  /usr/local/bin/npx firebase-tools@latest deploy --only hosting --project plantasy-bharat --debug
+  
+  Error: Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only hosting'.
+  
+  Error: Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only hosting'.
+  
+  The process '/usr/local/bin/npx' failed with exit code 1
+  Error: The process '/usr/local/bin/npx' failed with exit code 1
+  ***
+    conclusion: 'failure',
+    output: ***
+      title: 'Deploy preview failed',
+      summary: "Error: The process '/usr/local/bin/npx' failed with exit code 1"
+    ***
+  ***

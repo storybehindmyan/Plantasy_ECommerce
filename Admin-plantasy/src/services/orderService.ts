@@ -15,7 +15,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { Order } from '../types';
-import { jsPDF } from 'jspdf';
 
 const COLLECTION_NAME = 'orders';
 const ITEMS_PER_PAGE = 10;
@@ -340,183 +339,48 @@ export const orderService = {
     }
   },
 
-  // Download invoice: open browser print first, then download as PDF
   async downloadInvoice(orderId: string): Promise<void> {
     try {
       const order = await this.getOrder(orderId);
-      if (!order) {
-        throw new Error('Order not found');
-      }
+      if (!order) throw new Error('Order not found');
 
-      const lineItemsHtml = order.items
-        .map(
-          (item) => `
-            <tr>
-              <td>${item.productName}</td>
-              <td style="text-align:center;">${item.quantity}</td>
-              <td style="text-align:right;">₹${item.price.toFixed(2)}</td>
-              <td style="text-align:right;">₹${(item.price * item.quantity).toFixed(
-                2
-              )}</td>
-            </tr>
-          `
-        )
-        .join('');
+      const { generateInvoicePdf } = await import('../../../src/utils/invoicePdf');
 
-      const discountRow =
-        order.pricing.discount > 0
-          ? `<tr>
-               <td colspan="3" style="text-align:right;">Discount (${order.pricing.couponCode})</td>
-               <td style="text-align:right;">-₹${order.pricing.discount.toFixed(2)}</td>
-             </tr>`
-          : '';
-
-      const invoiceHtml = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Invoice - ${order.orderId || order.id}</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        padding: 24px;
-        color: #111827;
-      }
-      h1, h2, h3 {
-        margin: 0 0 8px;
-      }
-      .section {
-        margin-bottom: 16px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 8px;
-      }
-      th, td {
-        padding: 6px 8px;
-        border: 1px solid #e5e7eb;
-        font-size: 13px;
-      }
-      th {
-        background: #f3f4f6;
-        text-align: left;
-      }
-      .totals td {
-        font-weight: 600;
-      }
-      .muted {
-        color: #6b7280;
-        font-size: 13px;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 16px;
-      }
-      .title {
-        font-size: 20px;
-        font-weight: 700;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <div>
-        <div class="title">INVOICE</div>
-        <div class="muted">Order ID: ${order.orderId || order.id}</div>
-      </div>
-      <div class="muted">
-        Status: ${order.orderStatus}<br/>
-        Payment: ${order.payment.paymentStatus}
-      </div>
-    </div>
-
-    <div class="section">
-      <h3>Billing Information</h3>
-      <div class="muted">
-        ${order.deliveryAddress.firstName} ${order.deliveryAddress.lastName}<br/>
-        ${order.deliveryAddress.addressLine1}<br/>
-        ${order.deliveryAddress.addressLine2 ? order.deliveryAddress.addressLine2 + '<br/>' : ''}
-        ${order.deliveryAddress.city}, ${order.deliveryAddress.region} ${order.deliveryAddress.zip}<br/>
-        ${order.deliveryAddress.country}<br/>
-        Phone: ${order.deliveryAddress.phone}<br/>
-        User ID: ${order.userId}
-      </div>
-    </div>
-
-    <div class="section">
-      <h3>Order Details</h3>
-      <table>
-        <thead>
-          <tr>
-            <th style="width:50%;">Product</th>
-            <th style="width:10%; text-align:center;">Qty</th>
-            <th style="width:20%; text-align:right;">Price</th>
-            <th style="width:20%; text-align:right;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${lineItemsHtml}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section">
-      <h3>Pricing Summary</h3>
-      <table>
-        <tbody>
-          <tr>
-            <td colspan="3" style="text-align:right;">Subtotal</td>
-            <td style="text-align:right;">₹${order.pricing.subTotal.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td colspan="3" style="text-align:right;">Tax</td>
-            <td style="text-align:right;">₹${order.pricing.tax.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td colspan="3" style="text-align:right;">Shipping</td>
-            <td style="text-align:right;">₹${order.pricing.shippingCharge.toFixed(2)}</td>
-          </tr>
-          ${discountRow}
-          <tr class="totals">
-            <td colspan="3" style="text-align:right;">Grand Total</td>
-            <td style="text-align:right;">₹${order.pricing.grandTotal.toFixed(2)}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section">
-      <h3>Payment Information</h3>
-      <div class="muted">
-        Method: ${order.payment.paymentMethod}<br/>
-        Status: ${order.payment.paymentStatus}<br/>
-        Transaction Ref: ${order.payment.transactionRef}
-      </div>
-    </div>
-  </body>
-</html>
-      `;
-
-      const printWindow = window.open('', '_blank', 'width=800,height=900');
-      if (printWindow) {
-        printWindow.document.write(invoiceHtml);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-      }
-
-      const docPdf = new jsPDF('p', 'pt', 'a4');
-      await docPdf.html(invoiceHtml, {
-        x: 20,
-        y: 20,
-        callback: (pdf) => {
-          pdf.save(`invoice-${order.orderId || order.id}.pdf`);
+      await generateInvoicePdf({
+        orderId: order.orderId || order.id,
+        invoiceId: (order as any).invoiceId || '',
+        userId: order.userId || '',
+        orderStatus: order.orderStatus ?? null,
+        timestamps: (order as any).timestamps || null,
+        deliveryAddress: {
+          firstName: order.deliveryAddress.firstName || '',
+          lastName: order.deliveryAddress.lastName || '',
+          addressLine1: order.deliveryAddress.addressLine1 || '',
+          addressLine2: order.deliveryAddress.addressLine2 || '',
+          city: order.deliveryAddress.city || '',
+          region: order.deliveryAddress.region || '',
+          zip: order.deliveryAddress.zip || '',
+          country: order.deliveryAddress.country || '',
+          phone: order.deliveryAddress.phone || '',
         },
-        autoPaging: 'text',
+        items: order.items.map((it) => ({
+          productName: it.productName || '',
+          quantity: it.quantity || 1,
+          price: it.price || 0,
+        })),
+        payment: {
+          paymentMethod: order.payment.paymentMethod || '',
+          paymentStatus: order.payment.paymentStatus || '',
+          transactionRef: order.payment.transactionRef || '',
+        },
+        pricing: {
+          subTotal: order.pricing.subTotal || 0,
+          tax: order.pricing.tax || 0,
+          shippingCharge: order.pricing.shippingCharge || 0,
+          discount: order.pricing.discount || 0,
+          couponCode: order.pricing.couponCode || '',
+          grandTotal: order.pricing.grandTotal || 0,
+        },
       });
     } catch (error) {
       console.error('Error downloading invoice:', error);

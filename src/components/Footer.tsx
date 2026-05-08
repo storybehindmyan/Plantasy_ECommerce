@@ -70,9 +70,7 @@ const Footer = () => {
 
                 <FooterSection title="Company">
                     <Link to="/our-story" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Our Story</Link>
-                    {/* <Link to="/our-story" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Sustainability</Link>
-                    <Link to="#" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Careers</Link>
-                    <Link to="#" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Terms of Service</Link> */}
+                    <Link to="/terms-and-conditions" className="hover:text-shop-terracotta transition text-gray-400 hover:text-white">Terms &amp; Conditions</Link>
                 </FooterSection>
 
                 <FooterSection title="Support">

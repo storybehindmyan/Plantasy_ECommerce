@@ -16,6 +16,7 @@ import ReviewsPage from "./pages/reviews/ReviewsPage";
 import SupportPage from "./pages/support/SupportPage";
 import AdminUsersPage from "./pages/admin-users/AdminUsersPage";
 import CategoriesPage from "./pages/categories/CategoriesPage";
+import TermsPage from "./pages/terms/TermsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const AdminRoot = () => (
             <Route path="support" element={<SupportPage />} />
             <Route path="admin-users" element={<AdminUsersPage />} />
             <Route path="categories" element={<CategoriesPage />} />
+            <Route path="terms" element={<TermsPage />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

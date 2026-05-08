@@ -13,7 +13,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Store
+  Store,
+  ScrollText,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Blogs', path: 'blogs', icon: FileText },
   { label: 'Categories', path: 'categories', icon: Settings },
   { label: 'Support', path: 'support', icon: MessageSquare },
+  { label: 'Terms & Conditions', path: 'terms', icon: ScrollText },
   { label: 'Admin Users', path: 'admin-users', icon: Users },
 ];
 

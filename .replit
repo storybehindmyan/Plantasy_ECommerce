@@ -10,8 +10,9 @@ channel = "stable-25_05"
 
 [userenv.shared]
 PORT = "3000"
-VITE_API_URL = "http://localhost:3000"
+VITE_API_URL = ""
 NODE_ENV = "development"
+VITE_RAZORPAY_KEY_ID = "rzp_live_Sc9GkrN8gQ2xF7"
 
 [workflows]
 runButton = "Project"

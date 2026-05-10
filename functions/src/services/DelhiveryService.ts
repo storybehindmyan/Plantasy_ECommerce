@@ -19,6 +19,7 @@ export interface CreateShipmentParams {
   invoiceValue: number;
   products: { name: string; quantity: number }[];
   paymentMode: "Prepaid" | "COD";
+  weightKg?: number;
   customer: DelhiveryAddress;
   warehouse: {
     name: string;
@@ -37,6 +38,12 @@ export const DelhiveryService = {
     params: CreateShipmentParams
   ): Promise<{ waybill: string; trackingUrl: string; raw: any }> {
     const { orderId, invoiceValue, products, paymentMode, customer, warehouse } = params;
+    const weightKg = params.weightKg || parseFloat(process.env.DEFAULT_PACKAGE_WEIGHT || "0.5");
+
+    // Sanitize phone: strip country code, spaces, dashes — Delhivery needs exactly 10 digits
+    const sanitizePhone = (p: string) => p.replace(/\D/g, "").replace(/^91/, "").slice(-10);
+    const customerPhone = sanitizePhone(customer.phone);
+    const warehousePhone = sanitizePhone(warehouse.phone);
 
     if (USE_MOCK) {
       const fakeWaybill = `MOCK-${orderId}-${Date.now()}`;
@@ -53,23 +60,23 @@ export const DelhiveryService = {
       shipments: [
         {
           name: customer.name,
-          add: customer.addressLine1,
-          add2: customer.addressLine2 ?? "",
+          add: [customer.addressLine1, customer.addressLine2].filter(Boolean).join(", "),
           city: customer.city,
           state: customer.state,
           country: "India",
           pin: customer.pincode,
-          phone: customer.phone,
+          phone: customerPhone,
           email: customer.email ?? "",
           order: orderId,
           payment_mode: paymentMode,
           products_desc: products.map((p) => p.name).join(", "),
           total_amount: invoiceValue,
           cod_amount: paymentMode === "COD" ? invoiceValue : 0,
+          weight: weightKg,
           return_pin: warehouse.pincode,
           return_city: warehouse.city,
-          return_phone: warehouse.phone,
-          return_add: warehouse.addressLine1,
+          return_phone: warehousePhone,
+          return_add: [warehouse.addressLine1, warehouse.addressLine2].filter(Boolean).join(", "),
           return_state: warehouse.state,
           return_country: "India",
         },
@@ -80,7 +87,7 @@ export const DelhiveryService = {
         city: warehouse.city,
         pin: warehouse.pincode,
         country: "India",
-        phone: warehouse.phone,
+        phone: warehousePhone,
       },
     };
 
@@ -101,6 +108,16 @@ export const DelhiveryService = {
     }
 
     const shipmentData = (await shipmentRes.json()) as any;
+
+    // Check for package-level failure and include the actual Delhivery remarks in the error
+    const pkg = shipmentData?.packages?.[0];
+    if (pkg?.status === "Fail" || shipmentData?.success === false) {
+      const remarks = pkg?.remarks?.join("; ") || shipmentData?.rmk || "Unknown error";
+      const errCode = pkg?.err_code || "";
+      console.error("Delhivery package failed:", JSON.stringify(shipmentData));
+      throw new Error(`Delhivery error ${errCode}: ${remarks}`);
+    }
+
     const waybill =
       shipmentData?.packages?.[0]?.waybill ||
       shipmentData?.shipments?.[0]?.waybill ||
@@ -116,27 +133,32 @@ export const DelhiveryService = {
     const pickupDate = tomorrow.toISOString().split("T")[0];
 
     try {
+      const pickupBody = {
+        pickup_time: `${pickupDate} 10:00:00`,
+        pickup_date: pickupDate,
+        pickup_location: warehouse.name,
+        expected_package_count: 1,
+        shipment_id: [waybill],
+      };
+      console.log(`[Delhivery] Scheduling pickup for waybill ${waybill}:`, JSON.stringify(pickupBody));
+
       const pickupRes = await fetch(`${DELHIVERY_BASE_URL}/fm/request/new/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Token ${DELHIVERY_API_KEY}`,
         },
-        body: JSON.stringify({
-          pickup_time: `${pickupDate} 10:00:00`,
-          pickup_date: pickupDate,
-          pickup_location: warehouse.name,
-          expected_package_count: 1,
-          shipment_id: [waybill],
-        }),
+        body: JSON.stringify(pickupBody),
       });
 
+      const pickupText = await pickupRes.text();
       if (!pickupRes.ok) {
-        const text = await pickupRes.text();
-        console.error("Delhivery pickup error:", pickupRes.status, text);
+        console.error(`[Delhivery] Pickup scheduling failed ${pickupRes.status}:`, pickupText);
+      } else {
+        console.log(`[Delhivery] Pickup scheduled OK:`, pickupText);
       }
     } catch (err) {
-      console.error("Pickup request failed (shipment still created):", err);
+      console.error("[Delhivery] Pickup request exception (shipment still created):", err);
     }
 
     const trackingUrl = `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;

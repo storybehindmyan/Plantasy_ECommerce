@@ -248,15 +248,20 @@ router.post("/test-shipment", async (req: Request, res: Response) => {
     let responseJson: any;
     try { responseJson = JSON.parse(responseText); } catch { responseJson = { raw: responseText }; }
 
-    const waybill =
-      responseJson?.packages?.[0]?.waybill ||
-      responseJson?.shipments?.[0]?.waybill ||
-      responseJson?.upload_wbn ||
-      responseJson?.waybill ||
-      null;
+    const pkg = responseJson?.packages?.[0];
+    const failed = pkg?.status === "Fail" || responseJson?.success === false;
+    const waybill = failed ? null :
+      (pkg?.waybill || responseJson?.shipments?.[0]?.waybill || responseJson?.waybill || null);
+
+    const failRemarks = failed
+      ? (pkg?.remarks?.join("; ") || responseJson?.rmk || "")
+      : null;
 
     return res.json({
-      success: response.ok && !!waybill,
+      success: !!waybill,
+      failed,
+      failRemarks,
+      errCode: pkg?.err_code || null,
       httpStatus: response.status,
       waybill,
       envWarehouseName: process.env.WAREHOUSE_NAME || "(not set)",

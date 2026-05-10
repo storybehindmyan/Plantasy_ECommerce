@@ -367,6 +367,16 @@ export default function DeliveryTest() {
                   <p className="text-xs text-gray-500">Waybill Generated ✅</p>
                   <p className="font-mono font-bold text-green-700 text-lg">{shipmentResult.data.waybill}</p>
                 </div>
+              ) : shipmentResult.data.failed ? (
+                <div className="space-y-1">
+                  <p className="text-red-700 font-semibold text-sm">❌ Delhivery rejected the shipment</p>
+                  {shipmentResult.data.errCode && (
+                    <p className="text-xs font-mono bg-red-100 px-2 py-1 rounded text-red-800">Error Code: {shipmentResult.data.errCode}</p>
+                  )}
+                  {shipmentResult.data.failRemarks && (
+                    <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1">{shipmentResult.data.failRemarks}</p>
+                  )}
+                </div>
               ) : (
                 <p className="text-red-700 font-semibold text-sm">❌ No waybill returned — see raw response below</p>
               )}

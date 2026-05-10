@@ -34,6 +34,7 @@ const Checkout: React.FC = () => {
   const [courierName, setCourierName] = useState("Delhivery");
   const [isLoadingDelivery, setIsLoadingDelivery] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>("Not fetched yet");
 
   const subtotal = cartTotal;
   const tax = Math.round(subtotal * 0.05);
@@ -77,8 +78,10 @@ const Checkout: React.FC = () => {
         setDeliveryCharge(Number(quote.shippingCost) || 0);
         setEstimatedDelivery(quote.estimatedDelivery || null);
         setCourierName(quote.courier || "Delhivery");
-      } catch (e) {
+        setDebugInfo(JSON.stringify(quote, null, 2));
+      } catch (e: any) {
         console.error("Quote failed, falling back:", e);
+        setDebugInfo(`API ERROR: ${e?.message || String(e)}`);
         const charges = await DelhiveryService.getDeliveryCharges(address.zip);
         setDeliveryCharge(charges);
         setEstimatedDelivery(null);
@@ -231,6 +234,17 @@ const Checkout: React.FC = () => {
                     )}
                   </button>
                   <p className="text-center text-xs text-gray-400 mt-2">🔒 Secured by Razorpay</p>
+
+                  {/* Debug panel */}
+                  <details className="mt-4 border border-gray-200 rounded-lg">
+                    <summary className="px-3 py-2 text-xs text-gray-400 cursor-pointer select-none">🔧 Debug: Shipping API Response</summary>
+                    <textarea
+                      readOnly
+                      value={debugInfo}
+                      rows={6}
+                      className="w-full p-3 text-xs font-mono bg-gray-50 text-gray-600 border-t border-gray-200 resize-none outline-none"
+                    />
+                  </details>
                 </div>
               </div>
             )}

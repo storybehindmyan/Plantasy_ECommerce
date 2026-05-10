@@ -77,42 +77,15 @@ router.post("/sync-all", verifyAuth, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/delhivery/waybill — (re)generate waybill for an order, idempotent
+// POST /api/delhivery/waybill — confirm order: create waybill if needed, schedule pickup, set CONFIRMED
 router.post("/waybill", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "orderId is required" });
 
-    const orderRef = admin.firestore().collection("orders").doc(orderId);
-    const snap = await orderRef.get();
-    if (!snap.exists) return res.status(404).json({ error: "Order not found" });
-
-    const order = snap.data() as any;
-
-    // Idempotent: if waybill already exists, just return it
-    const existing = order.delhivery?.waybill || order.waybill;
-    if (existing) {
-      const trackingUrl =
-        order.delhivery?.trackingUrl ||
-        order.trackingUrl ||
-        order.track ||
-        `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(existing)}`;
-      return res.json({ waybill: existing, trackingUrl, alreadyExists: true });
-    }
-
-    const addr = order.deliveryAddress || {};
-    const phone = addr.phone || "";
-    const name = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
-    const amount = order.pricing?.grandTotal || 0;
-
-    const { waybill, trackingUrl } = await OrderService.onOrderPaid(
-      orderId,
-      phone,
-      name,
-      amount
-    );
-
-    return res.json({ waybill, trackingUrl, alreadyExists: false });
+    // Always go through onOrderConfirm: creates waybill if missing, schedules pickup, sets CONFIRMED
+    const { waybill, trackingUrl, alreadyHadWaybill } = await OrderService.onOrderConfirm(orderId);
+    return res.json({ waybill, trackingUrl, alreadyHadWaybill });
   } catch (error: any) {
     console.error("POST /api/delhivery/waybill error:", error);
     return res.status(500).json({ error: error.message });

@@ -192,10 +192,7 @@ const OrdersPage: React.FC = () => {
         const waybill = (res as any).waybill || '';
         const trackingUrl = (res as any).trackingUrl || '';
         toast.success(`✅ Order confirmed! Pickup scheduled. Waybill: ${waybill}`);
-        if (waybill) {
-          // Refresh selected order with new waybill info
-          setSelectedOrder((prev) => prev ? { ...prev, waybill, trackingUrl, orderStatus: 'CONFIRMED' } : prev);
-        }
+        setSelectedOrder((prev) => prev ? { ...prev, waybill, trackingUrl, orderStatus: 'CONFIRMED' } : prev);
       } else if (newStatus === 'shipped') {
         if (!order.waybill && !order.delhivery?.waybill) {
           toast.error('No waybill found. Confirm order first to generate a waybill.');

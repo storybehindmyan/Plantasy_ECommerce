@@ -43,7 +43,45 @@ export default function DeliveryTest() {
   const [pincode, setPincode] = useState("533001");
   const [verifyResult, setVerifyResult] = useState<Result>({ status: "idle" });
   const [quoteResult, setQuoteResult] = useState<Result>({ status: "idle" });
+  const [shipmentResult, setShipmentResult] = useState<Result>({ status: "idle" });
   const [running, setRunning] = useState(false);
+
+  const [warehouse, setWarehouse] = useState({
+    name: "", phone: "", address: "", city: "", state: "", pincode: "",
+  });
+  const [customer, setCustomer] = useState({
+    name: "Test Customer", phone: "9000000000", address: "123 Test Street",
+    city: "Hyderabad", state: "Telangana", pincode: "500001",
+  });
+
+  async function runShipment() {
+    setShipmentResult({ status: "loading" });
+    const t0 = Date.now();
+    try {
+      const res = await fetch(`${API_URL}/api/delhivery/test-shipment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          warehouseName: warehouse.name,
+          warehousePhone: warehouse.phone,
+          warehouseAddress: warehouse.address,
+          warehouseCity: warehouse.city,
+          warehouseState: warehouse.state,
+          warehousePincode: warehouse.pincode,
+          customerName: customer.name,
+          customerPhone: customer.phone,
+          customerAddress: customer.address,
+          customerCity: customer.city,
+          customerState: customer.state,
+          customerPincode: customer.pincode,
+        }),
+      });
+      const data = await res.json();
+      setShipmentResult({ status: data.success || data.waybill ? "ok" : "error", data, ms: Date.now() - t0 });
+    } catch (e: any) {
+      setShipmentResult({ status: "error", data: { error: e.message }, ms: Date.now() - t0 });
+    }
+  }
 
   async function runVerify(pin = pincode) {
     setVerifyResult({ status: "loading" });
@@ -241,6 +279,117 @@ export default function DeliveryTest() {
               {JSON.stringify(quoteResult.data, null, 2)}
             </pre>
           </details>
+        </div>
+
+        {/* Test 3 — Create Shipment (Waybill) */}
+        <div className="bg-white rounded-2xl border p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-800">3. Create Shipment (Waybill)</h2>
+              <code className="text-xs text-gray-400">POST /api/delhivery/test-shipment</code>
+            </div>
+            <div className="flex items-center gap-3">
+              {shipmentResult.ms != null && <span className="text-xs text-gray-400">{shipmentResult.ms}ms</span>}
+              <StatusBadge status={shipmentResult.status} />
+            </div>
+          </div>
+
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            ⚠ The <b>Warehouse Name</b> must exactly match the pickup location registered in your Delhivery account. This is the most common reason for "No waybill in response".
+          </p>
+
+          {/* Warehouse fields */}
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">📦 Warehouse (Pickup Location)</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: "name", label: "Location Name *", placeholder: "Exact name from Delhivery account" },
+                { key: "phone", label: "Phone", placeholder: "9000000000" },
+                { key: "address", label: "Address", placeholder: "Street address" },
+                { key: "city", label: "City", placeholder: "Hyderabad" },
+                { key: "state", label: "State", placeholder: "Telangana" },
+                { key: "pincode", label: "Pincode", placeholder: "500001" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="text-xs text-gray-500 block mb-0.5">{label}</label>
+                  <input
+                    type="text"
+                    value={(warehouse as any)[key]}
+                    onChange={(e) => setWarehouse((p) => ({ ...p, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Customer fields */}
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">👤 Test Customer (Delivery Address)</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: "name", label: "Name", placeholder: "Test Customer" },
+                { key: "phone", label: "Phone", placeholder: "9000000000" },
+                { key: "address", label: "Address", placeholder: "123 Test Street" },
+                { key: "city", label: "City", placeholder: "Hyderabad" },
+                { key: "state", label: "State", placeholder: "Telangana" },
+                { key: "pincode", label: "Pincode", placeholder: "500001" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="text-xs text-gray-500 block mb-0.5">{label}</label>
+                  <input
+                    type="text"
+                    value={(customer as any)[key]}
+                    onChange={(e) => setCustomer((p) => ({ ...p, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={runShipment}
+            disabled={shipmentResult.status === "loading" || !warehouse.name}
+            className="w-full bg-green-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-green-800 transition disabled:opacity-50"
+          >
+            {shipmentResult.status === "loading" ? "Creating…" : "🚀 Test Create Shipment"}
+          </button>
+          {!warehouse.name && <p className="text-xs text-red-500 text-center">Enter Warehouse Location Name to enable</p>}
+
+          {/* Result */}
+          {shipmentResult.data && shipmentResult.status !== "idle" && (
+            <div className={`rounded-xl p-4 space-y-2 border ${shipmentResult.status === "ok" ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+              {shipmentResult.data.waybill ? (
+                <div>
+                  <p className="text-xs text-gray-500">Waybill Generated ✅</p>
+                  <p className="font-mono font-bold text-green-700 text-lg">{shipmentResult.data.waybill}</p>
+                </div>
+              ) : (
+                <p className="text-red-700 font-semibold text-sm">❌ No waybill returned — see raw response below</p>
+              )}
+              {shipmentResult.data.mode === "mock" && (
+                <p className="text-yellow-700 text-xs">⚠ DELHIVERY_API_KEY not set on backend — mock mode</p>
+              )}
+              <div className="text-xs space-y-1 pt-1 border-t border-gray-200">
+                <p><span className="text-gray-500">Env WAREHOUSE_NAME:</span> <b>{shipmentResult.data.envWarehouseName}</b></p>
+                <p><span className="text-gray-500">Env WAREHOUSE_CITY:</span> <b>{shipmentResult.data.envWarehouseCity}</b></p>
+                <p><span className="text-gray-500">Env WAREHOUSE_PINCODE:</span> <b>{shipmentResult.data.envWarehousePincode}</b></p>
+                <p><span className="text-gray-500">HTTP Status:</span> <b>{shipmentResult.data.httpStatus}</b></p>
+              </div>
+            </div>
+          )}
+
+          {shipmentResult.data && (
+            <details className="text-xs">
+              <summary className="text-gray-400 cursor-pointer hover:text-gray-600">Raw Delhivery Response</summary>
+              <pre className="mt-2 bg-gray-50 rounded-lg p-3 overflow-auto text-gray-600 max-h-64">
+                {JSON.stringify(shipmentResult.data?.rawResponse ?? shipmentResult.data, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
 
         {/* Legend */}

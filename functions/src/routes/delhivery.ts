@@ -168,4 +168,107 @@ router.post("/label", verifyAuth, async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/delhivery/test-shipment — no auth, for DeliveryTest page debugging
+// Returns full raw Delhivery response so you can see exactly what the API returns
+router.post("/test-shipment", async (req: Request, res: Response) => {
+  try {
+    const {
+      warehouseName,
+      warehousePhone,
+      warehouseAddress,
+      warehouseCity,
+      warehouseState,
+      warehousePincode,
+      customerName,
+      customerPhone,
+      customerAddress,
+      customerCity,
+      customerState,
+      customerPincode,
+    } = req.body;
+
+    const apiKey = process.env.DELHIVERY_API_KEY || "";
+    const baseUrl = process.env.DELHIVERY_BASE_URL || "https://ltl-clients-api.delhivery.com";
+
+    if (!apiKey) {
+      return res.json({
+        success: false,
+        mode: "mock",
+        message: "DELHIVERY_API_KEY not set — running in mock mode",
+        mockWaybill: `MOCK-TEST-${Date.now()}`,
+      });
+    }
+
+    const testOrderId = `TEST-${Date.now()}`;
+    const payload = {
+      shipments: [
+        {
+          name: customerName || "Test Customer",
+          add: customerAddress || "Test Address",
+          city: customerCity || "Hyderabad",
+          state: customerState || "Telangana",
+          country: "India",
+          pin: customerPincode || "500001",
+          phone: customerPhone || "9000000000",
+          order: testOrderId,
+          payment_mode: "Prepaid",
+          products_desc: "Test Plant",
+          total_amount: 499,
+          cod_amount: 0,
+          return_pin: warehousePincode || "",
+          return_city: warehouseCity || "",
+          return_phone: warehousePhone || "",
+          return_add: warehouseAddress || "",
+          return_state: warehouseState || "",
+          return_country: "India",
+        },
+      ],
+      pickup_location: {
+        name: warehouseName || process.env.WAREHOUSE_NAME || "",
+        add: warehouseAddress || process.env.WAREHOUSE_ADDRESS_LINE1 || "",
+        city: warehouseCity || process.env.WAREHOUSE_CITY || "",
+        pin: warehousePincode || process.env.WAREHOUSE_PINCODE || "",
+        country: "India",
+        phone: warehousePhone || process.env.WAREHOUSE_PHONE || "",
+      },
+    };
+
+    const formBody = `format=json&data=${encodeURIComponent(JSON.stringify(payload))}`;
+
+    const response = await fetch(`${baseUrl}/api/cmu/create.json`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Token ${apiKey}`,
+      },
+      body: formBody,
+    });
+
+    const responseText = await response.text();
+    let responseJson: any;
+    try { responseJson = JSON.parse(responseText); } catch { responseJson = { raw: responseText }; }
+
+    const waybill =
+      responseJson?.packages?.[0]?.waybill ||
+      responseJson?.shipments?.[0]?.waybill ||
+      responseJson?.upload_wbn ||
+      responseJson?.waybill ||
+      null;
+
+    return res.json({
+      success: response.ok && !!waybill,
+      httpStatus: response.status,
+      waybill,
+      envWarehouseName: process.env.WAREHOUSE_NAME || "(not set)",
+      envWarehouseCity: process.env.WAREHOUSE_CITY || "(not set)",
+      envWarehousePincode: process.env.WAREHOUSE_PINCODE || "(not set)",
+      requestPayload: payload,
+      rawResponse: responseJson,
+    });
+  } catch (error: any) {
+    console.error("POST /api/delhivery/test-shipment error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

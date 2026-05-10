@@ -62,6 +62,8 @@ export const OrderService = {
     // Status stays PENDING — admin will confirm when packed
     await orderRef.update({
       orderStatus: "PENDING",
+      waybill,
+      trackingUrl,
       "delhivery.waybill": waybill,
       "delhivery.trackingUrl": trackingUrl,
       "delhivery.raw": raw,

@@ -97,11 +97,11 @@ export const orderService = {
             orderType: data.orderType || 'standard',
             isCancelable: data.isCancelable ?? true,
             isReturnEligible: data.isReturnEligible ?? false,
-            waybill: data.waybill || '',
+            waybill: data.waybill || data.delhivery?.waybill || '',
             courier: data.courier || '',
             shipmentStatus: data.shipmentStatus || '',
             pickupScheduled: data.pickupScheduled ?? false,
-            trackingUrl: data.trackingUrl || '',
+            trackingUrl: data.trackingUrl || data.delhivery?.trackingUrl || data.track || '',
             labelUrl: data.labelUrl || '',
             trackingEvents: Array.isArray(data.trackingEvents)
               ? data.trackingEvents

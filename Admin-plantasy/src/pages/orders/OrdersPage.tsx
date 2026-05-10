@@ -237,8 +237,8 @@ const OrdersPage: React.FC = () => {
       const waybill = (res as any).waybill || '';
       const trackingUrl = (res as any).trackingUrl || '';
       if (!waybill) throw new Error('No waybill returned from Delhivery');
-      toast.success(`✅ Waybill generated: ${waybill}`);
-      setSelectedOrder((prev) => prev ? { ...prev, waybill, trackingUrl } : prev);
+      toast.success(`✅ Order confirmed! Pickup scheduled. Waybill: ${waybill}`);
+      setSelectedOrder((prev) => prev ? { ...prev, waybill, trackingUrl, orderStatus: 'CONFIRMED' } : prev);
       await fetchOrders();
     } catch (err: any) {
       toast.error(`Waybill failed: ${err.message || 'Unknown error'}`);

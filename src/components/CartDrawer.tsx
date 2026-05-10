@@ -84,7 +84,18 @@ const CartDrawer: React.FC = () => {
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [verifyingDelivery, setVerifyingDelivery] = useState(false);
 
-  const { paymentStatus, handleCheckout } = useCheckout();
+  const { paymentStatus, currentOrderId, handleCheckout, resetPaymentStatus } = useCheckout();
+
+  useEffect(() => {
+    if (paymentStatus === "success" && currentOrderId) {
+      resetPaymentStatus();
+      navigate("/profile/orders", { state: { justOrdered: true, orderId: currentOrderId } });
+    } else if (paymentStatus === "failed" && currentOrderId) {
+      resetPaymentStatus();
+      if (!isCartOpen) toggleCart();
+      setTimeout(() => setIsCouponModalOpen(true), 300);
+    }
+  }, [paymentStatus]);
 
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
@@ -557,7 +568,7 @@ const CartDrawer: React.FC = () => {
       return;
     }
 
-    // Close modals
+    // Close coupon modal (cart stays open until payment resolves)
     setIsCouponModalOpen(false);
     toggleCart();
 

@@ -306,10 +306,13 @@ export const useCheckout = () => {
     }
   };
 
+  const resetPaymentStatus = () => setPaymentStatus("idle");
+
   return {
     paymentStatus,
     currentOrderId,
     handleCheckout,
+    resetPaymentStatus,
     setPaymentStatus, // Export this to reset state if needed
   };
 };

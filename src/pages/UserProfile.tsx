@@ -237,9 +237,21 @@ type OrderDoc = {
 const MyOrders: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = React.useState<OrderDoc[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [openOrderId, setOpenOrderId] = React.useState<string | null>(null);
+  const [justOrdered, setJustOrdered] = React.useState<{ orderId: string } | null>(
+    location.state?.justOrdered ? { orderId: location.state.orderId } : null
+  );
+
+  React.useEffect(() => {
+    if (justOrdered) {
+      window.history.replaceState({}, document.title);
+      const t = setTimeout(() => setJustOrdered(null), 8000);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   const fetchOrders = React.useCallback(async () => {
     if (!user?.uid) return;
@@ -327,16 +339,32 @@ const MyOrders: React.FC = () => {
     }
   };
 
+  const SuccessBanner = () =>
+    justOrdered ? (
+      <div className="mb-6 bg-emerald-900/40 border border-emerald-500/50 rounded-xl px-5 py-4 flex items-start gap-4">
+        <div className="mt-0.5 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+          <span className="text-emerald-400 text-lg">✓</span>
+        </div>
+        <div>
+          <p className="text-emerald-300 font-semibold text-sm">Order placed successfully! 🌿</p>
+          <p className="text-emerald-400/80 text-xs mt-0.5">
+            Order ID: <span className="font-mono">{justOrdered.orderId}</span>
+          </p>
+          <p className="text-gray-400 text-xs mt-1">
+            We'll send a WhatsApp confirmation shortly. You can track your order below.
+          </p>
+        </div>
+        <button onClick={() => setJustOrdered(null)} className="ml-auto text-gray-500 hover:text-white text-lg leading-none">×</button>
+      </div>
+    ) : null;
+
   if (!user?.uid) {
     return (
       <div>
-        <h2 className="text-2xl font-serif text-white mb-6">
-          My Orders
-        </h2>
+        <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+        <SuccessBanner />
         <div className="border border-white/10 p-8 text-center rounded-sm">
-          <p className="text-gray-400">
-            Please log in to view your orders.
-          </p>
+          <p className="text-gray-400">Please log in to view your orders.</p>
         </div>
       </div>
     );
@@ -345,9 +373,8 @@ const MyOrders: React.FC = () => {
   if (loading) {
     return (
       <div>
-        <h2 className="text-2xl font-serif text-white mb-6">
-          My Orders
-        </h2>
+        <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+        <SuccessBanner />
         <div className="border border-white/10 p-8 text-center rounded-sm">
           <p className="text-gray-400">Loading your orders...</p>
         </div>
@@ -358,9 +385,8 @@ const MyOrders: React.FC = () => {
   if (!orders.length) {
     return (
       <div>
-        <h2 className="text-2xl font-serif text-white mb-6">
-          My Orders
-        </h2>
+        <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+        <SuccessBanner />
         <div className="border border-white/10 p-8 text-center rounded-sm">
           <Package className="size-12 mx-auto text-gray-600 mb-4" />
           <p className="text-gray-400">
@@ -376,9 +402,8 @@ const MyOrders: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-serif text-white mb-6">
-        My Orders
-      </h2>
+      <h2 className="text-2xl font-serif text-white mb-6">My Orders</h2>
+      <SuccessBanner />
       <div className="space-y-4">
         {orders.map((order) => {
           const isOpen = openOrderId === order.id;

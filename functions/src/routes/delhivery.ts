@@ -231,4 +231,63 @@ router.post("/test-shipment", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/delhivery/test-pickup — unauthenticated, test pickup scheduling directly
+router.post("/test-pickup", async (req: Request, res: Response) => {
+  const DELHIVERY_API_KEY = process.env.DELHIVERY_API_KEY || "";
+  const DELHIVERY_BASE_URL = process.env.DELHIVERY_BASE_URL || "https://ltl-clients-api.delhivery.com";
+
+  if (!DELHIVERY_API_KEY) {
+    return res.json({ success: false, error: "DELHIVERY_API_KEY not set on backend" });
+  }
+
+  try {
+    const { waybill, warehouseName } = req.body;
+    if (!waybill) return res.status(400).json({ success: false, error: "waybill is required" });
+
+    const resolvedWarehouseName = warehouseName || process.env.WAREHOUSE_NAME || "Plantasy Warehouse";
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const pickupDate = tomorrow.toISOString().split("T")[0];
+
+    const pickupBody = {
+      pickup_time: `${pickupDate} 10:00:00`,
+      pickup_date: pickupDate,
+      pickup_location: resolvedWarehouseName,
+      expected_package_count: 1,
+      shipment_id: [waybill],
+    };
+
+    console.log(`[test-pickup] Request body:`, JSON.stringify(pickupBody));
+
+    const pickupRes = await fetch(`${DELHIVERY_BASE_URL}/fm/request/new/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${DELHIVERY_API_KEY}`,
+      },
+      body: JSON.stringify(pickupBody),
+    });
+
+    const rawText = await pickupRes.text();
+    let rawJson: any = null;
+    try { rawJson = JSON.parse(rawText); } catch { rawJson = rawText; }
+
+    console.log(`[test-pickup] Response ${pickupRes.status}:`, rawText);
+
+    return res.json({
+      success: pickupRes.ok,
+      httpStatus: pickupRes.status,
+      waybill,
+      pickupDate,
+      warehouseName: resolvedWarehouseName,
+      requestBody: pickupBody,
+      rawResponse: rawJson,
+    });
+  } catch (error: any) {
+    console.error("POST /api/delhivery/test-pickup error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

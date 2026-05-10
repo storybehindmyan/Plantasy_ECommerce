@@ -68,7 +68,7 @@ import razorpayRoutes from "./routes/razorpay.js";
 import shippingRoutes from "./routes/shipping.js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000; // Vite proxy expects backend on port 3000
 
 app.use(cors({
   origin: true,
@@ -87,6 +87,66 @@ app.use((req, _res, next) => {
 
 app.use("/api/razorpay", razorpayRoutes);
 app.use("/api/shipping", shippingRoutes);
+
+// ── Delhivery test-pickup (local testing only) ──
+app.post("/api/delhivery/test-pickup", async (req, res) => {
+  const DELHIVERY_API_KEY = process.env.DELHIVERY_API_KEY || "";
+  const DELHIVERY_BASE_URL = process.env.DELHIVERY_BASE_URL || "https://ltl-clients-api.delhivery.com";
+
+  if (!DELHIVERY_API_KEY) {
+    return res.json({ success: false, error: "DELHIVERY_API_KEY not set in .env" });
+  }
+
+  const { waybill, warehouseName } = req.body;
+  if (!waybill) return res.status(400).json({ success: false, error: "waybill is required" });
+
+  const resolvedWarehouseName = warehouseName || process.env.WAREHOUSE_NAME || "Plantasy Warehouse";
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const pickupDate = tomorrow.toISOString().split("T")[0];
+
+  const pickupBody = {
+    pickup_time: `${pickupDate} 10:00:00`,
+    pickup_date: pickupDate,
+    pickup_location: resolvedWarehouseName,
+    expected_package_count: 1,
+    shipment_id: [waybill],
+  };
+
+  console.log(`[test-pickup] Sending to Delhivery:`, JSON.stringify(pickupBody));
+
+  try {
+    const { default: fetch } = await import("node-fetch");
+    const pickupRes = await (fetch as any)(`${DELHIVERY_BASE_URL}/fm/request/new/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${DELHIVERY_API_KEY}`,
+      },
+      body: JSON.stringify(pickupBody),
+    });
+
+    const rawText = await pickupRes.text();
+    let rawJson: any = null;
+    try { rawJson = JSON.parse(rawText); } catch { rawJson = rawText; }
+
+    console.log(`[test-pickup] Response ${pickupRes.status}:`, rawText);
+
+    return res.json({
+      success: pickupRes.ok,
+      httpStatus: pickupRes.status,
+      waybill,
+      pickupDate,
+      warehouseName: resolvedWarehouseName,
+      requestBody: pickupBody,
+      rawResponse: rawJson,
+    });
+  } catch (err: any) {
+    console.error("[test-pickup] Error:", err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 app.get("/", (_req, res) => {
   res.json({ message: "Plantasy Backend API is running" });

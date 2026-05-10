@@ -46,6 +46,26 @@ export default function DeliveryTest() {
   const [shipmentResult, setShipmentResult] = useState<Result>({ status: "idle" });
   const [running, setRunning] = useState(false);
 
+  const [pickupWaybill, setPickupWaybill] = useState("48310710000114");
+  const [pickupWarehouseName, setPickupWarehouseName] = useState("");
+  const [pickupResult, setPickupResult] = useState<Result>({ status: "idle" });
+
+  async function runPickup() {
+    setPickupResult({ status: "loading" });
+    const t0 = Date.now();
+    try {
+      const res = await fetch(`${API_URL}/api/delhivery/test-pickup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ waybill: pickupWaybill, warehouseName: pickupWarehouseName }),
+      });
+      const data = await res.json();
+      setPickupResult({ status: data.success ? "ok" : "error", data, ms: Date.now() - t0 });
+    } catch (e: any) {
+      setPickupResult({ status: "error", data: { error: e.message }, ms: Date.now() - t0 });
+    }
+  }
+
   const [warehouse, setWarehouse] = useState({
     name: "", phone: "", address: "", city: "", state: "", pincode: "",
   });
@@ -399,6 +419,65 @@ export default function DeliveryTest() {
                 {JSON.stringify(shipmentResult.data?.rawResponse ?? shipmentResult.data, null, 2)}
               </pre>
             </details>
+          )}
+        </div>
+
+        {/* Test 4: Schedule Pickup */}
+        <div className="bg-white rounded-2xl border p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-800">Test 4: Schedule Pickup</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Calls <code className="bg-gray-100 px-1 rounded">/fm/request/new/</code> directly with a waybill</p>
+            </div>
+            <StatusBadge status={pickupResult.status} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Waybill (AWB)</label>
+              <input
+                type="text"
+                value={pickupWaybill}
+                onChange={(e) => setPickupWaybill(e.target.value.trim())}
+                className="border rounded-lg px-3 py-2 text-sm w-full font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="48310710000114"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Warehouse Name (leave blank to use env WAREHOUSE_NAME)</label>
+              <input
+                type="text"
+                value={pickupWarehouseName}
+                onChange={(e) => setPickupWarehouseName(e.target.value)}
+                className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Plantasy Warehouse"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={runPickup}
+            disabled={pickupResult.status === "loading" || !pickupWaybill}
+            className="bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-800 transition disabled:opacity-50"
+          >
+            {pickupResult.status === "loading" ? "Scheduling…" : "Schedule Pickup"}
+          </button>
+
+          {pickupResult.status !== "idle" && pickupResult.data && (
+            <div className="space-y-2">
+              {pickupResult.status === "ok" ? (
+                <p className="text-green-700 font-semibold text-sm">✅ Pickup scheduled! Check Delhivery portal.</p>
+              ) : (
+                <p className="text-red-700 font-semibold text-sm">❌ Pickup failed</p>
+              )}
+              {pickupResult.ms && <p className="text-xs text-gray-400">{pickupResult.ms}ms</p>}
+              <details className="text-xs" open>
+                <summary className="text-gray-400 cursor-pointer hover:text-gray-600">Raw Response</summary>
+                <pre className="mt-2 bg-gray-50 rounded-lg p-3 overflow-auto text-gray-600 max-h-64">
+                  {JSON.stringify(pickupResult.data, null, 2)}
+                </pre>
+              </details>
+            </div>
           )}
         </div>
 

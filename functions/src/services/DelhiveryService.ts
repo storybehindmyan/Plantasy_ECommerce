@@ -51,7 +51,7 @@ export const DelhiveryService = {
       console.log(`[Delhivery MOCK] Shipment created for order ${orderId}: ${fakeWaybill}`);
       return {
         waybill: fakeWaybill,
-        trackingUrl: `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(fakeWaybill)}`,
+        trackingUrl: `https://www.delhivery.com/track-v2/package/${encodeURIComponent(fakeWaybill)}`,
         raw: { mock: true, orderId, invoiceValue, products },
       };
     }
@@ -129,7 +129,7 @@ export const DelhiveryService = {
       throw new Error("No waybill in Delhivery response");
     }
 
-    const trackingUrl = `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;
+    const trackingUrl = `https://www.delhivery.com/track-v2/package/${encodeURIComponent(waybill)}`;
     return { waybill, trackingUrl, raw: shipmentData };
   },
 

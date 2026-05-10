@@ -96,8 +96,11 @@ export const OrderService = {
     const warehouseName = process.env.WAREHOUSE_NAME || "Plantasy";
 
     let waybill: string = order.delhivery?.waybill || order.waybill || "";
-    let trackingUrl: string = order.delhivery?.trackingUrl || order.trackingUrl || order.track || "";
     let alreadyHadWaybill = !!waybill;
+    // Always recompute correct tracking URL (overwrites any old /tracking?waybill= format)
+    let trackingUrl: string = waybill
+      ? `https://www.delhivery.com/track-v2/package/${encodeURIComponent(waybill)}`
+      : "";
 
     if (!waybill) {
       // Waybill not created yet — create it first
@@ -117,9 +120,15 @@ export const OrderService = {
       console.error(`Order ${orderId}: pickup scheduling failed:`, err.message);
     }
 
+    // Recompute after waybill may have been freshly created
+    trackingUrl = `https://www.delhivery.com/track-v2/package/${encodeURIComponent(waybill)}`;
+
     await orderRef.update({
       orderStatus: "CONFIRMED",
       pickupScheduled: !pickupError,
+      trackingUrl,
+      track: trackingUrl,
+      "delhivery.trackingUrl": trackingUrl,
       "timestamps.confirmedAt": admin.firestore.FieldValue.serverTimestamp(),
       "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -202,9 +211,7 @@ export const OrderService = {
       newOrderStatus = "SHIPPED";
     }
 
-    const trackingUrl =
-      order.delhivery?.trackingUrl || order.trackingUrl || order.track ||
-      `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;
+    const trackingUrl = `https://www.delhivery.com/track-v2/package/${encodeURIComponent(waybill)}`;
 
     const updatePayload: any = {
       trackingEvents: events,

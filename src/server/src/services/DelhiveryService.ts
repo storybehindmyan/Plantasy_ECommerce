@@ -54,9 +54,7 @@ export const DelhiveryService = {
 
     if (USE_MOCK_DELIVERY || !DELHIVERY_API_KEY) {
       const fakeWaybill = `MOCK-${orderId}-${Date.now()}`;
-      const trackingUrl = `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(
-        fakeWaybill
-      )}`;
+      const trackingUrl = `https://www.delhivery.com/track-v2/package/${encodeURIComponent(fakeWaybill)}`;
 
       return {
         waybill: fakeWaybill,
@@ -168,9 +166,7 @@ export const DelhiveryService = {
       console.error("Pickup request failed:", err);
     }
 
-    const trackingUrl = `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(
-      waybill
-    )}`;
+    const trackingUrl = `https://www.delhivery.com/track-v2/package/${encodeURIComponent(waybill)}`;
 
     return { waybill, trackingUrl, raw: shipmentData };
   },

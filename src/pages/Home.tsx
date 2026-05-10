@@ -444,7 +444,7 @@ const Home = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="text-5xl md:text-7xl font-serif mb-6 tracking-tight">
+          <h2 className="text-5xl md:text-7xl font-serif mb-6 tracking-tight text-white">
             From Seed to Sprout
           </h2>
           <p className="text-gray-200 text-lg md:text-xl mb-10 leading-relaxed font-light">
@@ -702,7 +702,7 @@ const Home = () => {
       {/* 3. Sprout on the #Gram Section */}
       <section className="bg-[#5a614a] py-24 px-6 text-white min-h-screen flex flex-col justify-center">
         <motion.div className="text-center mb-16" {...fadeInUp}>
-          <h2 className="text-5xl md:text-7xl font-serif mb-4">
+          <h2 className="text-5xl md:text-7xl font-serif mb-4 text-white">
             Sprout on the{" "}
             <span className="underline decoration-1 underline-offset-8">
               #Gram
@@ -760,7 +760,7 @@ const Home = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="text-4xl md:text-6xl font-serif mb-6 leading-tight">
+          <h2 className="text-4xl md:text-6xl font-serif mb-6 leading-tight opacity-80 text-white">
             Everything You Need to Know <br /> About Plants and More. No Spam,{" "}
             <br /> We Promise.
           </h2>

@@ -44,7 +44,7 @@ const YouMayAlsoLike = ({
                             Plants Collection
                         </span>
 
-                        <h3 className="text-3xl md:text-4xl font-serif mb-4 leading-tight">
+                        <h3 className="text-3xl md:text-4xl font-serif mb-4 leading-tight text-white">
                             Starting from <br /> ₹1,200
                         </h3>
 
@@ -75,7 +75,7 @@ const YouMayAlsoLike = ({
               p-6 flex flex-col justify-center items-start text-white
               border-r border-white/5 border-t border-white/5 md:border-t-0`}
                     >
-                        <h3 className="text-xl font-serif mb-2">
+                        <h3 className="text-xl font-serif mb-2 text-white">
                             Pots <br /> Collection
                         </h3>
 
@@ -111,7 +111,7 @@ const YouMayAlsoLike = ({
               p-6 flex flex-col justify-center items-start text-white
               border-r border-white/5 border-t border-white/5 md:border-t-0`}
                     >
-                        <h3 className="text-xl font-serif mb-2">
+                        <h3 className="text-xl font-serif mb-2 text-white">
                             Seeds <br /> Collection
                         </h3>
 

@@ -402,8 +402,8 @@ const ContactUs = () => {
                   </div>
                   <div>
                     <h3 className="text-white font-medium mb-1">Visit Us</h3>
-                    <p>123 Green Street, Plant District</p>
-                    <p>Mumbai, Maharashtra 400001</p>
+                    <p>Plot no:236,Jal vayu vihar,  Kukatpally, </p>
+                    <p> Hyderabad, Telangana - 500072.</p>
                   </div>
                 </div>
 
@@ -413,8 +413,7 @@ const ContactUs = () => {
                   </div>
                   <div>
                     <h3 className="text-white font-medium mb-1">Email Us</h3>
-                    <p>support@plantasy.com</p>
-                    <p>wholesale@plantasy.com</p>
+                    <p>Official@plantasy.co.in</p>
                   </div>
                 </div>
 
@@ -424,8 +423,8 @@ const ContactUs = () => {
                   </div>
                   <div>
                     <h3 className="text-white font-medium mb-1">Call Us</h3>
-                    <p>+91 98765 43210</p>
-                    <p>Mon - Fri, 9am - 6pm</p>
+                    <p>+918374988879</p>
+                    <p>Mon - Sat, 9am - 8pm</p>
                   </div>
                 </div>
               </div>

@@ -31,20 +31,16 @@ jobs:
         run: npx tsc
         working-directory: functions
 
+      - name: Create functions environment file
+        run: |
+          echo "RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}" > functions/.env
+          echo "RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}" >> functions/.env
+
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       - name: Write service account key
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLANTASY_BHARAT }}' > /tmp/sa.json
-
-      - name: Set Razorpay config on Firebase Functions
-        run: |
-          firebase functions:config:set \
-            razorpay.key_id="${{ secrets.RAZORPAY_KEY_ID }}" \
-            razorpay.key_secret="${{ secrets.RAZORPAY_KEY_SECRET }}" \
-            --project plantasy-bharat --non-interactive
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
 
       - name: Deploy hosting and functions
         run: firebase deploy --only hosting,functions --project plantasy-bharat --non-interactive

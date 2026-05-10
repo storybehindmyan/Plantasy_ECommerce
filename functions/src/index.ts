@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import * as functions from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import express from "express";
 import cors from "cors";
 import razorpayRouter from "./routes/razorpay";
@@ -26,4 +26,4 @@ app.get("/", (_req, res) => {
   res.json({ message: "Plantasy Backend API is running" });
 });
 
-export const api = functions.https.onRequest(app);
+export const api = onRequest(app);

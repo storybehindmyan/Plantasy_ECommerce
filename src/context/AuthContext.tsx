@@ -74,11 +74,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (firebaseAuth.user) {
       void loadUserProfile(firebaseAuth.user);
+      // setLoading(false) is called inside loadUserProfile's finally block
     } else {
       setUser(null);
       localStorage.removeItem("plantasy_user");
+      setLoading(false);
     }
-    setLoading(false);
   }, [firebaseAuth.user, firebaseAuth.loading]);
 
   const loadUserProfile = async (firebaseUser: any) => {
@@ -116,6 +117,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Error loading user profile:", error);
+    } finally {
+      setLoading(false);
     }
   };
 

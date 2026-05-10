@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/**",
+        "function": "api"
+      },
+      {
         "source": "/Admin-plantasy/**",
         "destination": "/Admin-plantasy/index.html"
       },

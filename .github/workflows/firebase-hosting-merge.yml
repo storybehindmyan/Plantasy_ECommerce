@@ -43,6 +43,6 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLANTASY_BHARAT }}' > /tmp/sa.json
 
       - name: Deploy hosting and functions
-        run: firebase deploy --only hosting,functions --project plantasy-bharat --non-interactive
+        run: firebase deploy --only hosting,functions --project plantasy-bharat --non-interactive --force
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json

@@ -18,6 +18,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { DelhiveryService } from "../services/DelhiveryService";
+import { ShippingQuoteService } from "../services/ShippingQuoteService";
 import { toast } from "sonner";
 
 type AddressDoc = {
@@ -90,6 +91,10 @@ const CartDrawer: React.FC = () => {
   });
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressError, setAddressError] = useState<string | null>(null);
+
+  const [shippingCost, setShippingCost] = useState(50);
+  const [estimatedDelivery, setEstimatedDelivery] = useState<string | null>(null);
+  const [courierName, setCourierName] = useState("Delhivery");
 
   const [couponCode, setCouponCode] = useState("");
   const [couponChecking, setCouponChecking] = useState(false);
@@ -319,7 +324,20 @@ const CartDrawer: React.FC = () => {
         return;
       }
 
-      // Delivery available, proceed to coupon
+      // Delivery available — fetch shipping quote
+      try {
+        const quote = await ShippingQuoteService.quote(
+          selectedAddr.zip,
+          cart.map((it) => ({ productId: it.id, quantity: it.quantity }))
+        );
+        setShippingCost(Number(quote.shippingCost) || 50);
+        setEstimatedDelivery(quote.estimatedDelivery || null);
+        setCourierName(quote.courier || "Delhivery");
+      } catch {
+        setShippingCost(50);
+        setEstimatedDelivery(null);
+      }
+
       toast.success("Delivery available for this location!");
       setIsAddressModalOpen(false);
       setIsCouponModalOpen(true);
@@ -462,9 +480,9 @@ const CartDrawer: React.FC = () => {
 
     // Calculate pricing
     const subtotal = cartTotal;
-    const tax = Math.round(subtotal * 0.18); // 18% tax
+    const tax = Math.round(subtotal * 0.05);
     const discount = appliedCoupon?.discountAmount || 0;
-    const shippingCharge = 0; // From DelhiveryService
+    const shippingCharge = shippingCost;
     const grandTotal = subtotal + tax + shippingCharge - discount;
 
     // Close modals
@@ -960,43 +978,42 @@ const CartDrawer: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Estimated delivery */}
+                  {estimatedDelivery && (
+                    <div className="bg-green-900/30 border border-green-700/40 rounded-lg px-4 py-3 mb-3">
+                      <p className="text-xs text-green-400 uppercase tracking-wide mb-0.5">Estimated Delivery</p>
+                      <p className="text-green-300 font-bold text-base">{estimatedDelivery}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">via {courierName}</p>
+                    </div>
+                  )}
+
                   <div className="border-t border-white/10 pt-3 text-sm">
                     <div className="flex justify-between mb-1">
                       <span className="text-gray-500">Cart Value</span>
-                      <span className="text-gray-400">
-                        +₹{cartTotal.toFixed(2)}
-                      </span>
+                      <span className="text-gray-400">+₹{cartTotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-gray-500">Tax (5%)</span>
+                      <span className="text-gray-400">+₹{Math.round(cartTotal * 0.05).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between mb-1">
                       <span className="text-gray-500">Shipping Charges</span>
-                      <span className="text-gray-400">+₹50.00</span>
+                      <span className="text-gray-400">
+                        {shippingCost === 0 ? <span className="text-green-400">FREE</span> : `+₹${shippingCost.toFixed(2)}`}
+                      </span>
                     </div>
-
-                    {(appliedCoupon)? (
-                      <>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-emerald-300">
-                            Coupon discount
-                          </span>
-                          <span className="text-emerald-300">
-                            -₹{appliedCoupon.discountAmount.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between mt-1 font-medium">
-                          <span className="text-gray-100">Grand Total</span>
-                          <span className="text-white">
-                            ₹{(effectiveTotal + 50.00).toFixed(2)}
-                          </span>
-                        </div>
-                      </>
-                    ):(<>
-                    <div className="flex justify-between mt-1 font-medium">
-                          <span className="text-gray-100">Grand Total</span>
-                          <span className="text-white">
-                            ₹{(effectiveTotal + 50.00).toFixed(2)}
-                          </span>
-                        </div>
-                    </>)}
+                    {appliedCoupon && (
+                      <div className="flex justify-between mb-1">
+                        <span className="text-emerald-300">Coupon discount</span>
+                        <span className="text-emerald-300">-₹{appliedCoupon.discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between mt-2 pt-2 border-t border-white/10 font-medium">
+                      <span className="text-gray-100">Grand Total</span>
+                      <span className="text-white">
+                        ₹{(cartTotal + Math.round(cartTotal * 0.05) + shippingCost - (appliedCoupon?.discountAmount || 0)).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

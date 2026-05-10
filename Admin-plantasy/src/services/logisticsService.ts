@@ -59,5 +59,14 @@ export const logisticsService = {
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()) as any;
   },
+
+  async retryPickup(orderId: string): Promise<{ waybill: string }> {
+    const res = await authedFetch("/api/delhivery/retry-pickup", {
+      method: "POST",
+      body: JSON.stringify({ orderId }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return (await res.json()) as any;
+  },
 };
 

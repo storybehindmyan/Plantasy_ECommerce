@@ -64,9 +64,9 @@ router.post("/sync-all", verifyAuth, async (req: Request, res: Response) => {
     );
 
     let updated = 0, errors = 0;
-    results.forEach((r) => {
+    results.forEach((r, i) => {
       if (r.status === "fulfilled") { if (r.value.newOrderStatus) updated++; }
-      else errors++;
+      else { errors++; console.error(`[sync-all] Error for order ${snap.docs[i].id}:`, r.reason?.message || r.reason); }
     });
 
     console.log(`[sync-all] ${snap.size} orders checked, ${updated} status updates, ${errors} errors`);
@@ -227,6 +227,32 @@ router.post("/test-shipment", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("POST /api/delhivery/test-shipment error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/delhivery/retry-pickup — re-schedule pickup for a CONFIRMED order (admin manual retry)
+router.post("/retry-pickup", verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ success: false, error: "orderId required" });
+
+    const snap = await admin.firestore().collection("orders").doc(orderId).get();
+    if (!snap.exists) return res.status(404).json({ success: false, error: "Order not found" });
+
+    const order = snap.data() as any;
+    const waybill = order.delhivery?.waybill || order.waybill || "";
+    if (!waybill) return res.status(400).json({ success: false, error: "No waybill on this order — confirm it first" });
+
+    const warehouseName = process.env.WAREHOUSE_NAME || "Plantasy";
+    await DelhiveryService.schedulePickup(waybill, warehouseName);
+
+    await admin.firestore().collection("orders").doc(orderId).update({ pickupScheduled: true });
+    console.log(`[retry-pickup] Pickup scheduled for order ${orderId} waybill ${waybill}`);
+
+    return res.json({ success: true, waybill, orderId });
+  } catch (error: any) {
+    console.error("POST /api/delhivery/retry-pickup error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 });

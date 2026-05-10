@@ -252,6 +252,21 @@ const OrdersPage: React.FC = () => {
     }
   };
 
+  const handleRetryPickup = async (order: Order) => {
+    setActionLoading(true);
+    try {
+      const res = await logisticsService.retryPickup(order.id);
+      const waybill = (res as any).waybill || '';
+      toast.success(`✅ Pickup scheduled! Waybill: ${waybill}`);
+      setSelectedOrder((prev) => prev ? { ...prev, pickupScheduled: true } : prev);
+      await fetchOrders();
+    } catch (err: any) {
+      toast.error(`Retry pickup failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSyncTracking = async (order: Order) => {
     const waybill = order.waybill || order.delhivery?.waybill;
     if (!waybill) {
@@ -645,21 +660,35 @@ const OrdersPage: React.FC = () => {
 
                 {/* Waybill row */}
                 {selectedOrder.waybill ? (
-                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Delhivery Waybill</p>
-                      <p className="font-mono font-semibold text-sm mt-0.5">{selectedOrder.waybill}</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Delhivery Waybill</p>
+                        <p className="font-mono font-semibold text-sm mt-0.5">{selectedOrder.waybill}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => copyToClipboard(selectedOrder.waybill!, 'Waybill')} className="admin-btn-ghost p-2 rounded-lg" title="Copy waybill">
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        {selectedOrder.trackingUrl && (
+                          <a href={selectedOrder.trackingUrl} target="_blank" rel="noopener noreferrer" className="admin-btn-ghost p-2 rounded-lg" title="View live tracking">
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => copyToClipboard(selectedOrder.waybill!, 'Waybill')} className="admin-btn-ghost p-2 rounded-lg" title="Copy waybill">
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      {selectedOrder.trackingUrl && (
-                        <a href={selectedOrder.trackingUrl} target="_blank" rel="noopener noreferrer" className="admin-btn-ghost p-2 rounded-lg" title="View live tracking">
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
-                    </div>
+                    {selectedOrder.orderStatus === 'CONFIRMED' && !(selectedOrder as any).pickupScheduled && (
+                      <div className="flex items-center justify-between p-2.5 bg-orange-50 border border-orange-200 rounded-lg">
+                        <span className="text-xs text-orange-700">⚠️ Pickup not yet scheduled in Delhivery</span>
+                        <button
+                          onClick={() => handleRetryPickup(selectedOrder)}
+                          disabled={actionLoading}
+                          className="text-xs bg-orange-600 hover:bg-orange-700 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                        >
+                          {actionLoading ? 'Scheduling…' : 'Schedule Pickup Now'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">

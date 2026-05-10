@@ -24,7 +24,6 @@
     "noUncheckedSideEffectImports": true
   },
   "include": [
-    "vite.config.ts",
-    "vite/razorpayApiPlugin.ts"
+    "vite.config.ts"
   ]
 }

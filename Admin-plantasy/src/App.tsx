@@ -32,7 +32,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/Admin-plantasy">
           <Routes>
             {/* Auth Routes */}
             <Route path="/auth/login" element={<LoginPage />} />

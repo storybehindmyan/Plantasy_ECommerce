@@ -35,6 +35,18 @@ jobs:
         run: |
           echo "RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}" > functions/.env
           echo "RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}" >> functions/.env
+          echo "DELHIVERY_API_KEY=${{ secrets.DELHIVERY_API_KEY }}" >> functions/.env
+          echo "DELHIVERY_BASE_URL=${{ secrets.DELHIVERY_BASE_URL }}" >> functions/.env
+          echo "WAREHOUSE_NAME=${{ secrets.WAREHOUSE_NAME }}" >> functions/.env
+          echo "WAREHOUSE_PHONE=${{ secrets.WAREHOUSE_PHONE }}" >> functions/.env
+          echo "WAREHOUSE_ADDRESS_LINE1=${{ secrets.WAREHOUSE_ADDRESS_LINE1 }}" >> functions/.env
+          echo "WAREHOUSE_CITY=${{ secrets.WAREHOUSE_CITY }}" >> functions/.env
+          echo "WAREHOUSE_STATE=${{ secrets.WAREHOUSE_STATE }}" >> functions/.env
+          echo "WAREHOUSE_PINCODE=${{ secrets.WAREHOUSE_PINCODE }}" >> functions/.env
+          echo "WAREHOUSE_CLIENT_CODE=${{ secrets.WAREHOUSE_CLIENT_CODE }}" >> functions/.env
+          echo "WHATSAPP_TOKEN=${{ secrets.WHATSAPP_TOKEN }}" >> functions/.env
+          echo "WHATSAPP_PHONE_NUMBER_ID=${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}" >> functions/.env
+          echo "WHATSAPP_VERIFY_TOKEN=${{ secrets.WHATSAPP_VERIFY_TOKEN }}" >> functions/.env
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools

@@ -106,7 +106,7 @@ export const useCheckout = () => {
         },
         (error) => {
           // Payment error callback
-          handlePaymentError(error, orderId);
+          handlePaymentError(error, orderId, params.deliveryAddress?.phone || "", finalAmount);
         }
       );
     } catch (error) {
@@ -229,13 +229,28 @@ export const useCheckout = () => {
       });
 
 
-      // Shipment + pickup will be triggered server-side when admin confirms the order.
+      // 5. Trigger Delhivery shipment + WhatsApp confirmation via backend
+      try {
+        const addr = params.deliveryAddress || {};
+        await fetch("/api/orders/paid", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            phone: addr.phone || "",
+            name: `${addr.firstName || ""} ${addr.lastName || ""}`.trim(),
+            amount: finalAmount,
+          }),
+        });
+      } catch (e) {
+        console.error("Order post-processing failed (non-critical):", e);
+      }
 
-      // 5. Update payment status
+      // 6. Update payment status
       setPaymentStatus("success");
       toast.success("Order placed successfully!");
 
-      // 6. Store order ID for later
+      // 7. Store order ID for later
       localStorage.setItem("lastOrderId", orderId);
     } catch (error) {
       console.error("Error processing payment success:", error);
@@ -244,7 +259,7 @@ export const useCheckout = () => {
     }
   };
 
-  const handlePaymentError = async (error: any, orderId: string) => {
+  const handlePaymentError = async (error: any, orderId: string, phone = "", amount = 0) => {
     try {
       // Store failed payment attempt
       const paymentData: Omit<PaymentDetails, "createdAt"> = {
@@ -265,6 +280,23 @@ export const useCheckout = () => {
 
     setPaymentStatus("failed");
     toast.error(error.message || "Payment failed. Please try again.");
+
+    try {
+      if (phone) {
+        await fetch("/api/whatsapp/payment-failed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone,
+            name: "",
+            amount,
+            retryUrl: "https://plantasy.co.in/checkout",
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("WhatsApp payment-failed notification error:", e);
+    }
   };
 
   return {

@@ -35,62 +35,44 @@ router.get("/track", verifyAuth, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/delhivery/track-sync — fetch latest events from Delhivery & save to Firestore
+// POST /api/delhivery/track-sync — sync tracking + auto-update order status
 router.post("/track-sync", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "orderId is required" });
 
-    const orderRef = admin.firestore().collection("orders").doc(orderId);
-    const snap = await orderRef.get();
-    if (!snap.exists) return res.status(404).json({ error: "Order not found" });
-
-    const order = snap.data() as any;
-    const waybill =
-      order.delhivery?.waybill ||
-      order.waybill ||
-      order.track?.replace(/^https?:\/\/.*waybill=/, "");
-
-    if (!waybill) {
-      return res.status(400).json({ error: "No waybill found for this order. Generate waybill first." });
-    }
-
-    const trackData = await DelhiveryService.trackShipment(waybill);
-
-    // Parse Delhivery tracking response (handles both API formats)
-    const scans: any[] =
-      trackData?.ShipmentData?.[0]?.Shipment?.Scans ||
-      trackData?.shipment_track?.[0]?.scans ||
-      [];
-
-    const events = scans.map((s: any) => ({
-      status: s.ScanDetail?.Scan || s.activity || s.status || "",
-      location: s.ScanDetail?.ScannedLocation || s.location || "",
-      timestamp: s.ScanDetail?.ScanDateTime || s.timestamp || new Date().toISOString(),
-    }));
-
-    const latestStatus =
-      trackData?.ShipmentData?.[0]?.Shipment?.Status?.Status ||
-      trackData?.shipment_track?.[0]?.current_status ||
-      "";
-
-    const trackingUrl =
-      order.delhivery?.trackingUrl ||
-      order.trackingUrl ||
-      order.track ||
-      `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;
-
-    await orderRef.update({
-      trackingEvents: events,
-      shipmentStatus: latestStatus,
-      trackingUrl,
-      waybill,
-      "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return res.json({ success: true, events, latestStatus, waybill, trackingUrl });
+    const result = await OrderService.syncOrderTracking(orderId);
+    return res.json({ success: true, ...result });
   } catch (error: any) {
     console.error("POST /api/delhivery/track-sync error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/delhivery/sync-all — sync tracking for ALL active orders (called on admin page load)
+router.post("/sync-all", verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const snap = await admin.firestore()
+      .collection("orders")
+      .where("orderStatus", "in", ["CONFIRMED", "SHIPPED"])
+      .get();
+
+    if (snap.empty) return res.json({ success: true, synced: 0, updated: 0 });
+
+    const results = await Promise.allSettled(
+      snap.docs.map((doc) => OrderService.syncOrderTracking(doc.id))
+    );
+
+    let updated = 0, errors = 0;
+    results.forEach((r) => {
+      if (r.status === "fulfilled") { if (r.value.newOrderStatus) updated++; }
+      else errors++;
+    });
+
+    console.log(`[sync-all] ${snap.size} orders checked, ${updated} status updates, ${errors} errors`);
+    return res.json({ success: true, synced: snap.size, updated, errors });
+  } catch (error: any) {
+    console.error("POST /api/delhivery/sync-all error:", error);
     return res.status(500).json({ error: error.message });
   }
 });

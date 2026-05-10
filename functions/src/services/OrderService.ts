@@ -145,6 +145,97 @@ export const OrderService = {
     });
   },
 
+  // Maps Delhivery tracking status → our order status and auto-updates Firestore
+  async syncOrderTracking(orderId: string): Promise<{
+    waybill: string;
+    events: any[];
+    latestDelhiveryStatus: string;
+    newOrderStatus: string | null;
+  }> {
+    const orderRef = db().collection("orders").doc(orderId);
+    const snap = await orderRef.get();
+    if (!snap.exists) throw new Error(`Order ${orderId} not found`);
+
+    const order = snap.data() as any;
+    const waybill = order.delhivery?.waybill || order.waybill || "";
+    if (!waybill) throw new Error("No waybill found for this order");
+
+    const trackData = await DelhiveryService.trackShipment(waybill);
+
+    const scans: any[] =
+      trackData?.ShipmentData?.[0]?.Shipment?.Scans ||
+      trackData?.shipment_track?.[0]?.scans || [];
+
+    const events = scans.map((s: any) => ({
+      status: s.ScanDetail?.Scan || s.activity || s.status || "",
+      location: s.ScanDetail?.ScannedLocation || s.location || "",
+      timestamp: s.ScanDetail?.ScanDateTime || s.timestamp || new Date().toISOString(),
+    }));
+
+    const latestDelhiveryStatus: string =
+      trackData?.ShipmentData?.[0]?.Shipment?.Status?.Status ||
+      trackData?.shipment_track?.[0]?.current_status || "";
+
+    // Map Delhivery status → our order status
+    const statusLower = latestDelhiveryStatus.toLowerCase();
+    let newOrderStatus: string | null = null;
+    const currentStatus: string = (order.orderStatus || "").toUpperCase();
+
+    if (
+      statusLower.includes("delivered") &&
+      currentStatus !== "DELIVERED"
+    ) {
+      newOrderStatus = "DELIVERED";
+    } else if (
+      (statusLower.includes("picked up") ||
+        statusLower.includes("in transit") ||
+        statusLower.includes("out for delivery") ||
+        statusLower.includes("manifested")) &&
+      currentStatus !== "DELIVERED" &&
+      currentStatus !== "SHIPPED"
+    ) {
+      newOrderStatus = "SHIPPED";
+    }
+
+    const trackingUrl =
+      order.delhivery?.trackingUrl || order.trackingUrl || order.track ||
+      `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;
+
+    const updatePayload: any = {
+      trackingEvents: events,
+      shipmentStatus: latestDelhiveryStatus,
+      trackingUrl,
+      waybill,
+      "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (newOrderStatus) {
+      updatePayload.orderStatus = newOrderStatus;
+      if (newOrderStatus === "SHIPPED") {
+        updatePayload["timestamps.shippedAt"] = admin.firestore.FieldValue.serverTimestamp();
+      } else if (newOrderStatus === "DELIVERED") {
+        updatePayload["timestamps.deliveredAt"] = admin.firestore.FieldValue.serverTimestamp();
+      }
+    }
+
+    await orderRef.update(updatePayload);
+
+    // Send WhatsApp notifications on status transitions
+    const addr = order.deliveryAddress || {};
+    const phone = addr.phone || "";
+    const customerName = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
+
+    if (newOrderStatus === "SHIPPED" && phone) {
+      await WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl).catch(console.error);
+    } else if (newOrderStatus === "DELIVERED" && phone) {
+      const reviewUrl = `https://plantasy.co.in/review/${orderId}`;
+      await WhatsAppService.sendOrderDelivered(phone, customerName, orderId, reviewUrl).catch(console.error);
+    }
+
+    console.log(`[syncOrderTracking] Order ${orderId}: Delhivery="${latestDelhiveryStatus}" → newStatus=${newOrderStatus || "no change"}`);
+    return { waybill, events, latestDelhiveryStatus, newOrderStatus };
+  },
+
   async onOrderDelivered(orderId: string): Promise<void> {
     const snap = await db().collection("orders").doc(orderId).get();
     if (!snap.exists) return;

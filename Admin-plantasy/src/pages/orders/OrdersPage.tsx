@@ -127,6 +127,13 @@ const OrdersPage: React.FC = () => {
     fetchOrders();
   }, [statusFilter]);
 
+  // Auto-sync tracking for all active orders whenever the page loads / filter changes
+  useEffect(() => {
+    logisticsService.syncAll()
+      .then((r) => { if (r.updated > 0) fetchOrders(); })
+      .catch(() => {}); // silent — don't block UI
+  }, []);
+
   // When opening/closing modal, sync local trackInput with selected order's track,
   // but do not modify any other data coming from Firestore.
   useEffect(() => {
@@ -253,9 +260,17 @@ const OrdersPage: React.FC = () => {
     try {
       const result = await logisticsService.syncTracking(order.id);
       const events: TrackingEvent[] = (result as any).events || [];
-      const latestStatus = (result as any).latestStatus || '';
-      setSelectedOrder((prev) => prev ? { ...prev, trackingEvents: events, shipmentStatus: latestStatus } : prev);
-      toast.success(`Tracking synced — ${events.length} event(s) updated.`);
+      const latestDelhiveryStatus = (result as any).latestDelhiveryStatus || '';
+      const newOrderStatus = (result as any).newOrderStatus || null;
+      setSelectedOrder((prev) => prev ? {
+        ...prev,
+        trackingEvents: events,
+        shipmentStatus: latestDelhiveryStatus,
+        ...(newOrderStatus ? { orderStatus: newOrderStatus } : {}),
+      } : prev);
+      const statusMsg = newOrderStatus ? ` · Status → ${newOrderStatus}` : '';
+      toast.success(`Tracking synced — ${events.length} event(s)${statusMsg}`);
+      if (newOrderStatus) fetchOrders();
     } catch (err: any) {
       toast.error(`Sync failed: ${err.message}`);
     } finally {

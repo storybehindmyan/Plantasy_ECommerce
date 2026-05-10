@@ -53,5 +53,11 @@ export const logisticsService = {
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()) as any;
   },
+
+  async syncAll(): Promise<{ synced: number; updated: number }> {
+    const res = await authedFetch("/api/delhivery/sync-all", { method: "POST" });
+    if (!res.ok) throw new Error(await res.text());
+    return (await res.json()) as any;
+  },
 };
 

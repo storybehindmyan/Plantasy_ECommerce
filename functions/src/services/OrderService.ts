@@ -41,7 +41,7 @@ export const OrderService = {
       order.pricing?.grandTotal || order.totalAmount || order.grandTotal || amount || 0;
 
     const warehouse = {
-      name: process.env.WAREHOUSE_NAME || "Plantasy Warehouse",
+      name: process.env.WAREHOUSE_NAME || "Plantasy",
       phone: process.env.WAREHOUSE_PHONE || "9999999999",
       addressLine1: process.env.WAREHOUSE_ADDRESS_LINE1 || "",
       addressLine2: process.env.WAREHOUSE_ADDRESS_LINE2 || "",
@@ -91,7 +91,7 @@ export const OrderService = {
     const addr = order.deliveryAddress || {};
     const phone = addr.phone || "";
     const name = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
-    const warehouseName = process.env.WAREHOUSE_NAME || "Plantasy Warehouse";
+    const warehouseName = process.env.WAREHOUSE_NAME || "Plantasy";
 
     let waybill: string = order.delhivery?.waybill || order.waybill || "";
     let trackingUrl: string = order.delhivery?.trackingUrl || order.trackingUrl || order.track || "";

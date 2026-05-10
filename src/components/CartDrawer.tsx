@@ -95,6 +95,7 @@ const CartDrawer: React.FC = () => {
   const [shippingCost, setShippingCost] = useState(50);
   const [estimatedDelivery, setEstimatedDelivery] = useState<string | null>(null);
   const [courierName, setCourierName] = useState("Delhivery");
+  const [serviceType, setServiceType] = useState<"Express" | "Standard" | null>(null);
 
   const [couponCode, setCouponCode] = useState("");
   const [couponChecking, setCouponChecking] = useState(false);
@@ -340,6 +341,7 @@ const CartDrawer: React.FC = () => {
       setShippingCost(Number(quote.shippingCost) || 50);
       setEstimatedDelivery(quote.estimatedDelivery || null);
       setCourierName(quote.courier || "Delhivery");
+      setServiceType((quote.serviceType as "Express" | "Standard") || null);
 
       if (quote.devMode) {
         toast.warning("Dev mode: using estimated delivery values");
@@ -1014,8 +1016,19 @@ const CartDrawer: React.FC = () => {
                   {/* Estimated delivery - always show with fallback */}
                   <div className="bg-green-900/30 border border-green-700/40 rounded-lg px-4 py-3 mb-3">
                     <p className="text-xs text-green-400 uppercase tracking-wide mb-0.5">Estimated Delivery</p>
-                    <p className="text-green-300 font-bold text-base">
-                      {estimatedDelivery || "3–7 Business Days"}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {serviceType && (
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          serviceType === "Express"
+                            ? "bg-orange-500/20 text-orange-300"
+                            : "bg-blue-500/20 text-blue-300"
+                        }`}>
+                          {serviceType === "Express" ? "⚡ Express (2–5 days)" : "📦 Standard (3–7 days)"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-green-300 font-bold text-base mt-1">
+                      {estimatedDelivery || (serviceType === "Express" ? "2–5 Business Days" : "3–7 Business Days")}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">via {courierName}</p>
                   </div>

@@ -163,9 +163,19 @@ export const DelhiveryService = {
     });
 
     const pickupText = await pickupRes.text();
-    if (!pickupRes.ok) {
-      console.error(`[Delhivery] Pickup scheduling failed ${pickupRes.status}:`, pickupText);
-      throw new Error(`Pickup scheduling failed: ${pickupText}`);
+    let pickupJson: any = null;
+    try { pickupJson = JSON.parse(pickupText); } catch { pickupJson = null; }
+
+    // pr_exist:true = pickup already scheduled for this date → treat as success
+    if (pickupJson?.pr_exist === true) {
+      console.log(`[Delhivery] Pickup already exists (OK):`, pickupText);
+      return;
+    }
+
+    if (!pickupRes.ok || pickupJson?.success === false) {
+      const reason = pickupJson?.prepaid || pickupJson?.error?.message || pickupText;
+      console.error(`[Delhivery] Pickup failed ${pickupRes.status}:`, pickupText);
+      throw new Error(`Pickup failed: ${reason}`);
     }
     console.log(`[Delhivery] Pickup scheduled OK:`, pickupText);
   },

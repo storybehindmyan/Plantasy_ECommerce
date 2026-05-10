@@ -100,23 +100,26 @@ export const OrderService = {
     let alreadyHadWaybill = !!waybill;
 
     if (!waybill) {
-      // Waybill not created yet (edge case) — create it now
+      // Waybill not created yet — create it first
       const amount = order.pricing?.grandTotal || 0;
       const result = await this.onOrderPaid(orderId, phone, name, amount);
       waybill = result.waybill;
       trackingUrl = result.trackingUrl;
-    } else {
-      // Waybill exists — schedule pickup now (Admin packed the order)
-      try {
-        await DelhiveryService.schedulePickup(waybill, warehouseName);
-        console.log(`Order ${orderId}: pickup scheduled for waybill ${waybill}`);
-      } catch (err: any) {
-        console.error(`Order ${orderId}: pickup scheduling failed (continuing):`, err.message);
-      }
+    }
+
+    // Always schedule pickup (whether waybill was just created or pre-existing)
+    let pickupError: string | null = null;
+    try {
+      await DelhiveryService.schedulePickup(waybill, warehouseName);
+      console.log(`Order ${orderId}: pickup scheduled for waybill ${waybill}`);
+    } catch (err: any) {
+      pickupError = err.message;
+      console.error(`Order ${orderId}: pickup scheduling failed:`, err.message);
     }
 
     await orderRef.update({
       orderStatus: "CONFIRMED",
+      pickupScheduled: !pickupError,
       "timestamps.confirmedAt": admin.firestore.FieldValue.serverTimestamp(),
       "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -124,7 +127,7 @@ export const OrderService = {
     // WhatsApp: order packed + tracking info
     await WhatsAppService.sendOrderShippingInfo(phone, name, orderId, waybill, trackingUrl);
 
-    return { waybill, trackingUrl, alreadyHadWaybill };
+    return { waybill, trackingUrl, alreadyHadWaybill, pickupError } as any;
   },
 
   async onOrderShipped(orderId: string): Promise<void> {

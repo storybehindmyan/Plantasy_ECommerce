@@ -191,7 +191,12 @@ const OrdersPage: React.FC = () => {
         const res = await logisticsService.generateWaybill(orderId);
         const waybill = (res as any).waybill || '';
         const trackingUrl = (res as any).trackingUrl || '';
-        toast.success(`✅ Order confirmed! Pickup scheduled. Waybill: ${waybill}`);
+        const pickupError = (res as any).pickupError || null;
+        if (pickupError) {
+          toast.warning(`⚠️ Order confirmed but pickup failed: ${pickupError}`);
+        } else {
+          toast.success(`✅ Order confirmed! Pickup scheduled. Waybill: ${waybill}`);
+        }
         setSelectedOrder((prev) => prev ? { ...prev, waybill, trackingUrl, orderStatus: 'CONFIRMED' } : prev);
       } else if (newStatus === 'shipped') {
         if (!order.waybill && !order.delhivery?.waybill) {

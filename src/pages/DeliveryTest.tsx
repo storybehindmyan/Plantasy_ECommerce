@@ -244,13 +244,21 @@ export default function DeliveryTest() {
         </div>
 
         {/* Legend */}
-        <div className="bg-white rounded-2xl border p-4 space-y-2 text-xs text-gray-500">
+        <div className="bg-white rounded-2xl border p-4 space-y-3 text-xs text-gray-500">
           <p className="font-semibold text-gray-700 text-sm">Service Type Legend</p>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-3"><ServiceBadge type="Express" /> <span>PIN code has "E" flag in Delhivery — faster delivery areas</span></div>
-            <div className="flex items-center gap-3"><ServiceBadge type="Standard" /> <span>PIN code has no "E" flag — standard delivery areas</span></div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <ServiceBadge type="Express" />
+              <span>PIN has Delhivery Express coverage (2–5 days). Depends on your Delhivery account/contract.</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <ServiceBadge type="Standard" />
+              <span>PIN has standard coverage (3–7 days). Even major cities show Standard if Express isn't enabled.</span>
+            </div>
           </div>
-          <p className="pt-1">⚠ <b>Dev Mode</b> = <code>DELHIVERY_API_KEY</code> not set on backend — using estimated fallback dates.</p>
+          <p className="text-gray-400 pt-1 border-t">
+            Express vs Standard is set by Delhivery per PIN based on your account — not by city size.
+          </p>
         </div>
 
       </div>

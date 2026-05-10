@@ -104,7 +104,7 @@ router.post("/quote", async (req: Request, res: Response) => {
 // GET /api/shipping/verify - Verify delivery availability for a pincode
 router.get("/verify/:pincode", async (req: Request, res: Response) => {
   try {
-    const { pincode } = req.params;
+    const { pincode } = req.params as { pincode: string };
 
     if (!pincode) {
       return res.status(400).json({ available: false, error: "Pincode is required" });

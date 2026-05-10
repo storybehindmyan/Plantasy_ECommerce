@@ -21,6 +21,8 @@ const Checkout: React.FC = () => {
 
   const [deliveryAddress, setDeliveryAddress] = useState<any | null>(null);
   const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [estimatedDelivery, setEstimatedDelivery] = useState<string | null>(null);
+  const [courierName, setCourierName] = useState("Delhivery");
   const [isLoadingDelivery, setIsLoadingDelivery] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
@@ -74,10 +76,13 @@ const Checkout: React.FC = () => {
           quantity: it.quantity,
         })));
         setDeliveryCharge(Number(quote.shippingCost) || 0);
+        setEstimatedDelivery(quote.estimatedDelivery || null);
+        setCourierName(quote.courier || "Delhivery");
       } catch (e) {
         console.error("Checkout quote preview failed, falling back:", e);
         const charges = await DelhiveryService.getDeliveryCharges(address.zip);
         setDeliveryCharge(charges);
+        setEstimatedDelivery(null);
       }
 
       toast.success("Address verified successfully!");
@@ -176,15 +181,50 @@ const Checkout: React.FC = () => {
                   </p>
                 </div>
 
+                {/* Delivery Details Card */}
+                <div className="mt-6 border border-green-200 bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">🚚</span>
+                    <h3 className="font-semibold text-gray-800">Delivery Details</h3>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Courier</span>
+                      <span className="font-medium text-gray-800">{courierName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping Charge</span>
+                      <span className="font-medium text-gray-800">
+                        {deliveryCharge === 0 ? (
+                          <span className="text-green-600 font-bold">FREE</span>
+                        ) : (
+                          `₹${deliveryCharge}`
+                        )}
+                      </span>
+                    </div>
+                    {estimatedDelivery && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Estimated Delivery</span>
+                        <span className="font-semibold text-green-700">{estimatedDelivery}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Payment Button */}
                 <button
                   onClick={handlePaymentClick}
                   disabled={paymentStatus === "pending"}
-                  className="w-full mt-8 px-6 py-4 bg-[#c16e41] text-white font-bold text-lg rounded-lg hover:bg-[#a05a32] disabled:opacity-50 transition-colors"
+                  className="w-full mt-6 px-6 py-4 bg-[#c16e41] text-white font-bold text-lg rounded-lg hover:bg-[#a05a32] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                 >
-                  {paymentStatus === "pending"
-                    ? "Processing Payment..."
-                    : "Proceed to Payment"}
+                  {paymentStatus === "pending" ? (
+                    "Processing Payment..."
+                  ) : (
+                    <>
+                      <span>Proceed to Payment</span>
+                      <span className="text-sm font-normal opacity-80">· ₹{(subtotal + tax + deliveryCharge).toFixed(0)}</span>
+                    </>
+                  )}
                 </button>
               </div>
             )}
@@ -202,6 +242,7 @@ const Checkout: React.FC = () => {
                 couponCode: "",
               }}
               deliveryCharge={deliveryCharge}
+              estimatedDelivery={estimatedDelivery}
             />
           </div>
         </div>

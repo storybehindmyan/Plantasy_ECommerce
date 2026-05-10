@@ -9,6 +9,7 @@ interface CheckoutSummaryProps {
   deliveryAddress?: any;
   pricing?: any;
   deliveryCharge?: number;
+  estimatedDelivery?: string | null;
 }
 
 const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
@@ -16,6 +17,7 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   deliveryAddress,
   pricing,
   deliveryCharge = 0,
+  estimatedDelivery,
 }) => {
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -94,10 +96,19 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
           </div>
         )}
 
-        {deliveryCharge > 0 && (
+        <div className="flex justify-between text-gray-600">
+          <span>Delivery Charge</span>
+          <span>
+            {deliveryCharge === 0
+              ? <span className="text-green-600 font-semibold">FREE</span>
+              : `₹${deliveryCharge.toFixed(2)}`}
+          </span>
+        </div>
+
+        {estimatedDelivery && (
           <div className="flex justify-between text-gray-600">
-            <span>Delivery Charge</span>
-            <span>₹{deliveryCharge.toFixed(2)}</span>
+            <span>Est. Delivery</span>
+            <span className="text-green-700 font-semibold text-xs text-right max-w-[130px]">{estimatedDelivery}</span>
           </div>
         )}
 

@@ -29,6 +29,18 @@ router.post("/paid", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/confirm", async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: "orderId is required" });
+    const result = await OrderService.onOrderConfirm(orderId);
+    return res.json({ success: true, ...result });
+  } catch (error: any) {
+    console.error("POST /api/orders/confirm error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router.post("/shipped", async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   ShoppingCart,
   DollarSign,
@@ -393,12 +394,12 @@ const DashboardPage: React.FC = () => {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Recent Orders</h2>
-          <a
-            href="/orders"
+          <Link
+            to="/orders"
             className="text-sm text-primary hover:underline"
           >
             View All
-          </a>
+          </Link>
         </div>
         <DataTable
           columns={orderColumns}

@@ -108,6 +108,22 @@ export const WhatsAppService = {
     ]);
   },
 
+  // Sent when admin confirms order — includes waybill + live tracking link
+  async sendOrderShippingInfo(
+    phone: string,
+    name: string,
+    orderId: string,
+    waybill: string,
+    trackingUrl: string
+  ): Promise<void> {
+    await sendTemplate(phone, "order_shipping_info", [
+      { type: "text", text: name },
+      { type: "text", text: orderId },
+      { type: "text", text: waybill },
+      { type: "text", text: trackingUrl },
+    ]);
+  },
+
   async sendOrderShipped(
     phone: string,
     orderId: string,

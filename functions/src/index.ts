@@ -6,6 +6,7 @@ import razorpayRouter from "./routes/razorpay";
 import shippingRouter from "./routes/shipping";
 import ordersRouter from "./routes/orders";
 import whatsappRouter from "./routes/whatsapp";
+import delhiveryRouter from "./routes/delhivery";
 
 admin.initializeApp();
 
@@ -25,6 +26,7 @@ app.use("/api/razorpay", razorpayRouter);
 app.use("/api/shipping", shippingRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/whatsapp", whatsappRouter);
+app.use("/api/delhivery", delhiveryRouter);
 
 app.get("/", (_req, res) => {
   res.json({ message: "Plantasy Backend API is running" });

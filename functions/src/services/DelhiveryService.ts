@@ -142,4 +142,39 @@ export const DelhiveryService = {
     const trackingUrl = `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;
     return { waybill, trackingUrl, raw: shipmentData };
   },
+
+  async trackShipment(waybill: string): Promise<any> {
+    if (USE_MOCK) {
+      return {
+        mock: true,
+        ShipmentData: [{
+          Shipment: {
+            Status: { Status: "In Transit" },
+            Scans: [
+              { ScanDetail: { Scan: "Picked Up", ScannedLocation: "Hyderabad", ScanDateTime: new Date(Date.now() - 172800000).toISOString() } },
+              { ScanDetail: { Scan: "In Transit", ScannedLocation: "Bengaluru Hub", ScanDateTime: new Date(Date.now() - 86400000).toISOString() } },
+              { ScanDetail: { Scan: "Out For Delivery", ScannedLocation: "Bengaluru City", ScanDateTime: new Date(Date.now() - 3600000).toISOString() } },
+            ],
+          },
+        }],
+      };
+    }
+
+    const res = await fetch(
+      `${DELHIVERY_BASE_URL}/api/v1/packages/json/?waybill=${encodeURIComponent(waybill)}&verbose=true`,
+      {
+        headers: {
+          Authorization: `Token ${DELHIVERY_API_KEY}`,
+          Accept: "application/json",
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Delhivery track failed: ${res.status} ${text}`);
+    }
+
+    return await res.json();
+  },
 };

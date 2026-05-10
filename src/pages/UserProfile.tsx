@@ -231,6 +231,7 @@ type OrderDoc = {
   labelUrl?: string;
   trackingEvents?: { status: string; message?: string; location?: string; timestamp: string }[];
   estimatedDelivery?: string;
+  deliveryMode?: string;
 };
 
 /* ---------------- My Orders ---------------- */
@@ -293,13 +294,14 @@ const MyOrders: React.FC = () => {
             pricing: data.pricing,
             timestamps: data.timestamps,
             track: data.track,
-            waybill: data.waybill,
+            waybill: data.waybill || data.delhivery?.waybill || "",
             courier: data.courier,
             shipmentStatus: data.shipmentStatus,
-            trackingUrl: data.trackingUrl,
+            trackingUrl: data.trackingUrl || data.delhivery?.trackingUrl || data.track || "",
             labelUrl: data.labelUrl,
             trackingEvents: Array.isArray(data.trackingEvents) ? data.trackingEvents : [],
             estimatedDelivery: data.estimatedDelivery,
+            deliveryMode: data.deliveryMode || "",
           });
         }
       }
@@ -546,58 +548,90 @@ const MyOrders: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* ── DELIVERY & TRACKING ── */}
                       <div>
-                        <p className="font-semibold mb-1">Tracking</p>
-                        {order.trackingUrl || order.track ? (
-                          <a
-                            href={order.trackingUrl || order.track}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[#c16e41] hover:underline text-xs md:text-sm"
-                          >
-                            Track Order
-                            <ChevronRight size={14} />
-                          </a>
+                        <p className="font-semibold mb-2">Delivery & Tracking</p>
+
+                        {/* Delivery mode + estimated delivery */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {order.deliveryMode && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              String(order.deliveryMode).toLowerCase().includes('express')
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                            }`}>
+                              🚚 {order.deliveryMode}
+                            </span>
+                          )}
+                          {order.estimatedDelivery && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-white/5 border border-white/10 text-gray-300">
+                              📅 Est. {order.estimatedDelivery}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Waybill + track link */}
+                        {(order.waybill || order.trackingUrl || order.track) ? (
+                          <div className="bg-white/5 border border-white/10 rounded-sm p-3 space-y-2">
+                            {order.waybill && (
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-xs text-gray-400">Waybill</p>
+                                  <p className="font-mono text-sm text-white">{order.waybill}</p>
+                                </div>
+                                <button
+                                  onClick={() => navigator.clipboard.writeText(order.waybill!).then(() => {})}
+                                  className="text-xs text-gray-400 hover:text-white border border-white/10 px-2 py-1 rounded"
+                                  title="Copy waybill"
+                                >Copy</button>
+                              </div>
+                            )}
+                            {(order.trackingUrl || order.track) && (
+                              <a
+                                href={order.trackingUrl || order.track}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[#c16e41] hover:underline text-xs"
+                              >
+                                View Live Tracking <ChevronRight size={12} />
+                              </a>
+                            )}
+                          </div>
                         ) : (
-                          <p className="text-xs text-gray-400">
-                            Tracking link not available.
-                          </p>
+                          <p className="text-xs text-gray-500 italic">Tracking details will appear once the order is confirmed.</p>
                         )}
                       </div>
 
-                      {/* Tracking timeline */}
-                      {Array.isArray(order.trackingEvents) &&
-                        order.trackingEvents.length > 0 && (
-                          <div>
-                            <p className="font-semibold mb-2">Shipment Updates</p>
-                            <div className="space-y-2 text-xs text-gray-300">
-                              {order.trackingEvents
-                                .slice()
-                                .sort((a, b) =>
-                                  String(b.timestamp).localeCompare(String(a.timestamp))
-                                )
-                                .slice(0, 6)
-                                .map((ev, idx) => (
-                                  <div
-                                    key={`${order.id}-ev-${idx}`}
-                                    className="border border-white/10 rounded-sm p-2 bg-white/5"
-                                  >
-                                    <p className="text-white/90 font-medium">
-                                      {ev.status}
-                                    </p>
-                                    {(ev.location || ev.message) && (
-                                      <p className="text-gray-400">
-                                        {[ev.location, ev.message].filter(Boolean).join(" · ")}
+                      {/* ── SHIPMENT EVENTS TIMELINE ── */}
+                      {Array.isArray(order.trackingEvents) && order.trackingEvents.length > 0 && (
+                        <div>
+                          <p className="font-semibold mb-2 text-sm">Shipment Updates</p>
+                          <div className="relative pl-4 border-l border-white/20 space-y-3">
+                            {order.trackingEvents
+                              .slice()
+                              .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))
+                              .slice(0, 6)
+                              .map((ev, idx) => (
+                                <div key={`${order.id}-ev-${idx}`} className="relative">
+                                  <div className="absolute -left-[1.05rem] top-1.5 w-2.5 h-2.5 rounded-full bg-[#c16e41]/80 border-2 border-black" />
+                                  <div className="bg-white/5 border border-white/10 rounded-sm px-3 py-2">
+                                    <p className="text-white/90 font-medium text-xs">{ev.status}</p>
+                                    {(ev.location || (ev as any).message) && (
+                                      <p className="text-gray-400 text-xs mt-0.5">
+                                        📍 {[ev.location, (ev as any).message].filter(Boolean).join(' · ')}
                                       </p>
                                     )}
-                                    <p className="text-gray-500">
-                                      {ev.timestamp ? new Date(ev.timestamp).toLocaleString() : ""}
-                                    </p>
+                                    {ev.timestamp && (
+                                      <p className="text-gray-500 text-xs mt-0.5">
+                                        {new Date(ev.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                      </p>
+                                    )}
                                   </div>
-                                ))}
-                            </div>
+                                </div>
+                              ))}
                           </div>
-                        )}
+                        </div>
+                      )}
 
                       <button
                         onClick={() => void handleGenerateInvoice(order)}

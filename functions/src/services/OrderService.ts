@@ -77,6 +77,43 @@ export const OrderService = {
     return { waybill, trackingUrl };
   },
 
+  // Admin-triggered confirmation — idempotent: skips waybill creation if already exists
+  async onOrderConfirm(orderId: string): Promise<{ waybill: string; trackingUrl: string; alreadyHadWaybill: boolean }> {
+    const orderRef = db().collection("orders").doc(orderId);
+    const snap = await orderRef.get();
+    if (!snap.exists) throw new Error(`Order ${orderId} not found`);
+
+    const order = snap.data() as any;
+    const existing = order.delhivery?.waybill || order.waybill;
+
+    if (existing) {
+      // Already confirmed with waybill — just ensure status is CONFIRMED
+      await orderRef.update({
+        orderStatus: "CONFIRMED",
+        "timestamps.confirmedAt": admin.firestore.FieldValue.serverTimestamp(),
+        "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return {
+        waybill: existing,
+        trackingUrl: order.delhivery?.trackingUrl || order.trackingUrl || order.track || `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(existing)}`,
+        alreadyHadWaybill: true,
+      };
+    }
+
+    // No waybill yet — create shipment and send WhatsApp
+    const addr = order.deliveryAddress || {};
+    const phone = addr.phone || "";
+    const name = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
+    const amount = order.pricing?.grandTotal || 0;
+
+    const { waybill, trackingUrl } = await this.onOrderPaid(orderId, phone, name, amount);
+
+    // Send WhatsApp shipping confirmation with tracking link
+    await WhatsAppService.sendOrderShippingInfo(phone, name, orderId, waybill, trackingUrl);
+
+    return { waybill, trackingUrl, alreadyHadWaybill: false };
+  },
+
   async onOrderShipped(orderId: string): Promise<void> {
     const snap = await db().collection("orders").doc(orderId).get();
     if (!snap.exists) return;

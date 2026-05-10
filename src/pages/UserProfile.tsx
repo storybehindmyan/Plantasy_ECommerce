@@ -200,6 +200,18 @@ type OrderPricing = {
   tax: number;
 };
 
+const getStatusLabel = (status: string): string => {
+  const map: Record<string, string> = {
+    PENDING: "Order Placed",
+    CONFIRMED: "Order Packed",
+    SHIPPED: "Shipped",
+    OUT_FOR_DELIVERY: "Out for Delivery",
+    DELIVERED: "Delivered",
+    CANCELLED: "Cancelled",
+  };
+  return map[status?.toUpperCase()] ?? status;
+};
+
 type OrderTimestamps = {
   confirmedAt?: Timestamp;
   deliveredAt?: Timestamp;
@@ -451,7 +463,7 @@ const MyOrders: React.FC = () => {
                       ? "border-red-500/50 text-red-400 bg-red-500/10"
                       : "border-gray-500 text-gray-300"
                   }`}>
-                    {status.toUpperCase()}
+                    {getStatusLabel(status)}
                   </span>
                   <span className="text-sm text-white font-medium">
                     ₹
@@ -670,7 +682,7 @@ const MyOrders: React.FC = () => {
                         {formatTs(order.timestamps?.orderedAt)}
                       </p>
                       <p>
-                        Confirmed at:{" "}
+                        Packed at:{" "}
                         {formatTs(order.timestamps?.confirmedAt)}
                       </p>
                       <p>

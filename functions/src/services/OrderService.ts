@@ -40,25 +40,28 @@ export const OrderService = {
     const invoiceValue =
       order.pricing?.grandTotal || order.totalAmount || order.grandTotal || amount || 0;
 
-    const { waybill, trackingUrl, raw } = await DelhiveryService.createShipmentAndPickup({
+    const warehouse = {
+      name: process.env.WAREHOUSE_NAME || "Plantasy Warehouse",
+      phone: process.env.WAREHOUSE_PHONE || "9999999999",
+      addressLine1: process.env.WAREHOUSE_ADDRESS_LINE1 || "",
+      addressLine2: process.env.WAREHOUSE_ADDRESS_LINE2 || "",
+      city: process.env.WAREHOUSE_CITY || "",
+      state: process.env.WAREHOUSE_STATE || "",
+      pincode: process.env.WAREHOUSE_PINCODE || "",
+    };
+
+    const { waybill, trackingUrl, raw } = await DelhiveryService.createShipment({
       orderId,
       invoiceValue,
       products,
       paymentMode: "Prepaid",
       customer,
-      warehouse: {
-        name: process.env.WAREHOUSE_NAME || "Plantasy Warehouse",
-        phone: process.env.WAREHOUSE_PHONE || "9999999999",
-        addressLine1: process.env.WAREHOUSE_ADDRESS_LINE1 || "",
-        addressLine2: process.env.WAREHOUSE_ADDRESS_LINE2 || "",
-        city: process.env.WAREHOUSE_CITY || "",
-        state: process.env.WAREHOUSE_STATE || "",
-        pincode: process.env.WAREHOUSE_PINCODE || "",
-      },
+      warehouse,
     });
 
+    // Status stays PENDING — admin will confirm when packed
     await orderRef.update({
-      orderStatus: "CONFIRMED",
+      orderStatus: "PENDING",
       "delhivery.waybill": waybill,
       "delhivery.trackingUrl": trackingUrl,
       "delhivery.raw": raw,
@@ -66,6 +69,7 @@ export const OrderService = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // WhatsApp: order placed confirmation
     await WhatsAppService.sendOrderConfirmed(
       customer.phone,
       customer.name,
@@ -73,45 +77,52 @@ export const OrderService = {
       invoiceValue
     );
 
-    console.log(`Order ${orderId} processed: waybill=${waybill}`);
+    console.log(`Order ${orderId}: waybill created=${waybill}, awaiting admin confirmation`);
     return { waybill, trackingUrl };
   },
 
-  // Admin-triggered confirmation — idempotent: skips waybill creation if already exists
+  // Admin confirms order (packed & ready) — schedules Delhivery pickup
   async onOrderConfirm(orderId: string): Promise<{ waybill: string; trackingUrl: string; alreadyHadWaybill: boolean }> {
     const orderRef = db().collection("orders").doc(orderId);
     const snap = await orderRef.get();
     if (!snap.exists) throw new Error(`Order ${orderId} not found`);
 
     const order = snap.data() as any;
-    const existing = order.delhivery?.waybill || order.waybill;
-
-    if (existing) {
-      // Already confirmed with waybill — just ensure status is CONFIRMED
-      await orderRef.update({
-        orderStatus: "CONFIRMED",
-        "timestamps.confirmedAt": admin.firestore.FieldValue.serverTimestamp(),
-        "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
-      });
-      return {
-        waybill: existing,
-        trackingUrl: order.delhivery?.trackingUrl || order.trackingUrl || order.track || `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(existing)}`,
-        alreadyHadWaybill: true,
-      };
-    }
-
-    // No waybill yet — create shipment and send WhatsApp
     const addr = order.deliveryAddress || {};
     const phone = addr.phone || "";
     const name = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
-    const amount = order.pricing?.grandTotal || 0;
+    const warehouseName = process.env.WAREHOUSE_NAME || "Plantasy Warehouse";
 
-    const { waybill, trackingUrl } = await this.onOrderPaid(orderId, phone, name, amount);
+    let waybill: string = order.delhivery?.waybill || order.waybill || "";
+    let trackingUrl: string = order.delhivery?.trackingUrl || order.trackingUrl || order.track || "";
+    let alreadyHadWaybill = !!waybill;
 
-    // Send WhatsApp shipping confirmation with tracking link
+    if (!waybill) {
+      // Waybill not created yet (edge case) — create it now
+      const amount = order.pricing?.grandTotal || 0;
+      const result = await this.onOrderPaid(orderId, phone, name, amount);
+      waybill = result.waybill;
+      trackingUrl = result.trackingUrl;
+    } else {
+      // Waybill exists — schedule pickup now (Admin packed the order)
+      try {
+        await DelhiveryService.schedulePickup(waybill, warehouseName);
+        console.log(`Order ${orderId}: pickup scheduled for waybill ${waybill}`);
+      } catch (err: any) {
+        console.error(`Order ${orderId}: pickup scheduling failed (continuing):`, err.message);
+      }
+    }
+
+    await orderRef.update({
+      orderStatus: "CONFIRMED",
+      "timestamps.confirmedAt": admin.firestore.FieldValue.serverTimestamp(),
+      "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // WhatsApp: order packed + tracking info
     await WhatsAppService.sendOrderShippingInfo(phone, name, orderId, waybill, trackingUrl);
 
-    return { waybill, trackingUrl, alreadyHadWaybill: false };
+    return { waybill, trackingUrl, alreadyHadWaybill };
   },
 
   async onOrderShipped(orderId: string): Promise<void> {

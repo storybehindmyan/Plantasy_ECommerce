@@ -169,9 +169,9 @@ const OrdersPage: React.FC = () => {
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus, order: Order) => {
     const confirmMsg = {
-      confirmed: `Confirm order ${orderId.slice(0, 8)}? This will auto-generate a Delhivery waybill and notify the customer on WhatsApp.`,
-      shipped:   `Mark order as SHIPPED? This will send a WhatsApp notification with tracking link.`,
-      delivered: `Mark order as DELIVERED? This will send a WhatsApp review/feedback message.`,
+      confirmed: `Mark as Confirmed (Packed & Ready)? This will schedule a Delhivery pickup for tomorrow and send the customer a WhatsApp tracking message.`,
+      shipped:   `Mark as SHIPPED? Use this after Delhivery has picked up the package. Sends WhatsApp notification to customer.`,
+      delivered: `Mark as DELIVERED? This will send a WhatsApp review/feedback message to the customer.`,
       cancelled: `Cancel this order? This cannot be undone.`,
       pending:   null,
     }[newStatus];
@@ -184,7 +184,7 @@ const OrdersPage: React.FC = () => {
         const res = await logisticsService.generateWaybill(orderId);
         const waybill = (res as any).waybill || '';
         const trackingUrl = (res as any).trackingUrl || '';
-        toast.success(`✅ Order confirmed! Waybill: ${waybill}`);
+        toast.success(`✅ Order confirmed! Pickup scheduled. Waybill: ${waybill}`);
         if (waybill) {
           // Refresh selected order with new waybill info
           setSelectedOrder((prev) => prev ? { ...prev, waybill, trackingUrl, orderStatus: 'CONFIRMED' } : prev);

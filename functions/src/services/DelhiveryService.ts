@@ -34,7 +34,8 @@ export interface CreateShipmentParams {
 }
 
 export const DelhiveryService = {
-  async createShipmentAndPickup(
+  // Creates the Delhivery shipment (waybill only, no pickup scheduling)
+  async createShipment(
     params: CreateShipmentParams
   ): Promise<{ waybill: string; trackingUrl: string; raw: any }> {
     const { orderId, invoiceValue, products, paymentMode, customer, warehouse } = params;
@@ -128,41 +129,52 @@ export const DelhiveryService = {
       throw new Error("No waybill in Delhivery response");
     }
 
+    const trackingUrl = `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;
+    return { waybill, trackingUrl, raw: shipmentData };
+  },
+
+  // Schedules a pickup for an existing waybill — call this when order is confirmed/packed
+  async schedulePickup(waybill: string, warehouseName: string): Promise<void> {
+    if (USE_MOCK) {
+      console.log(`[Delhivery MOCK] Pickup scheduled for waybill ${waybill}`);
+      return;
+    }
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const pickupDate = tomorrow.toISOString().split("T")[0];
 
-    try {
-      const pickupBody = {
-        pickup_time: `${pickupDate} 10:00:00`,
-        pickup_date: pickupDate,
-        pickup_location: warehouse.name,
-        expected_package_count: 1,
-        shipment_id: [waybill],
-      };
-      console.log(`[Delhivery] Scheduling pickup for waybill ${waybill}:`, JSON.stringify(pickupBody));
+    const pickupBody = {
+      pickup_time: `${pickupDate} 10:00:00`,
+      pickup_date: pickupDate,
+      pickup_location: warehouseName,
+      expected_package_count: 1,
+      shipment_id: [waybill],
+    };
+    console.log(`[Delhivery] Scheduling pickup for waybill ${waybill}:`, JSON.stringify(pickupBody));
 
-      const pickupRes = await fetch(`${DELHIVERY_BASE_URL}/fm/request/new/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${DELHIVERY_API_KEY}`,
-        },
-        body: JSON.stringify(pickupBody),
-      });
+    const pickupRes = await fetch(`${DELHIVERY_BASE_URL}/fm/request/new/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${DELHIVERY_API_KEY}`,
+      },
+      body: JSON.stringify(pickupBody),
+    });
 
-      const pickupText = await pickupRes.text();
-      if (!pickupRes.ok) {
-        console.error(`[Delhivery] Pickup scheduling failed ${pickupRes.status}:`, pickupText);
-      } else {
-        console.log(`[Delhivery] Pickup scheduled OK:`, pickupText);
-      }
-    } catch (err) {
-      console.error("[Delhivery] Pickup request exception (shipment still created):", err);
+    const pickupText = await pickupRes.text();
+    if (!pickupRes.ok) {
+      console.error(`[Delhivery] Pickup scheduling failed ${pickupRes.status}:`, pickupText);
+      throw new Error(`Pickup scheduling failed: ${pickupText}`);
     }
+    console.log(`[Delhivery] Pickup scheduled OK:`, pickupText);
+  },
 
-    const trackingUrl = `https://www.delhivery.com/tracking?waybill=${encodeURIComponent(waybill)}`;
-    return { waybill, trackingUrl, raw: shipmentData };
+  // Legacy alias — kept for backward compat
+  async createShipmentAndPickup(
+    params: CreateShipmentParams
+  ): Promise<{ waybill: string; trackingUrl: string; raw: any }> {
+    return this.createShipment(params);
   },
 
   async trackShipment(waybill: string): Promise<any> {

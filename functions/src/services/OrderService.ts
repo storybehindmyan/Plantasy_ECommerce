@@ -54,7 +54,6 @@ export const OrderService = {
         city: process.env.WAREHOUSE_CITY || "",
         state: process.env.WAREHOUSE_STATE || "",
         pincode: process.env.WAREHOUSE_PINCODE || "",
-        clientWarehouseCode: process.env.WAREHOUSE_CLIENT_CODE || "DEFAULT_WH",
       },
     });
 

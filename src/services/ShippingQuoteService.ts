@@ -8,7 +8,11 @@ export type ShippingQuoteResponse = {
   courier: "Delhivery";
   shippingCost: number;
   estimatedDelivery: string;
+  serviceable: boolean;
+  serviceType?: string;
+  devMode?: boolean;
   billableWeightGrams?: number;
+  error?: string;
 };
 
 export const ShippingQuoteService = {
@@ -19,12 +23,13 @@ export const ShippingQuoteService = {
       body: JSON.stringify({ pincode, items }),
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || "Failed to fetch shipping quote");
+    const data = (await res.json()) as any;
+
+    if (!res.ok || data.serviceable === false) {
+      throw new Error(data.error || "Delivery not available for this location");
     }
 
-    return (await res.json()) as any;
+    return data as ShippingQuoteResponse;
   },
 };
 

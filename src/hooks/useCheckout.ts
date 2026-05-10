@@ -16,6 +16,8 @@ import type { CartItem } from "../context/CartContext";
 import {getDoc, setDoc, doc} from "firebase/firestore"; 
 import { db } from "../firebase/firebaseConfig";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 interface CheckoutParams {
   deliveryAddress: any;
   cartItems: CartItem[];
@@ -45,35 +47,37 @@ export const useCheckout = () => {
       const orderId = generateOrderId();
       setCurrentOrderId(orderId);
 
-      // 2. Quote shipping (server-first). Fallback to client mock if backend is unavailable.
-      let deliveryCharge = 0;
+      // 2. Use shippingCharge from caller if provided; otherwise fetch from API
+      let deliveryCharge = Number(params.pricing?.shippingCharge) || 0;
       let estimatedDelivery: string | null = null;
-      try {
-        const quote = await ShippingQuoteService.quote(
-          params.deliveryAddress.zip,
-          params.cartItems.map((it) => ({
-            productId: it.id,
-            quantity: it.quantity,
-          }))
-        );
-        deliveryCharge = Number(quote.shippingCost) || 0;
-        estimatedDelivery = quote.estimatedDelivery || null;
-      } catch (e) {
-        console.error("Shipping quote failed, falling back:", e);
-        const deliveryAvailable = await DelhiveryService.verifyDeliveryAvailability(
-          params.deliveryAddress.zip
-        );
-        if (!deliveryAvailable) {
-          toast.error("Delivery not available for this location");
-          setPaymentStatus("failed");
-          return;
+      if (!deliveryCharge) {
+        try {
+          const quote = await ShippingQuoteService.quote(
+            params.deliveryAddress.zip,
+            params.cartItems.map((it) => ({
+              productId: it.id,
+              quantity: it.quantity,
+            }))
+          );
+          deliveryCharge = Number(quote.shippingCost) || 0;
+          estimatedDelivery = quote.estimatedDelivery || null;
+        } catch (e) {
+          console.error("Shipping quote failed, falling back:", e);
+          const deliveryAvailable = await DelhiveryService.verifyDeliveryAvailability(
+            params.deliveryAddress.zip
+          );
+          if (!deliveryAvailable) {
+            toast.error("Delivery not available for this location");
+            setPaymentStatus("failed");
+            return;
+          }
+          deliveryCharge = await DelhiveryService.getDeliveryCharges(
+            params.deliveryAddress.zip
+          );
         }
-        deliveryCharge = await DelhiveryService.getDeliveryCharges(
-          params.deliveryAddress.zip
-        );
       }
 
-      // 3. Compute final amount
+      // 3. Compute final amount using exact values from caller
       const finalAmount =
         Number(params.pricing?.subTotal || 0) +
         Number(params.pricing?.tax || 0) -
@@ -232,7 +236,7 @@ export const useCheckout = () => {
       // 5. Trigger Delhivery shipment + WhatsApp confirmation via backend
       try {
         const addr = params.deliveryAddress || {};
-        await fetch("/api/orders/paid", {
+        await fetch(`${API_URL}/api/orders/paid`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -283,7 +287,7 @@ export const useCheckout = () => {
 
     try {
       if (phone) {
-        await fetch("/api/whatsapp/payment-failed", {
+        await fetch(`${API_URL}/api/whatsapp/payment-failed`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -324,21 +324,28 @@ const CartDrawer: React.FC = () => {
         return;
       }
 
-      // Delivery available — fetch shipping quote
+      // Fetch real-time shipping quote — block if unavailable
+      let quote;
       try {
-        const quote = await ShippingQuoteService.quote(
+        quote = await ShippingQuoteService.quote(
           selectedAddr.zip,
           cart.map((it) => ({ productId: it.id, quantity: it.quantity }))
         );
-        setShippingCost(Number(quote.shippingCost) || 50);
-        setEstimatedDelivery(quote.estimatedDelivery || null);
-        setCourierName(quote.courier || "Delhivery");
-      } catch {
-        setShippingCost(50);
-        setEstimatedDelivery(null);
+      } catch (quoteErr: any) {
+        toast.error(quoteErr?.message || "Delivery check failed. Please try again.");
+        setVerifyingDelivery(false);
+        return;
       }
 
-      toast.success("Delivery available for this location!");
+      setShippingCost(Number(quote.shippingCost) || 50);
+      setEstimatedDelivery(quote.estimatedDelivery || null);
+      setCourierName(quote.courier || "Delhivery");
+
+      if (quote.devMode) {
+        toast.warning("Dev mode: using estimated delivery values");
+      } else {
+        toast.success(`Delivery available — ${quote.serviceType || "Standard"}`);
+      }
       setIsAddressModalOpen(false);
       setIsCouponModalOpen(true);
     } catch (error) {
@@ -484,6 +491,32 @@ const CartDrawer: React.FC = () => {
     const discount = appliedCoupon?.discountAmount || 0;
     const shippingCharge = shippingCost;
     const grandTotal = subtotal + tax + shippingCharge - discount;
+
+    // Verify delivery required fields
+    const missingFields: string[] = [];
+    if (!selectedAddr.firstName && !selectedAddr.lastName) missingFields.push("name");
+    if (!selectedAddr.phone) missingFields.push("phone");
+    if (!selectedAddr.addressLine1) missingFields.push("addressLine1");
+    if (!selectedAddr.city) missingFields.push("city");
+    if (!selectedAddr.region) missingFields.push("state/region");
+    if (!selectedAddr.zip) missingFields.push("pincode");
+
+    console.log("=== Delivery Data Check ===");
+    console.log("Address:", {
+      name: `${selectedAddr.firstName} ${selectedAddr.lastName}`,
+      phone: selectedAddr.phone,
+      addressLine1: selectedAddr.addressLine1,
+      city: selectedAddr.city,
+      state: selectedAddr.region,
+      pincode: selectedAddr.zip,
+    });
+    console.log("Shipping:", { shippingCost, estimatedDelivery, courierName });
+    console.log("Pricing:", { subtotal, tax, discount, shippingCharge, grandTotal });
+    if (missingFields.length > 0) {
+      console.warn("Missing delivery fields:", missingFields);
+      toast.error(`Missing delivery info: ${missingFields.join(", ")}`);
+      return;
+    }
 
     // Close modals
     setIsCouponModalOpen(false);
@@ -978,14 +1011,14 @@ const CartDrawer: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Estimated delivery */}
-                  {estimatedDelivery && (
-                    <div className="bg-green-900/30 border border-green-700/40 rounded-lg px-4 py-3 mb-3">
-                      <p className="text-xs text-green-400 uppercase tracking-wide mb-0.5">Estimated Delivery</p>
-                      <p className="text-green-300 font-bold text-base">{estimatedDelivery}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">via {courierName}</p>
-                    </div>
-                  )}
+                  {/* Estimated delivery - always show with fallback */}
+                  <div className="bg-green-900/30 border border-green-700/40 rounded-lg px-4 py-3 mb-3">
+                    <p className="text-xs text-green-400 uppercase tracking-wide mb-0.5">Estimated Delivery</p>
+                    <p className="text-green-300 font-bold text-base">
+                      {estimatedDelivery || "3–7 Business Days"}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">via {courierName}</p>
+                  </div>
 
                   <div className="border-t border-white/10 pt-3 text-sm">
                     <div className="flex justify-between mb-1">

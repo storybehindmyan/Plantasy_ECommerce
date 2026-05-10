@@ -28,7 +28,7 @@ export interface CreateShipmentParams {
     city: string;
     state: string;
     pincode: string;
-    clientWarehouseCode: string;
+    clientWarehouseCode?: string;
   };
 }
 
@@ -48,17 +48,8 @@ export const DelhiveryService = {
       };
     }
 
-    const shipmentPayload = {
-      pickup_location: {
-        name: warehouse.name,
-        add: warehouse.addressLine1,
-        add2: warehouse.addressLine2 ?? "",
-        city: warehouse.city,
-        state: warehouse.state,
-        country: "India",
-        pin: warehouse.pincode,
-        phone: warehouse.phone,
-      },
+    // Standard Delhivery Express API uses form-encoded body + Token auth
+    const expressPayload = {
       shipments: [
         {
           name: customer.name,
@@ -75,17 +66,33 @@ export const DelhiveryService = {
           products_desc: products.map((p) => p.name).join(", "),
           total_amount: invoiceValue,
           cod_amount: paymentMode === "COD" ? invoiceValue : 0,
+          return_pin: warehouse.pincode,
+          return_city: warehouse.city,
+          return_phone: warehouse.phone,
+          return_add: warehouse.addressLine1,
+          return_state: warehouse.state,
+          return_country: "India",
         },
       ],
+      pickup_location: {
+        name: warehouse.name,
+        add: warehouse.addressLine1,
+        city: warehouse.city,
+        pin: warehouse.pincode,
+        country: "India",
+        phone: warehouse.phone,
+      },
     };
 
-    const shipmentRes = await fetch(`${DELHIVERY_BASE_URL}/shipments`, {
+    const formBody = `format=json&data=${encodeURIComponent(JSON.stringify(expressPayload))}`;
+
+    const shipmentRes = await fetch(`${DELHIVERY_BASE_URL}/api/cmu/create.json`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${DELHIVERY_API_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Token ${DELHIVERY_API_KEY}`,
       },
-      body: JSON.stringify(shipmentPayload),
+      body: formBody,
     });
 
     if (!shipmentRes.ok) {
@@ -95,11 +102,12 @@ export const DelhiveryService = {
 
     const shipmentData = (await shipmentRes.json()) as any;
     const waybill =
-      shipmentData?.shipments?.[0]?.waybill ||
       shipmentData?.packages?.[0]?.waybill ||
+      shipmentData?.shipments?.[0]?.waybill ||
       shipmentData?.waybill;
 
     if (!waybill) {
+      console.error("Delhivery response:", JSON.stringify(shipmentData));
       throw new Error("No waybill in Delhivery response");
     }
 
@@ -108,18 +116,18 @@ export const DelhiveryService = {
     const pickupDate = tomorrow.toISOString().split("T")[0];
 
     try {
-      const pickupRes = await fetch(`${DELHIVERY_BASE_URL}/pickup_requests`, {
+      const pickupRes = await fetch(`${DELHIVERY_BASE_URL}/fm/request/new/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${DELHIVERY_API_KEY}`,
+          Authorization: `Token ${DELHIVERY_API_KEY}`,
         },
         body: JSON.stringify({
-          client_warehouse: warehouse.clientWarehouseCode,
+          pickup_time: `${pickupDate} 10:00:00`,
           pickup_date: pickupDate,
-          start_time: "09:00:00",
+          pickup_location: warehouse.name,
           expected_package_count: 1,
-          shipments: [{ awb: waybill, order_id: orderId }],
+          shipment_id: [waybill],
         }),
       });
 

@@ -440,7 +440,17 @@ const MyOrders: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-xs px-2 py-1 rounded-full border border-gray-500 text-gray-300">
+                  <span className={`text-xs px-2 py-1 rounded-full border font-semibold ${
+                    status === "DELIVERED"
+                      ? "border-green-500/50 text-green-400 bg-green-500/10"
+                      : status === "SHIPPED" || status === "OUT_FOR_DELIVERY"
+                      ? "border-blue-500/50 text-blue-400 bg-blue-500/10"
+                      : status === "CONFIRMED"
+                      ? "border-amber-500/50 text-amber-400 bg-amber-500/10"
+                      : status === "CANCELLED"
+                      ? "border-red-500/50 text-red-400 bg-red-500/10"
+                      : "border-gray-500 text-gray-300"
+                  }`}>
                     {status.toUpperCase()}
                   </span>
                   <span className="text-sm text-white font-medium">

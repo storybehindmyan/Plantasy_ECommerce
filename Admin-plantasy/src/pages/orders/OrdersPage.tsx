@@ -225,6 +225,24 @@ const OrdersPage: React.FC = () => {
     }
   };
 
+  const handleGenerateWaybill = async (order: Order) => {
+    if (!window.confirm(`Generate waybill for order ${order.orderId || order.id.slice(0, 8)}?`)) return;
+    setActionLoading(true);
+    try {
+      const res = await logisticsService.generateWaybill(order.id);
+      const waybill = (res as any).waybill || '';
+      const trackingUrl = (res as any).trackingUrl || '';
+      if (!waybill) throw new Error('No waybill returned from Delhivery');
+      toast.success(`✅ Waybill generated: ${waybill}`);
+      setSelectedOrder((prev) => prev ? { ...prev, waybill, trackingUrl } : prev);
+      await fetchOrders();
+    } catch (err: any) {
+      toast.error(`Waybill failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSyncTracking = async (order: Order) => {
     const waybill = order.waybill || order.delhivery?.waybill;
     if (!waybill) {
@@ -627,9 +645,19 @@ const OrdersPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>No waybill yet. Change status to <strong>Confirmed</strong> to auto-generate one.</span>
+                  <div className="flex flex-col gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-700 text-sm">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>No waybill yet for this order.</span>
+                    </div>
+                    <button
+                      onClick={() => handleGenerateWaybill(selectedOrder)}
+                      disabled={actionLoading}
+                      className="self-start flex items-center gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                    >
+                      <Truck className="w-3.5 h-3.5" />
+                      {actionLoading ? 'Generating…' : 'Generate Waybill Now'}
+                    </button>
                   </div>
                 )}
 

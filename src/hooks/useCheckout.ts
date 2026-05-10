@@ -23,6 +23,8 @@ interface CheckoutParams {
   cartItems: CartItem[];
   totalAmount: number;
   pricing: any;
+  estimatedDelivery?: string;
+  deliveryMode?: string;
 }
 
 export const useCheckout = () => {
@@ -160,7 +162,7 @@ export const useCheckout = () => {
         city: addr.city ?? "",
         region: addr.region ?? "",
         zip: addr.zip ?? "",
-        country: addr.country ?? "", // <-- no undefined
+        country: addr.country || addr.Country || "",
         phone: addr.phone ?? "",
       };
 
@@ -199,7 +201,7 @@ export const useCheckout = () => {
           shippingCharge: deliveryCharge,
           grandTotal: finalAmount,
         },
-        estimatedDelivery: estimatedDelivery || "",
+        estimatedDelivery: params.estimatedDelivery || estimatedDelivery || "",
         timestamps: {
           orderedAt: Timestamp.now(),
           confirmedAt: Timestamp.now(),
@@ -207,6 +209,7 @@ export const useCheckout = () => {
           deliveredAt: null,
           updatedAt: Timestamp.now(),
         },
+        deliveryMode: params.deliveryMode || "Standard",
         track: "",
       };
 

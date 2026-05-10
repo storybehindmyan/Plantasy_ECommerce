@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
+import { X, Trash2, Plus, Minus, ShoppingBag, Edit3, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -14,6 +14,8 @@ import {
   query,
   where,
   addDoc,
+  updateDoc,
+  doc,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
@@ -50,6 +52,14 @@ type CouponDoc = {
   applicableCategories?: string[];
   applicableProducts?: string[];
 };
+
+function getExpressEstimateDates(): string {
+  const today = new Date();
+  const min = new Date(today); min.setDate(today.getDate() + 2);
+  const max = new Date(today); max.setDate(today.getDate() + 5);
+  const fmt = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return `${fmt(min)} - ${fmt(max)}`;
+}
 
 const CartDrawer: React.FC = () => {
   const {
@@ -91,11 +101,16 @@ const CartDrawer: React.FC = () => {
   });
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [useSameAddressForBilling, setUseSameAddressForBilling] = useState(true);
+  const [billingAddressId, setBillingAddressId] = useState<string>("");
 
   const [shippingCost, setShippingCost] = useState(50);
   const [estimatedDelivery, setEstimatedDelivery] = useState<string | null>(null);
   const [courierName, setCourierName] = useState("Delhivery");
-  const [serviceType, setServiceType] = useState<"Express" | "Standard" | null>(null);
+  const [selectedDeliveryMode, setSelectedDeliveryMode] = useState<"Standard" | "Express">("Standard");
+  const [standardShippingCost, setStandardShippingCost] = useState(50);
+  const [standardEstimate, setStandardEstimate] = useState<string | null>(null);
 
   const [couponCode, setCouponCode] = useState("");
   const [couponChecking, setCouponChecking] = useState(false);
@@ -191,7 +206,7 @@ const CartDrawer: React.FC = () => {
         const data = d.data() as any;
         list.push({
           id: d.id,
-          country: data.country,
+          country: data.country || data.Country || "India",
           addressLine1: data.addressLine1,
           addressLine2: data.addressLine2,
           city: data.city,
@@ -228,6 +243,32 @@ const CartDrawer: React.FC = () => {
     setIsAddressModalOpen(false);
   };
 
+  const resetAddressForm = () => {
+    setNewAddress({ firstName: "", lastName: "", phone: "", addressLine1: "", addressLine2: "", city: "", region: "", zip: "", Country: "India", isDefault: false });
+    setEditingAddressId(null);
+    setAddressError(null);
+    setShowNewAddressForm(false);
+  };
+
+  const handleDiscardForm = () => resetAddressForm();
+
+  const handleStartEditAddress = (addr: AddressDoc) => {
+    setNewAddress({
+      firstName: addr.firstName,
+      lastName: addr.lastName,
+      phone: addr.phone,
+      addressLine1: addr.addressLine1,
+      addressLine2: addr.addressLine2 || "",
+      city: addr.city,
+      region: addr.region,
+      zip: addr.zip,
+      Country: addr.country || "India",
+      isDefault: addr.isDefault,
+    });
+    setEditingAddressId(addr.id);
+    setShowNewAddressForm(true);
+  };
+
   const handleSaveNewAddress = async () => {
     setAddressError(null);
     if (
@@ -246,14 +287,10 @@ const CartDrawer: React.FC = () => {
       setAddressError("You must be logged in.");
       return;
     }
-
-    // Validate ZIP code (6 digits for India)
     if (!/^\d{6}$/.test(newAddress.zip)) {
       setAddressError("Please enter a valid 6-digit PIN code.");
       return;
     }
-
-    // Validate phone (10 digits)
     if (!/^\d{10}$/.test(newAddress.phone.replace(/\D/g, ""))) {
       setAddressError("Please enter a valid 10-digit phone number.");
       return;
@@ -262,31 +299,28 @@ const CartDrawer: React.FC = () => {
     try {
       setSavingAddress(true);
       const addrCol = collection(db, "users", uid, "addresses");
-      const docRef = await addDoc(addrCol, {
-        ...newAddress,
-        createdAt: serverTimestamp(),
-      });
-      const newDoc: AddressDoc = {
-        id: docRef.id,
-        ...newAddress,
-        country: ""
-      };
-      setAddresses((prev) => [...prev, newDoc]);
-      setSelectedAddressId(docRef.id);
-      setShowNewAddressForm(false);
-      setNewAddress({
-        firstName: "",
-        lastName: "",
-        phone: "",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        region: "",
-        zip: "",
-        Country: "India",
-        isDefault: false,
-      });
-      toast.success("Address saved successfully!");
+
+      if (editingAddressId) {
+        // Update existing address
+        const addrRef = doc(addrCol, editingAddressId);
+        await updateDoc(addrRef, { ...newAddress, updatedAt: serverTimestamp() });
+        setAddresses((prev) =>
+          prev.map((a) =>
+            a.id === editingAddressId
+              ? { ...a, ...newAddress, country: newAddress.Country }
+              : a
+          )
+        );
+        toast.success("Address updated!");
+      } else {
+        // Add new address
+        const docRef = await addDoc(addrCol, { ...newAddress, createdAt: serverTimestamp() });
+        const newDoc: AddressDoc = { id: docRef.id, ...newAddress, country: newAddress.Country };
+        setAddresses((prev) => [...prev, newDoc]);
+        setSelectedAddressId(docRef.id);
+        toast.success("Address saved!");
+      }
+      resetAddressForm();
     } catch (err) {
       console.error("Error saving address:", err);
       setAddressError("Failed to save address. Please try again.");
@@ -338,10 +372,13 @@ const CartDrawer: React.FC = () => {
         return;
       }
 
-      setShippingCost(Number(quote.shippingCost) || 50);
+      const baseCost = Number(quote.shippingCost) || 50;
+      setStandardShippingCost(baseCost);
+      setShippingCost(baseCost);
+      setStandardEstimate(quote.estimatedDelivery || null);
       setEstimatedDelivery(quote.estimatedDelivery || null);
       setCourierName(quote.courier || "Delhivery");
-      setServiceType((quote.serviceType as "Express" | "Standard") || null);
+      setSelectedDeliveryMode("Standard");
 
       if (quote.devMode) {
         toast.warning("Dev mode: using estimated delivery values");
@@ -528,6 +565,8 @@ const CartDrawer: React.FC = () => {
       deliveryAddress: selectedAddr,
       cartItems: cart,
       totalAmount: grandTotal,
+      estimatedDelivery: estimatedDelivery || "",
+      deliveryMode: selectedDeliveryMode,
       pricing: {
         subTotal: subtotal,
         tax,
@@ -702,238 +741,133 @@ const CartDrawer: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Address selection + add new address with delivery verification */}
+      {/* Address selection modal */}
       <AnimatePresence>
         {isAddressModalOpen && (
           <>
-            <motion.div
-              className="fixed inset-0 bg-black/50 z-50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeAddressModal}
-            />
-            <motion.div
-              className="fixed inset-0 flex items-center justify-center z-50 px-4"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
-              <div
-                className="bg-[#050505] border border-white/10 rounded-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-white font-serif text-lg">
-                    Select delivery address
-                  </h3>
-                  <button
-                    onClick={closeAddressModal}
-                    className="p-1 rounded-full hover:bg-white/10"
-                  >
-                    <X size={18} className="text-white" />
-                  </button>
+            <motion.div className="fixed inset-0 bg-black/50 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeAddressModal} />
+            <motion.div className="fixed inset-0 flex items-center justify-center z-50 px-4" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
+              <div className="bg-[#050505] border border-white/10 rounded-xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className="flex justify-between items-center mb-5">
+                  <h3 className="text-white font-serif text-lg">Delivery Details</h3>
+                  <button onClick={closeAddressModal} className="p-1 rounded-full hover:bg-white/10"><X size={18} className="text-white" /></button>
                 </div>
 
                 {loadingAddresses ? (
-                  <p className="text-gray-400 text-sm">
-                    Loading your addresses...
-                  </p>
+                  <p className="text-gray-400 text-sm">Loading your addresses...</p>
                 ) : (
                   <>
-                    {addresses.length > 0 && (
-                      <div className="max-h-48 overflow-y-auto space-y-3 mb-4">
-                        {addresses.map((addr) => {
-                          const selected = selectedAddressId === addr.id;
-                          return (
-                            <button
-                              key={addr.id}
-                              type="button"
-                              onClick={() => setSelectedAddressId(addr.id)}
-                              className={`w-full text-left border rounded-md px-3 py-2 text-xs md:text-sm ${
-                                selected
-                                  ? "border-[#c16e41] bg-[#c16e41]/10"
-                                  : "border-white/15 hover:border-white/40"
-                              }`}
-                            >
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-white font-medium">
-                                  {addr.firstName} {addr.lastName}
-                                </span>
-                                {addr.isDefault && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                    Default
-                                  </span>
-                                )}
+                    {/* ── SHIPPING ADDRESS ── */}
+                    <div className="mb-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-[#c16e41] mb-3">Shipping Address</p>
+
+                      {addresses.length > 0 && !showNewAddressForm && (
+                        <div className="space-y-2 mb-3 max-h-52 overflow-y-auto pr-1">
+                          {addresses.map((addr) => {
+                            const selected = selectedAddressId === addr.id;
+                            return (
+                              <div key={addr.id} className={`flex items-start gap-2 border rounded-lg px-3 py-2 cursor-pointer transition ${selected ? "border-[#c16e41] bg-[#c16e41]/10" : "border-white/15 hover:border-white/30"}`} onClick={() => setSelectedAddressId(addr.id)}>
+                                <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? "border-[#c16e41]" : "border-white/30"}`}>
+                                  {selected && <div className="w-2 h-2 rounded-full bg-[#c16e41]" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-white text-xs font-medium truncate">{addr.firstName} {addr.lastName}</span>
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                      {addr.isDefault && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Default</span>}
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); handleStartEditAddress(addr); }} className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition">
+                                        <Edit3 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-400 text-[11px] truncate">{addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}</p>
+                                  <p className="text-gray-500 text-[11px]">{addr.city}, {addr.region} – {addr.zip}</p>
+                                  <p className="text-gray-500 text-[11px]">{addr.phone}</p>
+                                </div>
                               </div>
-                              <p className="text-gray-300">
-                                {addr.addressLine1}
-                                {addr.addressLine2 && `, ${addr.addressLine2}`}
-                              </p>
-                              <p className="text-gray-400">
-                                {addr.city}, {addr.region} {addr.zip}
-                              </p>
-                              <p className="text-gray-400">
-                                {addr.country} • {addr.phone}
-                              </p>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Add / Edit address form */}
+                      {showNewAddressForm ? (
+                        <div className="border border-white/15 rounded-lg p-3 mb-3 space-y-2">
+                          <p className="text-xs font-semibold text-gray-300 mb-2">{editingAddressId ? "Edit Address" : "New Address"}</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 text-white placeholder:text-gray-500 text-xs" placeholder="First name *" value={newAddress.firstName} onChange={(e) => setNewAddress((p) => ({ ...p, firstName: e.target.value }))} />
+                            <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 text-white placeholder:text-gray-500 text-xs" placeholder="Last name *" value={newAddress.lastName} onChange={(e) => setNewAddress((p) => ({ ...p, lastName: e.target.value }))} />
+                          </div>
+                          <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 w-full text-white placeholder:text-gray-500 text-xs" placeholder="Phone (10 digits) *" inputMode="numeric" maxLength={10} value={newAddress.phone} onChange={(e) => setNewAddress((p) => ({ ...p, phone: e.target.value.replace(/\D/g, "") }))} />
+                          <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 w-full text-white placeholder:text-gray-500 text-xs" placeholder="Address line 1 *" value={newAddress.addressLine1} onChange={(e) => setNewAddress((p) => ({ ...p, addressLine1: e.target.value }))} />
+                          <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 w-full text-white placeholder:text-gray-500 text-xs" placeholder="Address line 2 (optional)" value={newAddress.addressLine2} onChange={(e) => setNewAddress((p) => ({ ...p, addressLine2: e.target.value }))} />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 text-white placeholder:text-gray-500 text-xs" placeholder="City *" value={newAddress.city} onChange={(e) => setNewAddress((p) => ({ ...p, city: e.target.value }))} />
+                            <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 text-white placeholder:text-gray-500 text-xs" placeholder="State/Region *" value={newAddress.region} onChange={(e) => setNewAddress((p) => ({ ...p, region: e.target.value }))} />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 text-white placeholder:text-gray-500 text-xs" placeholder="PIN code (6 digits) *" inputMode="numeric" maxLength={6} value={newAddress.zip} onChange={(e) => setNewAddress((p) => ({ ...p, zip: e.target.value.replace(/\D/g, "") }))} />
+                            <input className="bg-transparent border border-white/20 rounded px-2 py-1.5 text-white placeholder:text-gray-500 text-xs" placeholder="Country" value={newAddress.Country} onChange={(e) => setNewAddress((p) => ({ ...p, Country: e.target.value }))} />
+                          </div>
+                          {addressError && <p className="text-[11px] text-red-400">{addressError}</p>}
+                          <div className="flex justify-between items-center pt-1">
+                            <button type="button" onClick={handleDiscardForm} className="text-xs text-gray-400 hover:text-white transition px-2 py-1 rounded hover:bg-white/10">Discard</button>
+                            <button type="button" disabled={savingAddress} onClick={handleSaveNewAddress} className="px-4 py-1.5 text-xs bg-[#c16e41] text-white rounded hover:bg-[#a05a32] disabled:opacity-50">
+                              {savingAddress ? "Saving..." : editingAddressId ? "Update Address" : "Save Address"}
                             </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                          </div>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => { resetAddressForm(); setShowNewAddressForm(true); }} className="flex items-center gap-1.5 text-xs text-[#c16e41] hover:underline mb-3">
+                          <Plus size={13} /><span>Add new address</span>
+                        </button>
+                      )}
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setShowNewAddressForm((prev) => !prev)}
-                      className="flex items-center gap-2 text-sm text-[#c16e41] hover:underline mb-3"
-                    >
-                      <Plus size={14} />
-                      <span>Add new address</span>
-                    </button>
+                    {/* ── BILLING ADDRESS ── */}
+                    {!showNewAddressForm && (
+                      <div className="mt-4 pt-4 border-t border-white/10">
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">Billing Address</p>
+                        <label className="flex items-center gap-2.5 cursor-pointer mb-3 group">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition ${useSameAddressForBilling ? "bg-[#c16e41] border-[#c16e41]" : "border-white/30 group-hover:border-white/60"}`} onClick={() => setUseSameAddressForBilling((v) => !v)}>
+                            {useSameAddressForBilling && <Check size={10} className="text-white" strokeWidth={3} />}
+                          </div>
+                          <span className="text-xs text-gray-300 select-none" onClick={() => setUseSameAddressForBilling((v) => !v)}>Same as shipping address</span>
+                        </label>
 
-                    {showNewAddressForm && (
-                      <div className="border border-white/15 rounded-md p-3 mb-3 space-y-2 text-xs md:text-sm">
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            className="bg-transparent border border-white/20 rounded px-2 py-1 text-white placeholder:text-gray-500 text-xs"
-                            placeholder="First name *"
-                            value={newAddress.firstName}
-                            onChange={(e) =>
-                              setNewAddress((p) => ({
-                                ...p,
-                                firstName: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="bg-transparent border border-white/20 rounded px-2 py-1 text-white placeholder:text-gray-500 text-xs"
-                            placeholder="Last name *"
-                            value={newAddress.lastName}
-                            onChange={(e) =>
-                              setNewAddress((p) => ({
-                                ...p,
-                                lastName: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        <input
-                          className="bg-transparent border border-white/20 rounded px-2 py-1 w-full text-white placeholder:text-gray-500 text-xs"
-                          placeholder="Phone (10 digits) *"
-                          value={newAddress.phone}
-                          onChange={(e) =>
-                            setNewAddress((p) => ({
-                              ...p,
-                              phone: e.target.value,
-                            }))
-                          }
-                        />
-                        <input
-                          className="bg-transparent border border-white/20 rounded px-2 py-1 w-full text-white placeholder:text-gray-500 text-xs"
-                          placeholder="Address line 1 *"
-                          value={newAddress.addressLine1}
-                          onChange={(e) =>
-                            setNewAddress((p) => ({
-                              ...p,
-                              addressLine1: e.target.value,
-                            }))
-                          }
-                        />
-                        <input
-                          className="bg-transparent border border-white/20 rounded px-2 py-1 w-full text-white placeholder:text-gray-500 text-xs"
-                          placeholder="Address line 2"
-                          value={newAddress.addressLine2}
-                          onChange={(e) =>
-                            setNewAddress((p) => ({
-                              ...p,
-                              addressLine2: e.target.value,
-                            }))
-                          }
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            className="bg-transparent border border-white/20 rounded px-2 py-1 text-white placeholder:text-gray-500 text-xs"
-                            placeholder="City *"
-                            value={newAddress.city}
-                            onChange={(e) =>
-                              setNewAddress((p) => ({
-                                ...p,
-                                city: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="bg-transparent border border-white/20 rounded px-2 py-1 text-white placeholder:text-gray-500 text-xs"
-                            placeholder="State/Region *"
-                            value={newAddress.region}
-                            onChange={(e) =>
-                              setNewAddress((p) => ({
-                                ...p,
-                                region: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            className="bg-transparent border border-white/20 rounded px-2 py-1 text-white placeholder:text-gray-500 text-xs"
-                            placeholder="PIN code (6 digits) *"
-                            value={newAddress.zip}
-                            maxLength={6}
-                            onChange={(e) =>
-                              setNewAddress((p) => ({
-                                ...p,
-                                zip: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="bg-transparent border border-white/20 rounded px-2 py-1 text-white placeholder:text-gray-500 text-xs"
-                            placeholder="Country"
-                            value={newAddress.Country}
-                            onChange={(e) =>
-                              setNewAddress((p) => ({
-                                ...p,
-                                Country: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        {addressError && (
-                          <p className="text-[11px] text-red-400">
-                            {addressError}
-                          </p>
+                        {!useSameAddressForBilling && addresses.length > 0 && (
+                          <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                            {addresses.map((addr) => {
+                              const selected = billingAddressId === addr.id;
+                              return (
+                                <div key={addr.id} className={`flex items-start gap-2 border rounded-lg px-3 py-2 cursor-pointer transition ${selected ? "border-blue-500 bg-blue-500/10" : "border-white/15 hover:border-white/30"}`} onClick={() => setBillingAddressId(addr.id)}>
+                                  <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? "border-blue-400" : "border-white/30"}`}>
+                                    {selected && <div className="w-2 h-2 rounded-full bg-blue-400" />}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-white text-xs font-medium">{addr.firstName} {addr.lastName}</p>
+                                    <p className="text-gray-500 text-[11px]">{addr.city}, {addr.region} – {addr.zip}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            disabled={savingAddress}
-                            onClick={handleSaveNewAddress}
-                            className="px-3 py-1.5 text-xs bg-[#c16e41] text-white rounded hover:bg-[#a05a32] disabled:opacity-50"
-                          >
-                            {savingAddress ? "Saving..." : "Save address"}
-                          </button>
-                        </div>
+                        {!useSameAddressForBilling && addresses.length === 0 && (
+                          <p className="text-xs text-gray-500">No saved addresses. Add one above.</p>
+                        )}
                       </div>
                     )}
 
-                    <p className="text-[11px] text-gray-400 mb-3">
-                      Address selection is{" "}
-                      <span className="text-red-400">*</span> required to
-                      continue. Delivery availability will be verified.
+                    {/* Footer */}
+                    <p className="text-[11px] text-gray-500 mt-4 mb-3">
+                      <span className="text-red-400">*</span> Delivery availability will be verified for the shipping address.
                     </p>
                     <div className="flex justify-end gap-3">
-                      <button
-                        onClick={closeAddressModal}
-                        className="px-4 py-2 text-sm text-gray-300 hover:text-white"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleAddressContinue}
-                        disabled={verifyingDelivery}
-                        className="px-4 py-2 text-sm bg-[#c16e41] text-white rounded hover:bg-[#a05a32] disabled:opacity-50"
-                      >
+                      <button onClick={closeAddressModal} className="px-4 py-2 text-sm text-gray-300 hover:text-white">Cancel</button>
+                      <button onClick={handleAddressContinue} disabled={verifyingDelivery || showNewAddressForm} className="px-4 py-2 text-sm bg-[#c16e41] text-white rounded hover:bg-[#a05a32] disabled:opacity-50">
                         {verifyingDelivery ? "Verifying..." : "Continue"}
                       </button>
                     </div>
@@ -1013,24 +947,50 @@ const CartDrawer: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Estimated delivery - always show with fallback */}
-                  <div className="bg-green-900/30 border border-green-700/40 rounded-lg px-4 py-3 mb-3">
-                    <p className="text-xs text-green-400 uppercase tracking-wide mb-0.5">Estimated Delivery</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {serviceType && (
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                          serviceType === "Express"
-                            ? "bg-orange-500/20 text-orange-300"
-                            : "bg-blue-500/20 text-blue-300"
-                        }`}>
-                          {serviceType === "Express" ? "⚡ Express (2–5 days)" : "📦 Standard (3–7 days)"}
-                        </span>
-                      )}
+                  {/* Delivery Mode Selector */}
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Choose Delivery Mode</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Standard */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDeliveryMode("Standard");
+                          setShippingCost(standardShippingCost);
+                          setEstimatedDelivery(standardEstimate);
+                        }}
+                        className={`text-left p-3 rounded-lg border-2 transition ${
+                          selectedDeliveryMode === "Standard"
+                            ? "border-blue-500 bg-blue-500/10"
+                            : "border-white/15 hover:border-white/30"
+                        }`}
+                      >
+                        <p className="text-xs font-bold text-blue-300 mb-1">📦 Standard</p>
+                        <p className="text-[11px] text-gray-400">3–7 business days</p>
+                        <p className="text-[11px] text-gray-500 truncate">{standardEstimate || ""}</p>
+                        <p className="text-sm font-bold text-white mt-1.5">₹{standardShippingCost.toFixed(0)}</p>
+                      </button>
+                      {/* Express */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDeliveryMode("Express");
+                          setShippingCost(standardShippingCost * 2);
+                          setEstimatedDelivery(getExpressEstimateDates());
+                        }}
+                        className={`text-left p-3 rounded-lg border-2 transition ${
+                          selectedDeliveryMode === "Express"
+                            ? "border-orange-500 bg-orange-500/10"
+                            : "border-white/15 hover:border-white/30"
+                        }`}
+                      >
+                        <p className="text-xs font-bold text-orange-300 mb-1">⚡ Express</p>
+                        <p className="text-[11px] text-gray-400">2–5 business days</p>
+                        <p className="text-[11px] text-gray-500 truncate">{getExpressEstimateDates()}</p>
+                        <p className="text-sm font-bold text-white mt-1.5">₹{(standardShippingCost * 2).toFixed(0)}</p>
+                      </button>
                     </div>
-                    <p className="text-green-300 font-bold text-base mt-1">
-                      {estimatedDelivery || (serviceType === "Express" ? "2–5 Business Days" : "3–7 Business Days")}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">via {courierName}</p>
+                    <p className="text-[10px] text-gray-600 mt-1">via {courierName}</p>
                   </div>
 
                   <div className="border-t border-white/10 pt-3 text-sm">

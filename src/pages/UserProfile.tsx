@@ -850,6 +850,32 @@ const Addresses: React.FC = () => {
       return;
     }
 
+    // Validate required fields
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      toast.error("First and last name are required.");
+      return;
+    }
+    if (!form.phone.trim() || !/^\d{10}$/.test(form.phone.replace(/\D/g, "").replace(/^(\+?91)/, ""))) {
+      toast.error("Please enter a valid 10-digit phone number.");
+      return;
+    }
+    if (!form.addressLine1.trim()) {
+      toast.error("Address Line 1 is required.");
+      return;
+    }
+    if (!form.city.trim()) {
+      toast.error("City is required.");
+      return;
+    }
+    if (!form.region) {
+      toast.error("Please select a state.");
+      return;
+    }
+    if (!form.zip.trim() || !/^\d{6}$/.test(form.zip)) {
+      toast.error("Please enter a valid 6-digit PIN code.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const addrCol = collection(db, "users", uid, "addresses");
@@ -1151,11 +1177,13 @@ const Addresses: React.FC = () => {
               </select>
 
               <input
-                placeholder="Zip Code"
+                placeholder="PIN Code (6 digits)"
                 className="w-full bg-transparent border border-white/20 p-3 text-white rounded-sm"
                 value={form.zip}
+                maxLength={6}
+                inputMode="numeric"
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, zip: e.target.value }))
+                  setForm((f) => ({ ...f, zip: e.target.value.replace(/\D/g, "") }))
                 }
               />
             </div>

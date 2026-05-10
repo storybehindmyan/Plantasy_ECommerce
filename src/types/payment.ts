@@ -67,6 +67,7 @@ export interface OrderData {
   };
 
   estimatedDelivery?: string;
+  deliveryMode?: string;
   
   track?: string;
   createdAt: any;

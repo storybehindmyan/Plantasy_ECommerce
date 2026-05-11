@@ -266,59 +266,71 @@ const MyOrders: React.FC = () => {
     }
   }, []);
 
+  const mapOrderSnap = (oSnap: any): OrderDoc => {
+    const data = oSnap.data() as any;
+    return {
+      id: oSnap.id,
+      userId: data.userId || data.uid || "",
+      createdAt: data.createdAt,
+      deliveryAddress: data.deliveryAddress,
+      invoiceId: data.invoiceId,
+      isCancelable: data.isCancelable,
+      isReturnEligible: data.isReturnEligible,
+      items: data.items,
+      orderId: data.orderId,
+      orderStatus: data.orderStatus ?? null,
+      orderType: data.orderType,
+      payment: data.payment,
+      pricing: data.pricing,
+      timestamps: data.timestamps,
+      track: data.track,
+      waybill: data.waybill || data.delhivery?.waybill || "",
+      courier: data.courier,
+      shipmentStatus: data.shipmentStatus,
+      trackingUrl: data.trackingUrl || data.delhivery?.trackingUrl || data.track || "",
+      labelUrl: data.labelUrl,
+      trackingEvents: Array.isArray(data.trackingEvents) ? data.trackingEvents : [],
+      estimatedDelivery: data.estimatedDelivery,
+      deliveryMode: data.deliveryMode || "",
+    };
+  };
+
   const fetchOrders = React.useCallback(async () => {
     if (!user?.uid) return;
     setLoading(true);
     try {
-      // 1. Get the orders array orderIds from users/{uid}
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-      const userData = userSnap.exists()
-        ? (userSnap.data() as any)
-        : null;
-      const orderIds: string[] = userData?.orders || [];
-      if (!orderIds.length) {
-        setOrders([]);
-        return;
-      }
-
-      // 2. Fetch each order doc
       const ordersCol = collection(db, "orders");
+      const seenIds = new Set<string>();
       const orderDocs: OrderDoc[] = [];
-      for (const oid of orderIds) {
-        const oRef = doc(ordersCol, oid);
-        const oSnap = await getDoc(oRef);
-        if (oSnap.exists()) {
-          const data = oSnap.data() as any;
-          orderDocs.push({
-            id: oSnap.id,
-            userId: data.userId,
-            createdAt: data.createdAt,
-            deliveryAddress: data.deliveryAddress,
-            invoiceId: data.invoiceId,
-            isCancelable: data.isCancelable,
-            isReturnEligible: data.isReturnEligible,
-            items: data.items,
-            orderId: data.orderId,
-            orderStatus: data.orderStatus ?? null,
-            orderType: data.orderType,
-            payment: data.payment,
-            pricing: data.pricing,
-            timestamps: data.timestamps,
-            track: data.track,
-            waybill: data.waybill || data.delhivery?.waybill || "",
-            courier: data.courier,
-            shipmentStatus: data.shipmentStatus,
-            trackingUrl: data.trackingUrl || data.delhivery?.trackingUrl || data.track || "",
-            labelUrl: data.labelUrl,
-            trackingEvents: Array.isArray(data.trackingEvents) ? data.trackingEvents : [],
-            estimatedDelivery: data.estimatedDelivery,
-            deliveryMode: data.deliveryMode || "",
-          });
-        }
+
+      // Primary: query orders directly by uid field
+      const directQ = query(ordersCol, where("uid", "==", user.uid));
+      const directSnap = await getDocs(directQ);
+      directSnap.forEach((oSnap) => {
+        seenIds.add(oSnap.id);
+        orderDocs.push(mapOrderSnap(oSnap));
+      });
+
+      // Fallback: also fetch any IDs stored in users/{uid}.orders array not already fetched
+      try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        const extraIds: string[] = (userSnap.data() as any)?.orders || [];
+        await Promise.all(
+          extraIds
+            .filter((oid) => !seenIds.has(oid))
+            .map(async (oid) => {
+              const oSnap = await getDoc(doc(ordersCol, oid));
+              if (oSnap.exists()) {
+                seenIds.add(oSnap.id);
+                orderDocs.push(mapOrderSnap(oSnap));
+              }
+            })
+        );
+      } catch {
+        // non-critical — direct query already ran
       }
 
-      // 3. Sort by createdAt desc
+      // Sort by createdAt desc
       orderDocs.sort((a, b) => {
         const ta = a.createdAt?.toMillis?.() ?? 0;
         const tb = b.createdAt?.toMillis?.() ?? 0;
@@ -1562,14 +1574,7 @@ const MyAccount: React.FC = () => {
     const newName = fullName || info.displayName;
 
     try {
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        name: newName,
-        title: info.title,
-        phone: info.phone,
-        updatedAt: serverTimestamp(),
-      });
-      updateUser({
+      await updateUser({
         name: newName,
         title: info.title,
         phone: info.phone,

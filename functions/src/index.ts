@@ -7,6 +7,7 @@ import shippingRouter from "./routes/shipping";
 import ordersRouter from "./routes/orders";
 import whatsappRouter from "./routes/whatsapp";
 import delhiveryRouter from "./routes/delhivery";
+import emailTestRouter from "./routes/emailTest";
 
 admin.initializeApp();
 
@@ -39,6 +40,7 @@ app.use("/api/shipping", shippingRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/whatsapp", whatsappRouter);
 app.use("/api/delhivery", delhiveryRouter);
+app.use("/api/email-test", emailTestRouter);
 
 app.get("/", (_req, res) => {
   res.json({ message: "Plantasy Backend API is running" });

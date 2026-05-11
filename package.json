@@ -17,7 +17,7 @@
   },
   "homepage": "https://plantasy.co.in",
   "scripts": {
-    "dev": "concurrently -n \"frontend,backend\" -c \"blue,green\" \"vite\" \"npm run dev --prefix src/server\"",
+    "dev": "concurrently -n \"frontend,backend\" -c \"blue,green\" \"vite --mode development\" \"npm run dev --prefix src/server\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

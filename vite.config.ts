@@ -6,7 +6,23 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'admin-spa-fallback',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (
+            req.url?.startsWith('/Admin-plantasy/') &&
+            !req.url.includes('.')
+          ) {
+            req.url = '/Admin-plantasy/index.html';
+          }
+          next();
+        });
+      },
+    },
+  ],
   define: {
     global: 'globalThis',
   },

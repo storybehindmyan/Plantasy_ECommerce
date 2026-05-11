@@ -112,7 +112,7 @@ export const useCheckout = () => {
         },
         (error) => {
           // Payment error callback
-          handlePaymentError(error, orderId, params.deliveryAddress?.phone || "", finalAmount);
+          handlePaymentError(error, orderId, params.deliveryAddress?.phone || "", finalAmount, params.deliveryAddress?.email || user?.email || "");
         }
       );
     } catch (error) {
@@ -273,7 +273,7 @@ export const useCheckout = () => {
     }
   };
 
-  const handlePaymentError = async (error: any, orderId: string, phone = "", amount = 0) => {
+  const handlePaymentError = async (error: any, orderId: string, phone = "", amount = 0, email = "") => {
     try {
       // Store failed payment attempt
       const paymentData: Omit<PaymentDetails, "createdAt"> = {
@@ -296,20 +296,20 @@ export const useCheckout = () => {
     toast.error(error.message || "Payment failed. Please try again.");
 
     try {
-      if (phone) {
-        await fetch(`${API_URL}/api/whatsapp/payment-failed`, {
+      await Promise.allSettled([
+        phone ? fetch(`${API_URL}/api/whatsapp/payment-failed`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone,
-            name: "",
-            amount,
-            retryUrl: "https://plantasy.co.in/checkout",
-          }),
-        });
-      }
+          body: JSON.stringify({ phone, name: "", amount, retryUrl: "https://plantasy.co.in/checkout" }),
+        }) : Promise.resolve(),
+        email ? fetch(`${API_URL}/api/orders/payment-failed`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, name: user?.name || "", amount }),
+        }) : Promise.resolve(),
+      ]);
     } catch (e) {
-      console.error("WhatsApp payment-failed notification error:", e);
+      console.error("Payment-failed notification error:", e);
     }
   };
 

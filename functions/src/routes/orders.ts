@@ -2,6 +2,7 @@ import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import * as admin from "firebase-admin";
 import { OrderService } from "../services/OrderService";
+import { EmailService } from "../services/EmailService";
 
 const router = express.Router();
 
@@ -64,6 +65,19 @@ router.post("/shipped", verifyAuth, async (req: Request, res: Response) => {
     return res.json({ success: true });
   } catch (error: any) {
     console.error("POST /api/orders/shipped error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/payment-failed", async (req: Request, res: Response) => {
+  try {
+    const { email, name, amount } = req.body;
+    if (!email || !email.includes("@")) return res.status(400).json({ error: "valid email required" });
+    const retryUrl = "https://plantasy.co.in/checkout";
+    await EmailService.sendPaymentFailed(email, name || "Customer", Number(amount) || 0, retryUrl);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error("POST /api/orders/payment-failed error:", error);
     return res.status(500).json({ error: error.message });
   }
 });

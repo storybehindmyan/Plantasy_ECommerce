@@ -128,4 +128,18 @@ export const EmailService = {
     `);
     await send(email, `Order Delivered — How Was It? 🌿`, html);
   },
+
+  async sendPaymentFailed(email: string, name: string, amount: number, retryUrl: string): Promise<void> {
+    const html = emailWrapper(`
+      <p>Hi <strong>${name}</strong>,</p>
+      <p>😕 Unfortunately your payment of <strong>₹${amount.toFixed(2)}</strong> could not be processed.</p>
+      <p>Don't worry — your cart is saved. You can try again by clicking the button below.</p>
+      <p style="text-align:center;margin-top:24px;">
+        <a class="btn" href="${retryUrl}">Retry Payment</a>
+      </p>
+      <p>If the problem persists, please contact us at <a href="mailto:support@plantasy.co.in">support@plantasy.co.in</a>.</p>
+      <p>We're here to help 🌿</p>
+    `);
+    await send(email, `Payment Failed — Please Retry`, html);
+  },
 };

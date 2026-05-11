@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Store,
   ScrollText,
+  Mail,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { label: 'Support', path: 'support', icon: MessageSquare },
   { label: 'Terms & Conditions', path: 'terms', icon: ScrollText },
   { label: 'Admin Users', path: 'admin-users', icon: Users },
+  { label: 'Email Test', path: 'email-test', icon: Mail, roles: ['super_admin'] },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {

@@ -8,6 +8,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import { orderService } from '../../services/orderService';
 import { logisticsService } from '../../services/logisticsService';
 import { toast } from 'sonner';
+import { auth } from '../../firebase/firebaseConfig';
 
 const statusOptions = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
 type OrderStatus = (typeof statusOptions)[number];
@@ -204,18 +205,22 @@ const OrdersPage: React.FC = () => {
           setActionLoading(false);
           return;
         }
+        const shipToken = await auth.currentUser?.getIdToken();
         await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders/shipped`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${shipToken}` },
           body: JSON.stringify({ orderId }),
         });
-        toast.success('📦 Order marked as SHIPPED — WhatsApp sent!');
+        toast.success('📦 Order marked as SHIPPED — WhatsApp + Email sent!');
         await orderService.updateOrderStatus(orderId, 'SHIPPED');
       } else if (newStatus === 'delivered') {
+        const deliverToken = await auth.currentUser?.getIdToken();
         await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders/delivered`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${deliverToken}` },
           body: JSON.stringify({ orderId }),
         });
-        toast.success('🎉 Order marked as DELIVERED — WhatsApp sent!');
+        toast.success('🎉 Order marked as DELIVERED — WhatsApp + Email sent!');
         await orderService.updateOrderStatus(orderId, 'DELIVERED');
       } else {
         if (trackInput && trackInput !== (order.track || '')) {

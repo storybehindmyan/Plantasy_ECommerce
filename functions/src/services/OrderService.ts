@@ -6,14 +6,28 @@ import { EmailService } from "./EmailService";
 const db = () => admin.firestore();
 
 async function getCustomerEmail(order: any): Promise<string> {
-  const email = (order.deliveryAddress?.email as string) || "";
-  if (email) return email;
+  const orderId = order.orderId || "(unknown)";
+  const addrEmail = (order.deliveryAddress?.email as string) || "";
+  if (addrEmail) {
+    console.log(`[getCustomerEmail] order=${orderId} → from deliveryAddress: ${addrEmail}`);
+    return addrEmail;
+  }
   const uid = order.uid || order.userId || "";
-  if (!uid) return "";
+  if (!uid) {
+    console.warn(`[getCustomerEmail] order=${orderId} → no email and no uid — cannot resolve email`);
+    return "";
+  }
   try {
     const userRecord = await admin.auth().getUser(uid);
-    return userRecord.email || "";
-  } catch {
+    const authEmail = userRecord.email || "";
+    if (authEmail) {
+      console.log(`[getCustomerEmail] order=${orderId} → from Firebase Auth (uid=${uid}): ${authEmail}`);
+    } else {
+      console.warn(`[getCustomerEmail] order=${orderId} → uid=${uid} found but has no email in Firebase Auth`);
+    }
+    return authEmail;
+  } catch (err: any) {
+    console.error(`[getCustomerEmail] order=${orderId} → Firebase Auth lookup failed for uid=${uid}:`, err.message);
     return "";
   }
 }
@@ -162,11 +176,12 @@ export const OrderService = {
 
     const order = snap.data() as any;
     const phone = order.deliveryAddress?.phone || "";
-    const waybill = order.delhivery?.waybill || "";
-    const trackingUrl = order.delhivery?.trackingUrl || "";
+    const waybill = order.delhivery?.waybill || order.waybill || "";
+    const trackingUrl = order.delhivery?.trackingUrl || order.trackingUrl || "";
 
     const shippedEmail = await getCustomerEmail(order);
     const shippedName = `${order.deliveryAddress?.firstName || ""} ${order.deliveryAddress?.lastName || ""}`.trim();
+    console.log(`[onOrderShipped] orderId=${orderId} email=${shippedEmail || "NONE"} phone=${phone || "NONE"} waybill=${waybill || "NONE"}`);
     await Promise.allSettled([
       phone && waybill ? WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl) : Promise.resolve(),
       shippedEmail ? EmailService.sendOrderShipped(shippedEmail, shippedName, orderId, waybill, trackingUrl) : Promise.resolve(),

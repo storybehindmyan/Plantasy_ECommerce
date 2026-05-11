@@ -134,18 +134,16 @@ const OrdersPage: React.FC = () => {
         pending: 'confirmed', confirmed: 'packed', shipped: 'shipped', delivered: 'delivered',
       };
       const emailType = typeMap[status] || 'confirmed';
-      const email = (order as any).deliveryAddress?.email || '';
-      const uid = (order as any).uid || (order as any).userId || '';
-      if (!email && !uid) { toast.error('No email or user ID found on this order'); return; }
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/email-test/send`, {
+      const realOrderId = (order as any).orderId || order.id;
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders/resend-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: emailType, email: email || undefined, uid: uid || undefined }),
+        body: JSON.stringify({ orderId: realOrderId, type: emailType }),
       });
       const data = await res.json().catch(() => ({})) as any;
-      console.log('[DEBUG] resend email →', res.status, data);
+      console.log('[DEBUG] resend-email →', res.status, data);
       if (!res.ok) throw new Error(`${res.status}: ${data.error || 'Failed'}`);
-      toast.success(`Email (${emailType}) resent to ${email}`);
+      toast.success(`✉️ Email (${emailType}) resent for order ${realOrderId}`);
     } catch (err: any) {
       toast.error(`Resend failed: ${err.message}`);
     } finally {

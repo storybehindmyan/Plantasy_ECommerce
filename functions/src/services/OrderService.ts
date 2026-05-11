@@ -5,6 +5,19 @@ import { EmailService } from "./EmailService";
 
 const db = () => admin.firestore();
 
+async function getCustomerEmail(order: any): Promise<string> {
+  const email = (order.deliveryAddress?.email as string) || "";
+  if (email) return email;
+  const uid = order.uid || order.userId || "";
+  if (!uid) return "";
+  try {
+    const userRecord = await admin.auth().getUser(uid);
+    return userRecord.email || "";
+  } catch {
+    return "";
+  }
+}
+
 export const OrderService = {
   async onOrderPaid(
     orderId: string,
@@ -134,10 +147,10 @@ export const OrderService = {
     });
 
     // Notify customer: order packed + tracking info (WhatsApp + Email in parallel)
-    const packedEmail = (order.deliveryAddress?.email as string) || "";
+    const packedEmail = await getCustomerEmail(order);
     await Promise.allSettled([
       WhatsAppService.sendOrderShippingInfo(phone, name, orderId, waybill, trackingUrl),
-      EmailService.sendOrderPacked(packedEmail, name, orderId, waybill, trackingUrl),
+      packedEmail ? EmailService.sendOrderPacked(packedEmail, name, orderId, waybill, trackingUrl) : Promise.resolve(),
     ]);
 
     return { waybill, trackingUrl, alreadyHadWaybill, pickupError } as any;
@@ -152,14 +165,12 @@ export const OrderService = {
     const waybill = order.delhivery?.waybill || "";
     const trackingUrl = order.delhivery?.trackingUrl || "";
 
-    const shippedEmail = (order.deliveryAddress?.email as string) || "";
+    const shippedEmail = await getCustomerEmail(order);
     const shippedName = `${order.deliveryAddress?.firstName || ""} ${order.deliveryAddress?.lastName || ""}`.trim();
-    if (phone && waybill) {
-      await Promise.allSettled([
-        WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl),
-        EmailService.sendOrderShipped(shippedEmail, shippedName, orderId, waybill, trackingUrl),
-      ]);
-    }
+    await Promise.allSettled([
+      phone && waybill ? WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl) : Promise.resolve(),
+      shippedEmail ? EmailService.sendOrderShipped(shippedEmail, shippedName, orderId, waybill, trackingUrl) : Promise.resolve(),
+    ]);
 
     await db().collection("orders").doc(orderId).update({
       orderStatus: "SHIPPED",
@@ -246,22 +257,44 @@ export const OrderService = {
     const phone = addr.phone || "";
     const customerName = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
 
-    const customerEmail = (addr.email as string) || "";
-    if (newOrderStatus === "SHIPPED" && phone) {
+    const customerEmail = await getCustomerEmail(order);
+    if (newOrderStatus === "SHIPPED") {
       await Promise.allSettled([
-        WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl),
-        EmailService.sendOrderShipped(customerEmail, customerName, orderId, waybill, trackingUrl),
+        phone && waybill ? WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl) : Promise.resolve(),
+        customerEmail ? EmailService.sendOrderShipped(customerEmail, customerName, orderId, waybill, trackingUrl) : Promise.resolve(),
       ]);
     } else if (newOrderStatus === "DELIVERED") {
       const reviewUrl = `https://plantasy.co.in/review/${orderId}`;
       await Promise.allSettled([
         phone ? WhatsAppService.sendOrderDelivered(phone, customerName, orderId, reviewUrl) : Promise.resolve(),
-        EmailService.sendOrderDelivered(customerEmail, customerName, orderId, reviewUrl),
+        customerEmail ? EmailService.sendOrderDelivered(customerEmail, customerName, orderId, reviewUrl) : Promise.resolve(),
       ]);
     }
 
     console.log(`[syncOrderTracking] Order ${orderId}: Delhivery="${latestDelhiveryStatus}" → newStatus=${newOrderStatus || "no change"}`);
     return { waybill, events, latestDelhiveryStatus, newOrderStatus };
+  },
+
+  async resendEmail(orderId: string, type: string): Promise<void> {
+    const snap = await db().collection("orders").doc(orderId).get();
+    if (!snap.exists) throw new Error(`Order ${orderId} not found`);
+    const order = snap.data() as any;
+    const addr = order.deliveryAddress || {};
+    const name = `${addr.firstName || ""} ${addr.lastName || ""}`.trim() || "Customer";
+    const email = await getCustomerEmail(order);
+    if (!email) throw new Error("No email address found for this order");
+    const waybill = order.waybill || order.delhivery?.waybill || "";
+    const trackingUrl = order.trackingUrl || order.delhivery?.trackingUrl || "";
+    const reviewUrl = `https://plantasy.co.in/review/${orderId}`;
+    const invoiceValue = order.pricing?.grandTotal || 0;
+    switch (type) {
+      case "confirmed": await EmailService.sendOrderConfirmed(email, name, orderId, invoiceValue); break;
+      case "packed":    await EmailService.sendOrderPacked(email, name, orderId, waybill, trackingUrl); break;
+      case "shipped":   await EmailService.sendOrderShipped(email, name, orderId, waybill, trackingUrl); break;
+      case "delivered": await EmailService.sendOrderDelivered(email, name, orderId, reviewUrl); break;
+      default: throw new Error(`Unknown email type: ${type}`);
+    }
+    console.log(`[resendEmail] Sent '${type}' email to ${email} for order ${orderId}`);
   },
 
   async onOrderDelivered(orderId: string): Promise<void> {
@@ -274,10 +307,10 @@ export const OrderService = {
     const name = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
     const reviewUrl = `https://plantasy.co.in/review/${orderId}`;
 
-    const deliveredEmail = (addr.email as string) || "";
+    const deliveredEmail = await getCustomerEmail(order);
     await Promise.allSettled([
       phone ? WhatsAppService.sendOrderDelivered(phone, name, orderId, reviewUrl) : Promise.resolve(),
-      EmailService.sendOrderDelivered(deliveredEmail, name, orderId, reviewUrl),
+      deliveredEmail ? EmailService.sendOrderDelivered(deliveredEmail, name, orderId, reviewUrl) : Promise.resolve(),
     ]);
 
     await db().collection("orders").doc(orderId).update({

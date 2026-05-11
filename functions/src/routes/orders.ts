@@ -68,6 +68,18 @@ router.post("/shipped", verifyAuth, async (req: Request, res: Response) => {
   }
 });
 
+router.post("/resend-email", verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const { orderId, type } = req.body;
+    if (!orderId || !type) return res.status(400).json({ error: "orderId and type are required" });
+    await OrderService.resendEmail(orderId, type);
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error("POST /api/orders/resend-email error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router.post("/delivered", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;

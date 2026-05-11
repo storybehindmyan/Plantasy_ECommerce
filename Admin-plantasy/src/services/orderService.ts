@@ -91,7 +91,7 @@ export const orderService = {
 
           return {
             id: d.id,
-            userId: data.userId || '',
+            userId: data.userId || data.uid || '',
             orderId: data.orderId || d.id,
             orderStatus: data.orderStatus, // stored uppercase in Firestore
             orderType: data.orderType || 'standard',
@@ -164,7 +164,7 @@ export const orderService = {
 
         return {
           id: docSnap.id,
-          userId: data.userId || '',
+          userId: data.userId || data.uid || '',
           orderId: data.orderId || docSnap.id,
           orderStatus: data.orderStatus,
           orderType: data.orderType || 'standard',
@@ -249,7 +249,7 @@ export const orderService = {
 
           return {
             id: d.id,
-            userId: data.userId || '',
+            userId: data.userId || data.uid || '',
             orderId: data.orderId || d.id,
             orderStatus: data.orderStatus,
             orderType: data.orderType || 'standard',

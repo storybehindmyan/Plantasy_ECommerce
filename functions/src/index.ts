@@ -46,4 +46,5 @@ app.get("/", (_req, res) => {
   res.json({ message: "Plantasy Backend API is running" });
 });
 
+// v2
 export const api = onRequest(app);

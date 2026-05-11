@@ -135,11 +135,12 @@ const OrdersPage: React.FC = () => {
       };
       const emailType = typeMap[status] || 'confirmed';
       const email = (order as any).deliveryAddress?.email || '';
-      if (!email) { toast.error('No email address found on this order'); return; }
+      const uid = (order as any).uid || (order as any).userId || '';
+      if (!email && !uid) { toast.error('No email or user ID found on this order'); return; }
       const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/email-test/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: emailType, email }),
+        body: JSON.stringify({ type: emailType, email: email || undefined, uid: uid || undefined }),
       });
       const data = await res.json().catch(() => ({})) as any;
       console.log('[DEBUG] resend email →', res.status, data);

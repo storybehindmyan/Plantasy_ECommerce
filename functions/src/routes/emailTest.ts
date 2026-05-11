@@ -21,10 +21,20 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/email-test/send
 // Body: { type: "confirmed"|"packed"|"shipped"|"delivered", email: string }
 router.post("/send", verifyAuth, async (req: Request, res: Response) => {
-  const { type, email } = req.body as { type: string; email: string };
+  const { type, uid } = req.body as { type: string; email?: string; uid?: string };
+  let { email } = req.body as { email?: string };
+
+  if ((!email || !email.includes("@")) && uid) {
+    try {
+      const userRecord = await admin.auth().getUser(uid);
+      email = userRecord.email || "";
+    } catch {
+      return res.status(400).json({ error: `Could not find user for uid: ${uid}` });
+    }
+  }
 
   if (!email || !email.includes("@")) {
-    return res.status(400).json({ error: "Valid email address required" });
+    return res.status(400).json({ error: "Valid email address required (or pass uid to auto-lookup)" });
   }
 
   const orderId = "TEST-ORDER-001";

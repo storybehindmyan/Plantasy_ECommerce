@@ -20,7 +20,7 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
 
 router.post("/paid", verifyAuth, async (req: Request, res: Response) => {
   try {
-    const { orderId, phone, name, amount } = req.body;
+    const { orderId, phone, name, email, amount } = req.body;
 
     if (!orderId) {
       return res.status(400).json({ error: "orderId is required" });
@@ -30,7 +30,8 @@ router.post("/paid", verifyAuth, async (req: Request, res: Response) => {
       orderId,
       phone || "",
       name || "",
-      Number(amount) || 0
+      Number(amount) || 0,
+      email || ""
     );
 
     return res.json({ success: true, waybill, trackingUrl });

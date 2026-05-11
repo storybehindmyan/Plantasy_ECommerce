@@ -164,6 +164,7 @@ export const useCheckout = () => {
         zip: addr.zip ?? "",
         country: addr.country || addr.Country || "",
         phone: addr.phone ?? "",
+        email: addr.email || user?.email || "",
       };
 
       // 3. Create order document
@@ -251,6 +252,7 @@ export const useCheckout = () => {
             orderId,
             phone: addr.phone || "",
             name: `${addr.firstName || ""} ${addr.lastName || ""}`.trim(),
+            email: addr.email || user?.email || "",
             amount: finalAmount,
           }),
         });

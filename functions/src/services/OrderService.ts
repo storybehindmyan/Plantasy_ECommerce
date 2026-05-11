@@ -10,7 +10,8 @@ export const OrderService = {
     orderId: string,
     phone: string,
     customerName: string,
-    amount: number
+    amount: number,
+    emailOverride = ""
   ): Promise<{ waybill: string; trackingUrl: string }> {
     const orderRef = db().collection("orders").doc(orderId);
     const snap = await orderRef.get();
@@ -25,7 +26,7 @@ export const OrderService = {
     const customer = {
       name: customerName || `${addr.firstName || ""} ${addr.lastName || ""}`.trim(),
       phone: phone || addr.phone || "",
-      email: addr.email || "",
+      email: addr.email || emailOverride || "",
       addressLine1: addr.addressLine1 || "",
       addressLine2: addr.addressLine2 || "",
       city: addr.city || "",

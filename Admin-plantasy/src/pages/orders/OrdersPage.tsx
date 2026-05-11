@@ -122,6 +122,35 @@ const OrdersPage: React.FC = () => {
 
   // Tracking / logistics actions
   const [actionLoading, setActionLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+
+  const handleResendEmail = async (order: Order) => {
+    if (!order?.id) return;
+    setResendLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const status = String(order.orderStatus).toLowerCase();
+      const typeMap: Record<string, string> = {
+        pending: 'confirmed', confirmed: 'packed', shipped: 'shipped', delivered: 'delivered',
+      };
+      const emailType = typeMap[status] || 'confirmed';
+      const email = (order as any).deliveryAddress?.email || '';
+      if (!email) { toast.error('No email address found on this order'); return; }
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/email-test/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: emailType, email }),
+      });
+      const data = await res.json().catch(() => ({})) as any;
+      console.log('[DEBUG] resend email →', res.status, data);
+      if (!res.ok) throw new Error(`${res.status}: ${data.error || 'Failed'}`);
+      toast.success(`Email (${emailType}) resent to ${email}`);
+    } catch (err: any) {
+      toast.error(`Resend failed: ${err.message}`);
+    } finally {
+      setResendLoading(false);
+    }
+  };
   const [syncingTracking, setSyncingTracking] = useState(false);
 
   useEffect(() => {
@@ -206,20 +235,26 @@ const OrdersPage: React.FC = () => {
           return;
         }
         const shipToken = await auth.currentUser?.getIdToken();
-        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders/shipped`, {
+        const shipRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders/shipped`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${shipToken}` },
           body: JSON.stringify({ orderId }),
         });
+        const shipData = await shipRes.json().catch(() => ({}));
+        console.log('[DEBUG] /api/orders/shipped →', shipRes.status, shipData);
+        if (!shipRes.ok) throw new Error(`API error ${shipRes.status}: ${JSON.stringify(shipData)}`);
         toast.success('📦 Order marked as SHIPPED — WhatsApp + Email sent!');
         await orderService.updateOrderStatus(orderId, 'SHIPPED');
       } else if (newStatus === 'delivered') {
         const deliverToken = await auth.currentUser?.getIdToken();
-        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders/delivered`, {
+        const deliverRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/orders/delivered`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${deliverToken}` },
           body: JSON.stringify({ orderId }),
         });
+        const deliverData = await deliverRes.json().catch(() => ({}));
+        console.log('[DEBUG] /api/orders/delivered →', deliverRes.status, deliverData);
+        if (!deliverRes.ok) throw new Error(`API error ${deliverRes.status}: ${JSON.stringify(deliverData)}`);
         toast.success('🎉 Order marked as DELIVERED — WhatsApp + Email sent!');
         await orderService.updateOrderStatus(orderId, 'DELIVERED');
       } else {
@@ -612,6 +647,15 @@ const OrdersPage: React.FC = () => {
                   <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
                 </div>
                 {actionLoading && <span className="text-xs text-muted-foreground animate-pulse">Processing…</span>}
+                <button
+                  type="button"
+                  onClick={() => handleResendEmail(selectedOrder)}
+                  disabled={resendLoading}
+                  className="admin-btn-outline text-sm whitespace-nowrap flex items-center gap-1.5"
+                  title="Manually resend the email notification for current order status"
+                >
+                  {resendLoading ? '⏳' : '✉️'} Resend Email
+                </button>
                 <button type="button" onClick={() => handleDownloadInvoice(selectedOrder)} className="admin-btn-outline text-sm whitespace-nowrap">
                   Download Invoice
                 </button>

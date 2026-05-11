@@ -12,9 +12,21 @@ admin.initializeApp();
 
 const app = express();
 
+const ALLOWED_ORIGINS = [
+  "https://plantasy.co.in",
+  "https://www.plantasy.co.in",
+  "https://plantasy-bharat.web.app",
+  "https://plantasy-bharat.firebaseapp.com",
+];
+
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],

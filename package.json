@@ -1,21 +1,21 @@
 {
-  "name": "qwert",
+  "name": "plantasy-ecommerce",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "description": "Plantasy — plant e-commerce storefront with admin panel, Delhivery logistics, Razorpay payments, and WhatsApp notifications.",
   "main": "eslint.config.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shaikvaliyababji/Plant_Ecommers.git"
+    "url": "git+https://github.com/storybehindmyan/Plantasy_ECommerce.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Plantasy",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/shaikvaliyababji/Plant_Ecommers/issues"
+    "url": "https://github.com/storybehindmyan/Plantasy_ECommerce/issues"
   },
-  "homepage": "https://github.com/shaikvaliyababji/Plant_Ecommers#readme",
+  "homepage": "https://plantasy.co.in",
   "scripts": {
     "dev": "concurrently -n \"frontend,backend\" -c \"blue,green\" \"vite\" \"npm run dev --prefix src/server\"",
     "build": "tsc -b && vite build",

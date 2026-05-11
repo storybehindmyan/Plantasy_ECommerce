@@ -230,7 +230,6 @@ async createOrder(orderData: any): Promise<string> {
       }
     }
 
-    console.log('✅ Order created:', orderId);
     return orderId;
   } catch (error) {
     console.error('Error creating order:', error);

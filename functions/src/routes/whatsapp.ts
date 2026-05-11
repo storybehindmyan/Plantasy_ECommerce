@@ -1,9 +1,23 @@
 import express from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
+import * as admin from "firebase-admin";
 import { WhatsAppService } from "../services/WhatsAppService";
 import { OrderService } from "../services/OrderService";
 
 const router = express.Router();
+
+const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized: missing token" });
+  }
+  try {
+    await admin.auth().verifyIdToken(auth.split(" ")[1]);
+    return next();
+  } catch {
+    return res.status(401).json({ error: "Unauthorized: invalid token" });
+  }
+};
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "plantasy_verify";
 
@@ -43,7 +57,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/cart-reminder", async (req: Request, res: Response) => {
+router.post("/cart-reminder", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { phone, name, cartUrl } = req.body;
     if (!phone) return res.status(400).json({ error: "phone is required" });
@@ -60,7 +74,7 @@ router.post("/cart-reminder", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/checkout-pending", async (req: Request, res: Response) => {
+router.post("/checkout-pending", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { phone, name, amount, checkoutUrl } = req.body;
     if (!phone) return res.status(400).json({ error: "phone is required" });
@@ -78,7 +92,7 @@ router.post("/checkout-pending", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/payment-failed", async (req: Request, res: Response) => {
+router.post("/payment-failed", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { phone, name, amount, retryUrl } = req.body;
     if (!phone) return res.status(400).json({ error: "phone is required" });

@@ -123,9 +123,8 @@ router.post("/label", verifyAuth, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/delhivery/test-shipment — no auth, for DeliveryTest page debugging
-// Returns full raw Delhivery response so you can see exactly what the API returns
-router.post("/test-shipment", async (req: Request, res: Response) => {
+// POST /api/delhivery/test-shipment — admin-only debug endpoint
+router.post("/test-shipment", verifyAuth, async (req: Request, res: Response) => {
   try {
     const {
       warehouseName,
@@ -257,8 +256,8 @@ router.post("/retry-pickup", verifyAuth, async (req: Request, res: Response) => 
   }
 });
 
-// POST /api/delhivery/test-pickup — unauthenticated, test pickup scheduling directly
-router.post("/test-pickup", async (req: Request, res: Response) => {
+// POST /api/delhivery/test-pickup — admin-only debug endpoint
+router.post("/test-pickup", verifyAuth, async (req: Request, res: Response) => {
   const DELHIVERY_API_KEY = process.env.DELHIVERY_API_KEY || "";
   const DELHIVERY_BASE_URL = process.env.DELHIVERY_BASE_URL || "https://ltl-clients-api.delhivery.com";
 

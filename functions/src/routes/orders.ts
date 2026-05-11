@@ -1,10 +1,24 @@
 import express from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
+import * as admin from "firebase-admin";
 import { OrderService } from "../services/OrderService";
 
 const router = express.Router();
 
-router.post("/paid", async (req: Request, res: Response) => {
+const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized: missing token" });
+  }
+  try {
+    await admin.auth().verifyIdToken(auth.split(" ")[1]);
+    return next();
+  } catch {
+    return res.status(401).json({ error: "Unauthorized: invalid token" });
+  }
+};
+
+router.post("/paid", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { orderId, phone, name, amount } = req.body;
 
@@ -29,7 +43,7 @@ router.post("/paid", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/confirm", async (req: Request, res: Response) => {
+router.post("/confirm", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "orderId is required" });
@@ -41,7 +55,7 @@ router.post("/confirm", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/shipped", async (req: Request, res: Response) => {
+router.post("/shipped", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "orderId is required" });
@@ -53,7 +67,7 @@ router.post("/shipped", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/delivered", async (req: Request, res: Response) => {
+router.post("/delivered", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: "orderId is required" });

@@ -239,9 +239,14 @@ export const useCheckout = () => {
       // 5. Trigger Delhivery shipment + WhatsApp confirmation via backend
       try {
         const addr = params.deliveryAddress || {};
+        const { auth: firebaseAuth } = await import("../firebase/firebaseConfig");
+        const idToken = firebaseAuth.currentUser ? await firebaseAuth.currentUser.getIdToken() : "";
         await fetch(`${API_URL}/api/orders/paid`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+          },
           body: JSON.stringify({
             orderId,
             phone: addr.phone || "",

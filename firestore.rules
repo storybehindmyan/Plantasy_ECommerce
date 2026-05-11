@@ -2,17 +2,73 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // DEVELOPMENT RULES – apply to ALL collections
-    // Anyone can READ, only authenticated users can WRITE.
-    // (Tighten this for production.)
-    match /{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+    // Helper: check if the requester is a registered admin
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // If you ever need to allow everything (dev-only), use this instead:
-    // match /{document=**} {
-    //   allow read, write: if true;
-    // }
+    // Products — public storefront read; writes via backend service account only
+    match /products/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Categories / Blogs / Reviews — public read
+    match /categories/{id} { allow read: if true; allow write: if false; }
+    match /blogs/{id}       { allow read: if true; allow write: if false; }
+    match /reviews/{id}     {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    // Orders — customer reads/creates own orders; admins read all; backend writes
+    match /orders/{orderId} {
+      allow read: if request.auth != null &&
+        (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Users — own profile only
+    match /users/{userId} {
+      allow read, write: if request.auth != null &&
+        request.auth.uid == userId;
+    }
+
+    // Admins — only admins can read the collection (for role checks)
+    match /admins/{adminId} {
+      allow read: if request.auth != null &&
+        request.auth.uid == adminId;
+      allow write: if false;
+    }
+
+    // Coupons — require auth to read (prevent anonymous coupon discovery)
+    match /coupons/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Support tickets — customers manage their own; admins read all
+    match /support_tickets/{id} {
+      allow read: if request.auth != null &&
+        (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Payments — customers write their own payment records; admins read all
+    match /payments/{id} {
+      allow create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid;
+      allow read: if request.auth != null &&
+        (resource.data.uid == request.auth.uid || isAdmin());
+      allow update, delete: if false;
+    }
   }
 }

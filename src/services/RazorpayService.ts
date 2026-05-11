@@ -46,9 +46,6 @@ export const RazorpayService = {
       return;
     }
 
-    console.log("🔑 Using Razorpay Key:", RAZORPAY_KEY_ID.slice(0, 10) + "...");
-    // console.log("💰 Amount:", amount, "paisa");
-    // console.log("📝 Order ID:", orderId);
 
     const options = {
       key: RAZORPAY_KEY_ID,

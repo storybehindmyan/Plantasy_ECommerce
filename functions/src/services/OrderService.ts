@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { DelhiveryService } from "./DelhiveryService";
 import { WhatsAppService } from "./WhatsAppService";
+import { EmailService } from "./EmailService";
 
 const db = () => admin.firestore();
 
@@ -71,13 +72,11 @@ export const OrderService = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // WhatsApp: order placed confirmation
-    await WhatsAppService.sendOrderConfirmed(
-      customer.phone,
-      customer.name,
-      orderId,
-      invoiceValue
-    );
+    // Notify customer: order placed (WhatsApp + Email in parallel)
+    await Promise.allSettled([
+      WhatsAppService.sendOrderConfirmed(customer.phone, customer.name, orderId, invoiceValue),
+      EmailService.sendOrderConfirmed(customer.email, customer.name, orderId, invoiceValue),
+    ]);
 
     console.log(`Order ${orderId}: waybill created=${waybill}, awaiting admin confirmation`);
     return { waybill, trackingUrl };
@@ -133,8 +132,12 @@ export const OrderService = {
       "timestamps.updatedAt": admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // WhatsApp: order packed + tracking info
-    await WhatsAppService.sendOrderShippingInfo(phone, name, orderId, waybill, trackingUrl);
+    // Notify customer: order packed + tracking info (WhatsApp + Email in parallel)
+    const packedEmail = (order.deliveryAddress?.email as string) || "";
+    await Promise.allSettled([
+      WhatsAppService.sendOrderShippingInfo(phone, name, orderId, waybill, trackingUrl),
+      EmailService.sendOrderPacked(packedEmail, name, orderId, waybill, trackingUrl),
+    ]);
 
     return { waybill, trackingUrl, alreadyHadWaybill, pickupError } as any;
   },
@@ -148,8 +151,13 @@ export const OrderService = {
     const waybill = order.delhivery?.waybill || "";
     const trackingUrl = order.delhivery?.trackingUrl || "";
 
+    const shippedEmail = (order.deliveryAddress?.email as string) || "";
+    const shippedName = `${order.deliveryAddress?.firstName || ""} ${order.deliveryAddress?.lastName || ""}`.trim();
     if (phone && waybill) {
-      await WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl);
+      await Promise.allSettled([
+        WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl),
+        EmailService.sendOrderShipped(shippedEmail, shippedName, orderId, waybill, trackingUrl),
+      ]);
     }
 
     await db().collection("orders").doc(orderId).update({
@@ -237,11 +245,18 @@ export const OrderService = {
     const phone = addr.phone || "";
     const customerName = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
 
+    const customerEmail = (addr.email as string) || "";
     if (newOrderStatus === "SHIPPED" && phone) {
-      await WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl).catch(console.error);
-    } else if (newOrderStatus === "DELIVERED" && phone) {
+      await Promise.allSettled([
+        WhatsAppService.sendOrderShipped(phone, orderId, waybill, trackingUrl),
+        EmailService.sendOrderShipped(customerEmail, customerName, orderId, waybill, trackingUrl),
+      ]);
+    } else if (newOrderStatus === "DELIVERED") {
       const reviewUrl = `https://plantasy.co.in/review/${orderId}`;
-      await WhatsAppService.sendOrderDelivered(phone, customerName, orderId, reviewUrl).catch(console.error);
+      await Promise.allSettled([
+        phone ? WhatsAppService.sendOrderDelivered(phone, customerName, orderId, reviewUrl) : Promise.resolve(),
+        EmailService.sendOrderDelivered(customerEmail, customerName, orderId, reviewUrl),
+      ]);
     }
 
     console.log(`[syncOrderTracking] Order ${orderId}: Delhivery="${latestDelhiveryStatus}" → newStatus=${newOrderStatus || "no change"}`);
@@ -258,9 +273,11 @@ export const OrderService = {
     const name = `${addr.firstName || ""} ${addr.lastName || ""}`.trim();
     const reviewUrl = `https://plantasy.co.in/review/${orderId}`;
 
-    if (phone) {
-      await WhatsAppService.sendOrderDelivered(phone, name, orderId, reviewUrl);
-    }
+    const deliveredEmail = (addr.email as string) || "";
+    await Promise.allSettled([
+      phone ? WhatsAppService.sendOrderDelivered(phone, name, orderId, reviewUrl) : Promise.resolve(),
+      EmailService.sendOrderDelivered(deliveredEmail, name, orderId, reviewUrl),
+    ]);
 
     await db().collection("orders").doc(orderId).update({
       orderStatus: "DELIVERED",

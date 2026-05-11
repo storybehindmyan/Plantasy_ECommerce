@@ -17,7 +17,6 @@ import ShippingReturns from './pages/ShippingReturns';
 import TermsAndConditions from './pages/TermsAndConditions';
 import ContactUs from './pages/ContactUs';
 import Checkout from "./pages/Checkout";
-import DeliveryTest from "./pages/DeliveryTest";
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminShell from './admin/AdminShell';
 
@@ -51,7 +50,6 @@ const App = () => {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="delivery-test" element={<DeliveryTest />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

@@ -50,6 +50,8 @@ jobs:
           echo "WHATSAPP_TOKEN=${{ secrets.WHATSAPP_TOKEN }}" >> functions/.env
           echo "WHATSAPP_PHONE_NUMBER_ID=${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}" >> functions/.env
           echo "WHATSAPP_VERIFY_TOKEN=${{ secrets.WHATSAPP_VERIFY_TOKEN }}" >> functions/.env
+          echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> functions/.env
+          echo "RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}" >> functions/.env
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools

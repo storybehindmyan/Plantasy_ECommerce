@@ -205,7 +205,7 @@ const SupportPage: React.FC = () => {
 
   // This function must call your backend or third‑party email API
 const sendSupportEmail = async (to: string, subject: string, body: string) => {
-  const res = await fetch('/api/send-support-email', {
+  const res = await fetch('http://localhost:5000/api/send-support-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to, subject, body }),

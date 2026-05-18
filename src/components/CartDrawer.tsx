@@ -69,6 +69,7 @@ const CartDrawer: React.FC = () => {
     removeFromCart,
     updateQuantity,
     cartTotal,
+    verifyCartStock,
   } = useCart();
 
   const { user } = useAuth();
@@ -593,6 +594,8 @@ const CartDrawer: React.FC = () => {
     }
   };
 
+  const [verifyingStock, setVerifyingStock] = useState(false);
+
   const handleCheckoutClick = async () => {
     if (!uid) {
       toggleCart();
@@ -603,6 +606,24 @@ const CartDrawer: React.FC = () => {
       toast.error("Your cart is empty");
       return;
     }
+
+    setVerifyingStock(true);
+    try {
+      const { hasIssues, issues } = await verifyCartStock();
+      if (hasIssues) {
+        for (const issue of issues) {
+          if (issue.available === 0) {
+            toast.error(`"${issue.name}" is out of stock and has been removed from your cart.`);
+          } else {
+            toast.error(`Only ${issue.available} left for "${issue.name}". Your cart quantity has been updated.`);
+          }
+        }
+        return;
+      }
+    } finally {
+      setVerifyingStock(false);
+    }
+
     void openAddressModal();
   };
 
@@ -659,6 +680,9 @@ const CartDrawer: React.FC = () => {
                       (item as any).productId ??
                       `${(item as any).name ?? "item"}-${index}`;
 
+                    const itemStock = typeof (item as any).stock === "number" ? (item as any).stock as number : undefined;
+                    const atStockLimit = itemStock !== undefined && item.quantity >= itemStock;
+
                     return (
                       <div key={key} className="flex gap-4">
                         {imgSrc && (
@@ -700,7 +724,8 @@ const CartDrawer: React.FC = () => {
                                     item.quantity + 1,
                                   )
                                 }
-                                className="p-1 hover:bg-white/10"
+                                disabled={atStockLimit}
+                                className="p-1 hover:bg-white/10 disabled:opacity-40"
                               >
                                 <Plus size={14} />
                               </button>
@@ -712,6 +737,12 @@ const CartDrawer: React.FC = () => {
                               <Trash2 size={16} />
                             </button>
                           </div>
+
+                          {atStockLimit && itemStock !== undefined && itemStock > 0 && (
+                            <p className="text-amber-400 text-[11px] mt-1.5">
+                              Only {itemStock} in stock
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
@@ -741,9 +772,10 @@ const CartDrawer: React.FC = () => {
                   )}
                   <button
                     onClick={handleCheckoutClick}
-                    className="w-full bg-[#c16e41] text-white py-3 font-semibold tracking-wide hover:bg-[#a05a32] transition duration-300 rounded-lg"
+                    disabled={verifyingStock}
+                    className="w-full bg-[#c16e41] text-white py-3 font-semibold tracking-wide hover:bg-[#a05a32] transition duration-300 rounded-lg disabled:opacity-60"
                   >
-                    CHECKOUT
+                    {verifyingStock ? "Checking stock..." : "CHECKOUT"}
                   </button>
                 </div>
               )}

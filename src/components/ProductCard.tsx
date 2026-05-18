@@ -14,9 +14,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isAdded, setIsAdded] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
+  const isOutOfStock = typeof product.stock === "number" && product.stock === 0;
+
   const handleAddContext = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent Link navigation when clicking add button
     e.stopPropagation();
+    if (isOutOfStock) return;
     addToCart(product);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
@@ -62,13 +65,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           )}
 
           {/* Badge */}
-          {product.badge && (
+          {product.badge && !isOutOfStock && (
             <span
               className={`absolute top-2 left-2 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-1 ${product.badge === "Sale" ? "bg-shop-terracotta" : "bg-[#686736]/70 backdrop-blur-md border border-[#686736]/90"
                 }`}
             >
               {product.badge}
             </span>
+          )}
+
+          {/* Out of Stock overlay */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+              <span className="text-white text-xs font-bold uppercase tracking-widest bg-black/70 px-3 py-1.5">
+                Out of Stock
+              </span>
+            </div>
           )}
         </div>
 
@@ -91,9 +103,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           <button
             onClick={handleAddContext}
-            className="w-full border border-white/30 text-white py-2 text-sm font-medium tracking-wider hover:bg-white hover:text-shop-ink transition-all duration-300"
+            disabled={isOutOfStock}
+            className={`w-full border py-2 text-sm font-medium tracking-wider transition-all duration-300 ${
+              isOutOfStock
+                ? "border-white/10 text-white/30 cursor-not-allowed"
+                : "border-white/30 text-white hover:bg-white hover:text-shop-ink"
+            }`}
           >
-            {isAdded ? "Added" : "Add to Cart"}
+            {isOutOfStock ? "Out of Stock" : isAdded ? "Added" : "Add to Cart"}
           </button>
         </div>
       </Link>

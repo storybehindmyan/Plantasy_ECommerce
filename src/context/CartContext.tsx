@@ -26,6 +26,13 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface StockIssue {
+  id: string;
+  name: string;
+  requested: number;
+  available: number;
+}
+
 interface CartContextType {
   cart: CartItem[];
   isCartOpen: boolean;
@@ -39,6 +46,7 @@ interface CartContextType {
   toggleCart: () => void;
   cartTotal: number;
   itemsCount: number;
+  verifyCartStock: () => Promise<{ hasIssues: boolean; issues: StockIssue[] }>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -192,6 +200,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // 2) Check stock — if 0, do not add
+    const productStock = typeof product.stock === "number" ? product.stock : undefined;
+    if (productStock === 0) return;
+
     // Ensure itemType is not empty
     const finalType =
       itemType && itemType.trim() ? itemType.trim() : "regular";
@@ -201,19 +213,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       let next: CartItem[];
 
       if (existing) {
-        // Update quantity for existing item
+        // Cap quantity at stock if defined
+        const newQty = existing.quantity + quantity;
+        const cappedQty = productStock !== undefined ? Math.min(newQty, productStock) : newQty;
         next = prev.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: cappedQty }
             : item
         );
       } else {
+        const cappedQty = productStock !== undefined ? Math.min(quantity, productStock) : quantity;
         // Add new item
         const newItem: CartItem = {
           id: product.id,
           name: product.name || "",
           price: product.price || 0,
-          quantity,
+          quantity: cappedQty,
           type: finalType,
           coverImage:
             (product as any).coverImage ||
@@ -265,12 +280,54 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setCart((prev) => {
-      const next = prev.map((item) =>
-        item.id === id ? { ...item, quantity: qty } : item
+      const item = prev.find((i) => i.id === id);
+      const stock = item && typeof item.stock === "number" ? item.stock : undefined;
+      const cappedQty = stock !== undefined ? Math.min(qty, stock) : qty;
+      const next = prev.map((i) =>
+        i.id === id ? { ...i, quantity: cappedQty } : i
       );
       void syncCartToFirestore(next);
       return next;
     });
+  };
+
+  const verifyCartStock = async (): Promise<{ hasIssues: boolean; issues: StockIssue[] }> => {
+    const issues: StockIssue[] = [];
+    const updates: { id: string; qty: number }[] = [];
+
+    for (const item of cart) {
+      try {
+        const productRef = doc(db, "products", item.id);
+        const productSnap = await getDoc(productRef);
+        if (!productSnap.exists()) continue;
+        const data = productSnap.data() as any;
+        const stock = typeof data.stock === "number" ? data.stock : undefined;
+        if (stock === undefined) continue;
+        if (item.quantity > stock) {
+          issues.push({ id: item.id, name: item.name, requested: item.quantity, available: stock });
+          updates.push({ id: item.id, qty: stock });
+        }
+      } catch (err) {
+        console.error("Error verifying stock for", item.id, err);
+      }
+    }
+
+    if (updates.length > 0) {
+      setCart((prev) => {
+        const next = prev
+          .map((item) => {
+            const update = updates.find((u) => u.id === item.id);
+            if (!update) return item;
+            if (update.qty === 0) return null;
+            return { ...item, quantity: update.qty };
+          })
+          .filter(Boolean) as CartItem[];
+        void syncCartToFirestore(next);
+        return next;
+      });
+    }
+
+    return { hasIssues: issues.length > 0, issues };
   };
 
   const toggleCart = () => setIsCartOpen((prev) => !prev);
@@ -293,6 +350,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         toggleCart,
         cartTotal,
         itemsCount,
+        verifyCartStock,
       }}
     >
       {children}

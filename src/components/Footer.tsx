@@ -82,7 +82,8 @@ const Footer = () => {
             </div>
 
             <div className="text-center text-xs text-gray-600 pt-8 border-t border-white/5">
-                &copy;{new Date().getFullYear()} Plantasy. All rights reserved.
+                &copy;{new Date().getFullYear()} Plantasy. All rights reserved.  | Designed and developed by 
+                <a href="https://www.instagram.com/alwayssiddhardh?igsh=MWtta2RxNDEyMGxibg==" target='blank' className=" hover:text-white transition"> @alwayssiddhardh</a>
             </div>
         </footer>
     );

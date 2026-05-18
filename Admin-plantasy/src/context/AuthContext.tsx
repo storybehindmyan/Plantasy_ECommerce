@@ -93,6 +93,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await signOut(auth);
         throw new Error('Access denied. You are not authorized as an admin.');
       }
+
+      // Set all auth state immediately so AdminLayout doesn't get stuck on
+      // the loading spinner while waiting for onAuthStateChanged to fire.
+      const data = adminDoc.data();
+      setUser(userCredential.user);
+      setAdminUser({
+        uid: userCredential.user.uid,
+        email: userCredential.user.email || '',
+        displayName: data.displayName || userCredential.user.displayName || 'Admin',
+        role: data.role as AdminRole,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        lastLogin: data.lastLogin?.toDate() || new Date(),
+      });
+      setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
       throw error;

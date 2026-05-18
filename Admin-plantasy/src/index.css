@@ -4,6 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 @layer base {
   :root {
     /* Primary Palette - Warm Earthy Tones */
@@ -301,4 +302,18 @@
     background-color: hsl(var(--accent-secondary));
     border-radius: 3px;
   }
+}
+
+
+/* Hide spinners in Chrome, Safari, Edge, Opera */
+.admin-input.no-spinner::-webkit-inner-spin-button,
+.admin-input.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide spinners in Firefox */
+.admin-input.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

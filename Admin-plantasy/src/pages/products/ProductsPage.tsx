@@ -986,7 +986,7 @@ const ProductsPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, price: e.target.value })
                 }
-                className="admin-input"
+                className="admin-input no-spinner"
                 required
               />
             </div>
@@ -1002,7 +1002,7 @@ const ProductsPage: React.FC = () => {
                     discountPrice: e.target.value,
                   })
                 }
-                className="admin-input"
+                className="admin-input no-spinner"
                 placeholder="Optional"
               />
             </div>
@@ -1014,7 +1014,7 @@ const ProductsPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, stock: e.target.value })
                 }
-                className="admin-input"
+                className="admin-input no-spinner"
                 required
               />
             </div>
@@ -1044,7 +1044,7 @@ const ProductsPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, weightGrams: e.target.value })
                 }
-                className="admin-input"
+                className="admin-input no-spinner"
                 required
               />
             </div>
@@ -1060,7 +1060,7 @@ const ProductsPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, heightValue: e.target.value })
                   }
-                  className="admin-input"
+                  className="admin-input no-spinner"
                   required
                 />
                 <select
@@ -1090,7 +1090,7 @@ const ProductsPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, widthValue: e.target.value })
                   }
-                  className="admin-input"
+                  className="admin-input no-spinner"
                   required
                 />
                 <select
@@ -1120,7 +1120,7 @@ const ProductsPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, lengthValue: e.target.value })
                   }
-                  className="admin-input"
+                  className="admin-input no-spinner"
                   required
                 />
                 <select

@@ -66,6 +66,8 @@ import express from "express";
 import cors from "cors";
 import razorpayRoutes from "./routes/razorpay.js";
 import shippingRoutes from "./routes/shipping.js";
+import Nodemailer from "nodemailer";
+import { MailtrapTransport } from "mailtrap";
 
 const app = express();
 const PORT = 3000; // Vite proxy expects backend on port 3000
@@ -145,6 +147,37 @@ app.post("/api/delhivery/test-pickup", async (req, res) => {
   } catch (err: any) {
     console.error("[test-pickup] Error:", err.message);
     return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Support email (used by Admin Panel SupportPage) ──
+app.post("/api/send-support-email", async (req, res) => {
+  const MAILTRAP_TOKEN = process.env.MAILTRAP_TOKEN;
+  const { to, subject, body } = req.body as { to?: string; subject?: string; body?: string };
+
+  if (!to || !subject || !body) {
+    return res.status(400).json({ error: "Missing to/subject/body" });
+  }
+
+  if (!MAILTRAP_TOKEN) {
+    console.warn("MAILTRAP_TOKEN not set — support email not sent");
+    return res.status(503).json({ error: "Email service not configured" });
+  }
+
+  try {
+    const transport = Nodemailer.createTransport(
+      MailtrapTransport({ token: MAILTRAP_TOKEN })
+    );
+    await transport.sendMail({
+      from: { address: process.env.FROM_EMAIL || "hello@plantasy.co.in", name: "Plantasy Support" },
+      to: [to],
+      subject,
+      text: body,
+    });
+    return res.json({ success: true });
+  } catch (err: any) {
+    console.error("Mailtrap send error:", err);
+    return res.status(500).json({ error: "Failed to send email" });
   }
 });
 

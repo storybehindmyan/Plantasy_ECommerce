@@ -13,7 +13,7 @@ import { ShippingQuoteService } from "../services/ShippingQuoteService";
 import type { OrderData, PaymentDetails } from "../types/payment";
 import { Timestamp } from "firebase/firestore";
 import type { CartItem } from "../context/CartContext";
-import {getDoc, setDoc, doc} from "firebase/firestore"; 
+import { getDoc, setDoc, doc, runTransaction } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -215,6 +215,25 @@ export const useCheckout = () => {
       };
 
       await orderService.createOrder(orderData);
+
+      // Deduct stock for each ordered item atomically
+      await Promise.all(
+        params.cartItems.map(async (item) => {
+          try {
+            const productRef = doc(db, "products", item.id);
+            await runTransaction(db, async (transaction) => {
+              const productSnap = await transaction.get(productRef);
+              if (!productSnap.exists()) return;
+              const currentStock = productSnap.data()?.stock;
+              if (typeof currentStock !== "number") return;
+              const newStock = Math.max(0, currentStock - item.quantity);
+              transaction.update(productRef, { stock: newStock });
+            });
+          } catch (stockErr) {
+            console.error(`Stock deduction failed for product ${item.id}:`, stockErr);
+          }
+        })
+      );
 
       //Add orderId in user's order history array
       const userOrdersRef = doc(db, "users", user?.uid || "");

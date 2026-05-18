@@ -178,8 +178,10 @@ const ProductDetails = () => {
     }
   }, [user?.uid]);
 
+  const isOutOfStock = typeof product?.stock === "number" && product.stock === 0;
+
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!product || isOutOfStock) return;
     addToCart(product, quantity);
     toast.success("Added to cart");
   };
@@ -444,19 +446,38 @@ const ProductDetails = () => {
 
               {/* Options */}
               <div className="space-y-6">
+                {/* Out of Stock banner */}
+                {isOutOfStock && (
+                  <div className="flex items-center gap-3 border border-red-500/40 bg-red-500/10 rounded-sm px-4 py-3">
+                    <span className="text-red-400 text-lg leading-none">✕</span>
+                    <div>
+                      <p className="text-red-400 font-semibold text-sm tracking-wide">Out of Stock</p>
+                      <p className="text-gray-400 text-xs mt-0.5">We'll get it back for you soon — check back later!</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Quantity */}
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-400 block">
+                  <label className={`text-sm block ${isOutOfStock ? "text-gray-600" : "text-gray-400"}`}>
                     Quantity <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
                     min={1}
+                    max={typeof product.stock === "number" && product.stock > 0 ? product.stock : undefined}
                     value={quantity}
-                    onChange={(e) =>
-                      setQuantity(Math.max(1, Number(e.target.value) || 1))
-                    }
-                    className="w-24 bg-transparent border border-white/20 px-4 py-3 rounded-none text-sm text-white focus:border-white focus:outline-none"
+                    disabled={isOutOfStock}
+                    onChange={(e) => {
+                      const val = Math.max(1, Number(e.target.value) || 1);
+                      const maxQty = typeof product.stock === "number" && product.stock > 0 ? product.stock : Infinity;
+                      setQuantity(Math.min(val, maxQty));
+                    }}
+                    className={`w-24 bg-transparent border px-4 py-3 rounded-none text-sm focus:outline-none transition-colors ${
+                      isOutOfStock
+                        ? "border-white/10 text-white/20 cursor-not-allowed"
+                        : "border-white/20 text-white focus:border-white"
+                    }`}
                   />
                 </div>
 
@@ -464,9 +485,14 @@ const ProductDetails = () => {
                 <div className="flex gap-4 pt-4 items-center">
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 bg-shop-terracotta hover:bg-[#b05d35] text-white py-3 px-8 text-sm font-medium tracking-wide transition-colors duration-300"
+                    disabled={isOutOfStock}
+                    className={`flex-1 py-3 px-8 text-sm font-medium tracking-wide transition-colors duration-300 ${
+                      isOutOfStock
+                        ? "bg-white/10 text-white/30 cursor-not-allowed"
+                        : "bg-shop-terracotta hover:bg-[#b05d35] text-white"
+                    }`}
                   >
-                    Add to Cart
+                    {isOutOfStock ? "Out of Stock" : "Add to Cart"}
                   </button>
                   <button
                     type="button"

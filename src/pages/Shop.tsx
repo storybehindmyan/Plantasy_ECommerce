@@ -37,6 +37,7 @@ type FirestoreProduct = Product & {
 type CategoryFilter = {
   id: string;
   label: string;
+  docId?: string;
 };
 
 const SidebarAccordion = ({
@@ -124,9 +125,11 @@ const Shop = () => {
         ];
         const cats: CategoryFilter[] = snap.docs.map((d) => {
           const data = d.data() as any;
+          const name = (data.name || d.id).toString().trim();
           return {
-            id: (data.name || d.id).toString().toLowerCase(),
-            label: data.name || d.id,
+            id: name.toLowerCase(),
+            label: name,
+            docId: d.id,
           };
         });
         setCategoryFilters([...base, ...cats]);
@@ -325,8 +328,19 @@ const Shop = () => {
         product.category === "plants" &&
         product.name.toLowerCase().includes("subscription");
     } else {
-      matchesCategory =
-        product.category.toLowerCase() === activeCategory.toLowerCase();
+      const productCatNorm = (product.category || "").toString().toLowerCase().trim();
+      const activeLower = activeCategory.toLowerCase().trim();
+
+      // Primary: product.category (lowercased+trimmed) matches filter id (lowercased name)
+      if (productCatNorm === activeLower) {
+        matchesCategory = true;
+      } else {
+        // Fallback: product may store the Firestore doc ID instead of the name
+        const activeCatEntry = categoryFilters.find((c) => c.id === activeLower);
+        matchesCategory =
+          !!activeCatEntry?.docId &&
+          productCatNorm === activeCatEntry.docId.toLowerCase().trim();
+      }
     }
 
     const matchesPrice = product.price <= maxPrice;

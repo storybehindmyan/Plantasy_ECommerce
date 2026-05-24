@@ -120,7 +120,7 @@ const Shop = () => {
           { id: "all", label: "All" },
           { id: "new-arrivals", label: "New Arrivals" },
           { id: "sale", label: "Sale" },
-          { id: "subscriptions", label: "Subscriptions" },
+          // { id: "subscriptions", label: "Subscriptions" },
         ];
         const cats: CategoryFilter[] = snap.docs.map((d) => {
           const data = d.data() as any;

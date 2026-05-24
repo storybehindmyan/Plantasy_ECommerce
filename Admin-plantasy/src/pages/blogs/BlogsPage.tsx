@@ -308,6 +308,7 @@ const BlogsPage: React.FC = () => {
         seoTitle: formData.seoTitle,
         seoDescription: formData.seoDescription,
         isPublished: formData.isPublished,
+        publishedAt: formData.isPublished ? serverTimestamp() : null,
         galleryImages: galleryUrls,
       };
 
@@ -354,6 +355,7 @@ const BlogsPage: React.FC = () => {
     try {
       await updateDoc(doc(db, 'blogs', blog.id), {
         isPublished: !blog.isPublished,
+        publishedAt: !blog.isPublished ? serverTimestamp() : null,
         updatedAt: serverTimestamp(),
       });
       fetchBlogs();

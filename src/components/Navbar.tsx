@@ -152,7 +152,7 @@ const Navbar = () => {
   const navLinks = [
     { name: "Shop All", path: "/shop" },
     { name: "Plants", path: "/shop?category=plants" },
-    { name: "Pots", path: "/shop?category=pots" },
+    { name: "3D Pots", path: "/shop?category=pots" },
     { name: "Seeds", path: "/shop?category=seeds" },
     { name: "Care", path: "/care" },
   ];

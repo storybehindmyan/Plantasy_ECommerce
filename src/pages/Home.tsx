@@ -702,12 +702,14 @@ const Home = () => {
       {/* 3. Sprout on the #Gram Section */}
       <section className="bg-[#5a614a] py-24 px-6 text-white min-h-screen flex flex-col justify-center">
         <motion.div className="text-center mb-16" {...fadeInUp}>
+          <a href="https://www.instagram.com/plantasy_india?igsh=Z2I0N2licGtyMjJo" target="_blank" rel="noopener noreferrer">
           <h2 className="text-5xl md:text-7xl font-serif mb-4 text-white">
             Sprout on the{" "}
             <span className="underline decoration-1 underline-offset-8">
               #Gram
             </span>
           </h2>
+          </a>
         </motion.div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-[1400px] mx-auto w-full">
@@ -729,6 +731,7 @@ const Home = () => {
               viewport={{ once: true }}
               transition={{ delay: i * 0.05, duration: 0.6 }}
             >
+              <a href="https://www.instagram.com/plantasy_india?igsh=Z2I0N2licGtyMjJo" target="_blank" rel="noopener noreferrer">
               <img
                 src={src}
                 alt="Instagram"
@@ -737,6 +740,7 @@ const Home = () => {
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
                 <Instagram className="text-white w-8 h-8" />
               </div>
+            </a>
             </motion.div>
           ))}
         </div>

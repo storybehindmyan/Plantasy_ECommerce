@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const FooterSection = ({ title, children }: { title: string, children: React.ReactNode }) => {
     const [isOpen, setIsOpen] = useState(false);
 
+
     return (
         <div className="border-b border-shop-ink/10 md:border-none">
             <button
@@ -36,6 +37,13 @@ const FooterSection = ({ title, children }: { title: string, children: React.Rea
     );
 };
 
+const socialLinks = [
+    { Icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
+    { Icon: Instagram, href: 'https://www.instagram.com/plantasy_india?igsh=Z2I0N2licGtyMjJo', label: 'Instagram' },
+    { Icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
+    { Icon: Mail, href: 'mailto:contact@plantasy.com', label: 'Email' }
+];
+
 const Footer = () => {
     return (
         <footer className="bg-black pt-16 pb-8 border-t border-white/10 text-white">
@@ -48,10 +56,13 @@ const Footer = () => {
                         Bringing the beauty of nature into your home with curated plants and pots.
                     </p>
                     <div className="flex gap-4 pt-2">
-                        {[Facebook, Instagram, Twitter, Mail].map((Icon, i) => (
+                        {socialLinks.map(({ Icon, href, label }, i) => (
                             <a
                                 key={i}
-                                href="#"
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={label}
                                 className="p-2 bg-white/10 rounded-full text-white hover:bg-white hover:text-black transition-all duration-300 transform hover:-translate-y-1 shadow-sm"
                             >
                                 <Icon size={18} />

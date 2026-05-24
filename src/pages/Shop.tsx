@@ -95,7 +95,8 @@ const Shop = () => {
   const [activeCategory, setActiveCategory] = useState<string>(
     categoryParam || "all"
   );
-  const [maxPrice, setMaxPrice] = useState(5000);
+  const [priceSliderMax, setPriceSliderMax] = useState(10000);
+  const [maxPrice, setMaxPrice] = useState(10000);
   const [sortBy, setSortBy] = useState("featured");
 
   // Type filter: "all" | "soil-base" | "soil-less"
@@ -208,6 +209,14 @@ const Shop = () => {
         });
 
         setProducts(items);
+
+        // Dynamically set the price slider ceiling to the most expensive product
+        if (items.length > 0) {
+          const maxProductPrice = Math.max(...items.map((p) => p.price ?? 0));
+          const ceiling = Math.ceil(maxProductPrice / 500) * 500 || 10000;
+          setPriceSliderMax(ceiling);
+          setMaxPrice(ceiling);
+        }
       } catch (err) {
         console.error("Error loading products:", err);
       } finally {
@@ -455,7 +464,7 @@ const Shop = () => {
                 <input
                   type="range"
                   min="0"
-                  max="10000"
+                  max={priceSliderMax}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full h-[2px] bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"

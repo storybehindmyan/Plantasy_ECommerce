@@ -39,7 +39,7 @@ const FooterSection = ({ title, children }: { title: string, children: React.Rea
 };
 
 const socialLinks = [
-    { Icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
+    { Icon: Facebook, href: 'https://www.facebook.com/share/18eY4QHxuc/', label: 'Facebook' },
     { Icon: Instagram, href: 'https://www.instagram.com/plantasy_india?igsh=Z2I0N2licGtyMjJo', label: 'Instagram' },
     { Icon: FaWhatsapp, href: 'https://wa.me/+918374988879', label: 'WhatsApp' },
     { Icon: Mail, href: 'mailto:official@plantasy.co.in?subject=Enquiry', label: 'Email' }

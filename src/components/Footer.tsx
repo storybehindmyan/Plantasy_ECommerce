@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import { Facebook, Instagram,  Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const FooterSection = ({ title, children }: { title: string, children: React.ReactNode }) => {
@@ -40,8 +41,8 @@ const FooterSection = ({ title, children }: { title: string, children: React.Rea
 const socialLinks = [
     { Icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
     { Icon: Instagram, href: 'https://www.instagram.com/plantasy_india?igsh=Z2I0N2licGtyMjJo', label: 'Instagram' },
-    { Icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
-    { Icon: Mail, href: 'mailto:contact@plantasy.com', label: 'Email' }
+    { Icon: FaWhatsapp, href: 'https://wa.me/+918374988879', label: 'WhatsApp' },
+    { Icon: Mail, href: 'mailto:official@plantasy.co.in?subject=Enquiry', label: 'Email' }
 ];
 
 const Footer = () => {
@@ -60,8 +61,8 @@ const Footer = () => {
                             <a
                                 key={i}
                                 href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                target={href.startsWith('mailto:') ? '_self' : '_blank'}
+                                rel={href.startsWith('mailto:') ? '' : 'noopener noreferrer'}
                                 aria-label={label}
                                 className="p-2 bg-white/10 rounded-full text-white hover:bg-white hover:text-black transition-all duration-300 transform hover:-translate-y-1 shadow-sm"
                             >

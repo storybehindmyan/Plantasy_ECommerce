@@ -5,7 +5,7 @@ const OurStory = () => {
         <div className="max-w-4xl mx-auto px-6 py-20 space-y-12">
             <div className="text-center space-y-6">
                 <span className="text-shop-terracotta text-sm font-bold tracking-widest uppercase">Since 2024</span>
-                <h1 className="text-4xl md:text-6xl font-serif text-shop-ink">Growing Green</h1>
+                <h1 className="text-4xl md:text-6xl font-serif text-shop-ink">Our Story</h1>
             </div>
 
             <motion.div
@@ -20,16 +20,15 @@ const OurStory = () => {
                 />
             </motion.div>
 
-            <div className="prose prose-lg mx-auto text-gray-600 font-light leading-relaxed">
-                <p>
-                    Plantasy began with a simple idea: bringing the calm and beauty of nature into our modern, busy lives should be easy and accessible. What started as a small personal collection on a windowsill has grown into a curated haven for plant lovers.
-                </p>
-                <p>
-                    We believe that plants are more than just decor; they are living companions that improve our air, lift our moods, and connect us to the earth. Our mission is to help you build your own indoor sanctuary, no matter how much space or experience you have.
-                </p>
-                <p>
-                    Every plant we ship is hand-selected for its health and vitality. We work with sustainable nurseries to ensure that we are not only greening your home but also caring for our planet.
-                </p>
+            <div className="prose prose-lg mx-auto text-gray-600 font-light leading-relaxed flex flex-col gap-4">
+                
+                <p>Plantasy was born from a simple belief — everyone should be able to grow their own plants, herbs, vegetables, and flowers, regardless of space limitations.</p>
+
+                <p>What started as a passion for sustainable gardening has evolved into a mission to make modern growing solutions accessible to every home. From beautifully designed 3D-printed planters to innovative hydroponic and aeroponic systems, we create products that help people reconnect with nature in a simple and enjoyable way.</p>
+                    
+                <p>Whether you have a balcony, terrace, apartment, or backyard, Plantasy provides everything you need to start and succeed in your gardening journey. Our goal is to make growing plants easier, smarter, and more rewarding for everyone.</p>
+                    
+                <p>Grow more. Waste less. Live greener.</p>
             </div>
         </div>
     );

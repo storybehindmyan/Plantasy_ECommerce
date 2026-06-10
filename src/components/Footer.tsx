@@ -54,7 +54,7 @@ const Footer = () => {
                 <div className="space-y-4">
                     <h2 className="text-2xl font-serif font-bold tracking-tight text-white">PLANTASY</h2>
                     <p className="text-sm text-gray-400 max-w-xs">
-                        Bringing the beauty of nature into your home with curated plants and pots.
+                        From tiny seeds to thriving gardens, Plantasy exists to help every home experience the joy of growing. Because a greener world begins with a single plant.
                     </p>
                     <div className="flex gap-4 pt-2">
                         {socialLinks.map(({ Icon, href, label }, i) => (

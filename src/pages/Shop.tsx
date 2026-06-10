@@ -8,8 +8,8 @@ import clsx from "clsx";
 import { Plus, Minus, Heart } from "lucide-react";
 
 import ProductCard from "../components/ProductCard";
-import YouMayAlsoLike from "../components/YouMayAlsoLike";
-import YouMayAlsoLikePots from "../components/YouMayAlsoLikePots";
+// import YouMayAlsoLike from "../components/YouMayAlsoLike";
+// import YouMayAlsoLikePots from "../components/YouMayAlsoLikePots";
 
 import { db } from "../firebase/firebaseConfig";
 import {
@@ -408,7 +408,7 @@ const Shop = () => {
                           : "text-gray-400 hover:text-white"
                       )}
                     >
-                      {cat.label}
+                      {cat.label=== "Pots" ? "3D Pots" : cat.label} 
                     </button>
                   </li>
                 ))}
@@ -548,7 +548,7 @@ const Shop = () => {
         </div>
       </div>
 
-      {/* Recommendations */}
+      {/* Recommendations
       {activeCategory === "pots" ? (
         <YouMayAlsoLikePots />
       ) : (
@@ -556,7 +556,7 @@ const Shop = () => {
           hideFirstImage={activeCategory === "pots"}
           compact={activeCategory === "seeds" || activeCategory === "plants"}
         />
-      )}
+      )} */}
     </div>
   );
 };
